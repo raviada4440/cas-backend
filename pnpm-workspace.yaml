@@ -1,0 +1,16 @@
+packages:
+  - packages/*
+  - apps/*
+  - prisma
+
+ignoredBuiltDependencies:
+  - '@nestjs/core'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@swc/core'
+  - esbuild
+  - prisma
+  - redis-memory-server
+
+onlyBuiltDependencies:
+  - bcrypt

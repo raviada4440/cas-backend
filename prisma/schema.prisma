@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./client"
+}
+
+generator json {
+  provider  = "prisma-json-types-generator"
+  namespace = "PrismaJson"
+  allowAny  = "false"
+}
+
+generator zod-prisma-types {
+  provider                         = "zod-prisma-types"
+  output                           = "./zod"
+  coerceDate                       = "true"
+  writeBarrelFiles                 = "true"
+  createModelTypes                 = "true"
+  addIncludeType                   = "false"
+  writeNullishInModelTypes         = "false"
+  addInputTypeValidation           = "false"
+  createInputTypes                 = "false"
+  useMultipleFiles                 = "true"
+  createPartialTypes               = "false"
+  validateWhereUniqueInput         = "false"
+  createOptionalDefaultValuesTypes = "true"
+  addSelectType                    = "false"
+  useDefaultValidators             = "true"
+  createRelationValuesTypes        = "false"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model User {
+  id            String     @id @default("")
+  username      String     @unique @db.VarChar(80)
+  name          String     @db.VarChar(80)
+  introduce     String?    @db.VarChar(255)
+  avatar        String?    @db.VarChar(1024)
+  password      String     @db.VarChar(80)
+  mail          String?    @db.VarChar(80)
+  url           String?    @db.VarChar(1024)
+  lastLoginTime DateTime?  @map("last_login_time")
+  lastLoginIp   String?    @map("last_login_ip")
+  socialIds     Json?      @default("{}") @map("social_ids")
+  created       DateTime   @default(now()) @map("created_at")
+  modified      DateTime?  @updatedAt @map("updated_at")
+  apiTokens     ApiToken[]
+  oauths        OAuth[]
+}
+
+model ApiToken {
+  id      String    @id @default("")
+  userId  String
+  created DateTime  @default(now())
+  token   String
+  expired DateTime?
+  name    String    @unique
+  user    User      @relation(fields: [userId], references: [id])
+}
+
+model OAuth {
+  id       String @id @default("")
+  userId   String
+  platform String
+  oauthId  String
+  user     User   @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id         String    @id @default("")
+  slug       String
+  text       String
+  title      String    @db.VarChar(255)
+  created    DateTime  @default(now()) @map("created_at")
+  modified   DateTime? @updatedAt @map("updated_at")
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id])
+
+  @@unique([slug, categoryId])
+  @@index([slug])
+  @@index([created])
+}
+
+model Category {
+  id      String   @id @default("")
+  /// @zod.string.max(80)
+  name    String   @unique
+  /// @zod.string.max(255)
+  slug    String   @unique @db.VarChar(255)
+  created DateTime @default(now()) @map("created_at")
+  Post    Post[]
+
+  @@index([slug], map: "slugIndex")
+}
+
+model Tag {
+  id      String   @id @default("")
+  name    String   @unique
+  created DateTime @default(now()) @map("created_at")
+}
