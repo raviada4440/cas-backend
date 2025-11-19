@@ -1,8 +1,11 @@
-import { factory } from '@innei/prettier'
-
 export default {
-  ...factory({
-    tailwindcss: false,
-  }),
-  importOrderParserPlugins: ['typescript', 'jsx', 'decorators-legacy'],
+  semi: false,
+  singleQuote: true,
+  trailingComma: 'all',
+  printWidth: 100,
+  tabWidth: 2,
+  useTabs: false,
+  bracketSpacing: true,
+  arrowParens: 'always',
+  plugins: [],
 }

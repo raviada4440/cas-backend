@@ -5,7 +5,7 @@ import { mockUserInputData1 } from '@test/mock/data/user.data'
 import { authProvider } from '@test/mock/modules/auth.mock'
 
 describe('/modules/user/user.service', () => {
-  const proxy = createServiceUnitTestApp(UserService, {
+  const proxy = createServiceUnitTestApp<UserService>(UserService, {
     providers: [authProvider],
   })
 

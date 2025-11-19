@@ -15,9 +15,7 @@ class InMemoryRedisClient {
   }
 
   async del(key: string) {
-    const deleted =
-      (this.strings.delete(key) ? 1 : 0) +
-      (this.hashes.delete(key) ? 1 : 0)
+    const deleted = (this.strings.delete(key) ? 1 : 0) + (this.hashes.delete(key) ? 1 : 0)
     return deleted > 0 ? 1 : 0
   }
 

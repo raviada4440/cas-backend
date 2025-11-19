@@ -35,37 +35,82 @@ export interface QueryInfo {
   executionTime: number
 }
 
-export function loggingMiddleware(
+export const createLoggingExtension = (
   { logger, logMessage, logLevel }: LoggingMiddlewareOptions = {
     logger: console,
     logLevel: 'debug',
   },
-): Prisma.Middleware {
-  return async (params, next) => {
-    const before = Date.now()
+) =>
+  Prisma.defineExtension({
+    name: 'prisma-logging',
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          const before = Date.now()
 
-    const result = await next(params)
+          const result = query(args)
+          const modelName = model ?? 'unknown'
+          const actionName = operation ?? 'unknown'
 
-    const after = Date.now()
+          const pendingResult = result as PromiseLike<unknown> | undefined
+          if (pendingResult && typeof pendingResult.then === 'function') {
+            return pendingResult.then((value) => {
+              logQuery({
+                model: modelName,
+                action: actionName,
+                before,
+                logger,
+                logLevel,
+                logMessage,
+              })
+              return value
+            })
+          }
 
-    const executionTime = after - before
+          logQuery({
+            model: modelName,
+            action: actionName,
+            before,
+            logger,
+            logLevel,
+            logMessage,
+          })
+          return result
+        },
+      },
+    },
+  })
 
-    if (logMessage) {
-      logger[logLevel](
-        logMessage({
-          model: params.model!,
-          action: params.action,
-          before,
-          after,
-          executionTime,
-        }),
-      )
-    } else {
-      logger[logLevel](
-        `Prisma Query ${params.model}.${params.action} took ${executionTime}ms`,
-      )
-    }
+const logQuery = ({
+  model,
+  action,
+  before,
+  logger,
+  logLevel,
+  logMessage,
+}: {
+  model: string
+  action: string
+  before: number
+  logger: Console | Logger
+  logLevel: LoggingMiddlewareOptions['logLevel']
+  logMessage?: LoggingMiddlewareOptions['logMessage']
+}) => {
+  const after = Date.now()
+  const executionTime = after - before
 
-    return result
+  if (logMessage) {
+    logger[logLevel](
+      logMessage({
+        model,
+        action,
+        before,
+        after,
+        executionTime,
+      }),
+    )
+    return
   }
+
+  logger[logLevel](`Prisma Query ${model}.${action} took ${executionTime}ms`)
 }

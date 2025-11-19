@@ -1,11 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify'
 
-import {
-  CallHandler,
-  ExecutionContext,
-  NestInterceptor,
-  RequestMethod,
-} from '@nestjs/common'
+import { CallHandler, ExecutionContext, NestInterceptor, RequestMethod } from '@nestjs/common'
 
 declare module 'fastify' {
   // @ts-ignore
@@ -15,10 +10,10 @@ declare module 'fastify' {
 }
 
 export class AllowAllCorsInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler<any>) {
+  intercept(context: ExecutionContext, next: CallHandler) {
     const handle = next.handle()
     const request = context.switchToHttp().getRequest() as FastifyRequest
-    const response: FastifyReply<any> = context.switchToHttp().getResponse()
+    const response: FastifyReply = context.switchToHttp().getResponse()
     const allowedMethods = [
       RequestMethod.GET,
       RequestMethod.HEAD,

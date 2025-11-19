@@ -74,19 +74,14 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
     host: ArgumentsHost,
   ) {
     const statusCode = this.errorCodesStatusMapping[exception.code]
-    const message = `[${exception.code}]: ${this.exceptionShortMessage(
-      exception.message,
-    )}`
+    const message = `[${exception.code}]: ${this.exceptionShortMessage(exception.message)}`
 
     if (host.getType() === 'http') {
       if (!Object.keys(this.errorCodesStatusMapping).includes(exception.code)) {
         return super.catch(exception, host)
       }
 
-      return super.catch(
-        new HttpException({ statusCode, message }, statusCode),
-        host,
-      )
+      return super.catch(new HttpException({ statusCode, message }, statusCode), host)
     } else if (host.getType<GqlContextType>() === 'graphql') {
       // for graphql requests
       if (!Object.keys(this.errorCodesStatusMapping).includes(exception.code)) {
@@ -99,10 +94,7 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
 
   private exceptionShortMessage(message: string): string {
     const shortMessage = message.substring(message.indexOf('→'))
-    return shortMessage
-      .substring(shortMessage.indexOf('\n'))
-      .replace(/\n/g, '')
-      .trim()
+    return shortMessage.substring(shortMessage.indexOf('\n')).replace(/\n/g, '').trim()
   }
 }
 
@@ -112,10 +104,7 @@ export function providePrismaClientExceptionFilter(
   return {
     provide: APP_FILTER,
     useFactory: ({ httpAdapter }: HttpAdapterHost) => {
-      return new PrismaClientExceptionFilter(
-        httpAdapter,
-        errorCodesStatusMapping,
-      )
+      return new PrismaClientExceptionFilter(httpAdapter, errorCodesStatusMapping)
     },
     inject: [HttpAdapterHost],
   }

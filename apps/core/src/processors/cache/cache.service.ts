@@ -8,7 +8,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common'
 
 // 获取器
 export type TCacheKey = string
-export type TCacheResult<T> = Promise<T | undefined>
 
 /**
  * @class CacheService
@@ -33,8 +32,8 @@ export class CacheService {
     return this.cache.store.getClient()
   }
 
-  public get<T>(key: TCacheKey): TCacheResult<T> {
-    return this.cache.get(key)
+  public get<T>(key: TCacheKey) {
+    return this.cache.get<T>(key)
   }
 
   public set(key: TCacheKey, value: any, ttl?: number | undefined) {

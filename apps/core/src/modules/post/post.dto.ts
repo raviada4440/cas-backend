@@ -8,18 +8,13 @@ import { PostOptionalDefaultsSchema, PostSchema } from '@db/client/zod'
 
 import { PostSchemaProjection } from './post.protect'
 
-const PostInputSchema = PostOptionalDefaultsSchema.extend({
-  related: z.array(z.string()).optional(),
-  slug: z
-    .string()
-    .transform((val) => slugify(val, { lower: true, trim: true })),
+export const PostInputSchema = PostOptionalDefaultsSchema.extend({
+  slug: z.string().transform((val) => slugify(val, { lower: true, trim: true })),
 }).omit(PostSchemaProjection)
 
 export class PostDto extends createZodDto(PostInputSchema) {}
 
-export class PostPatchDto extends createZodDto(
-  makeOptionalPropsNullable(PostInputSchema),
-) {}
+export class PostPatchDto extends createZodDto(makeOptionalPropsNullable(PostInputSchema)) {}
 
 export class PostPagerDto extends createZodDto(
   basePagerSchema.extend({
@@ -34,3 +29,5 @@ export class CategoryAndSlugDto extends createZodDto(
     slug: z.string(),
   }),
 ) {}
+
+export type PostInput = z.infer<typeof PostInputSchema>

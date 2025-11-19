@@ -1,6 +1,9 @@
 module.exports = {
   extends: ['@innei/eslint-config-ts'],
   root: true,
+  parserOptions: {
+    warnOnUnsupportedTypeScriptVersion: false,
+  },
   plugins: ['unused-imports', '@typescript-eslint'],
   rules: {
     'no-empty': 'warn',
@@ -23,5 +26,7 @@ module.exports = {
         argsIgnorePattern: '^_',
       },
     ],
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'warn',
   },
 }

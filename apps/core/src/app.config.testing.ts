@@ -1,4 +1,5 @@
 import './global/dotenv.global'
+
 import { AxiosRequestConfig } from 'axios'
 import { argv } from 'zx-cjs'
 
@@ -25,12 +26,9 @@ const DEFAULT_REDIS_PORT = 6379
 
 const redisHost = argv.redis_host ?? process.env.REDIS_HOST ?? DEFAULT_REDIS_HOST
 const redisPort =
-  Number(argv.redis_port ?? process.env.REDIS_PORT ?? DEFAULT_REDIS_PORT) ||
-  DEFAULT_REDIS_PORT
-const redisPassword =
-  argv.redis_password ?? process.env.REDIS_PASSWORD ?? null
-const redisUsername =
-  argv.redis_username ?? process.env.REDIS_USERNAME ?? null
+  Number(argv.redis_port ?? process.env.REDIS_PORT ?? DEFAULT_REDIS_PORT) || DEFAULT_REDIS_PORT
+const redisPassword = argv.redis_password ?? process.env.REDIS_PASSWORD ?? null
+const redisUsername = argv.redis_username ?? process.env.REDIS_USERNAME ?? null
 
 export const REDIS = {
   host: redisHost,
@@ -40,8 +38,7 @@ export const REDIS = {
   ttl: null,
   httpCacheTTL: 5,
   max: 5,
-  disableApiCache:
-    (isDev || argv.disable_cache) && !process.env['ENABLE_CACHE_DEBUG'],
+  disableApiCache: (isDev || argv.disable_cache) && !process.env['ENABLE_CACHE_DEBUG'],
 }
 export const SECURITY = {
   jwtSecret: argv.jwtSecret || 'asjhczxiucipoiopiqm2376',

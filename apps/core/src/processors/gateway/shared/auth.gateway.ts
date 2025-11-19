@@ -5,11 +5,7 @@ import { AuthService } from '@core/modules/auth/auth.service'
 import { CacheService } from '@core/processors/cache/cache.service'
 import { JWTService } from '@core/processors/helper/helper.jwt.service'
 import { OnEvent } from '@nestjs/event-emitter'
-import {
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  WebSocketServer,
-} from '@nestjs/websockets'
+import { OnGatewayConnection, OnGatewayDisconnect, WebSocketServer } from '@nestjs/websockets'
 
 import { BusinessEvents } from '../../../constants/business-event.constant'
 import { BroadcastBaseGateway } from '../base.gateway'
@@ -42,9 +38,7 @@ export const createAuthGateway = (
     protected namespace: Namespace
 
     async authFailed(client: Socket) {
-      client.send(
-        this.gatewayMessageFormat(BusinessEvents.AUTH_FAILED, '认证失败'),
-      )
+      client.send(this.gatewayMessageFormat(BusinessEvents.AUTH_FAILED, '认证失败'))
       client.disconnect()
     }
 
@@ -53,8 +47,7 @@ export const createAuthGateway = (
         return false
       }
       const validCustomToken = async () => {
-        const verifyCustomToken =
-          await this.authService.verifyCustomToken(token)
+        const verifyCustomToken = await this.authService.verifyCustomToken(token)
         if (verifyCustomToken) {
           return true
         }
@@ -86,6 +79,8 @@ export const createAuthGateway = (
           const validCustomTokenResult = await validCustomToken()
           return validCustomTokenResult || (await validJwt())
         }
+        default:
+          return false
       }
     }
 
@@ -128,7 +123,7 @@ export const createAuthGateway = (
       return false
     }
 
-    override broadcast(event: BusinessEvents, data: any) {
+    override broadcast(_event: BusinessEvents, _data: any) {
       // TODO
       // this.cacheService.emitter
       //   .of(`/${namespace}`)

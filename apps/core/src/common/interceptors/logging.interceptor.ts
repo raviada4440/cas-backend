@@ -26,10 +26,8 @@ export class LoggingInterceptor implements NestInterceptor {
   constructor() {
     this.logger = new Logger(LoggingInterceptor.name)
   }
-  intercept(
-    context: ExecutionContext,
-    next: CallHandler<any>,
-  ): Observable<any> {
+
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const call$ = next.handle()
     if (!isDev) {
       return call$
@@ -41,9 +39,7 @@ export class LoggingInterceptor implements NestInterceptor {
     SetMetadata(HTTP_REQUEST_TIME, now)(this.getRequest(context))
 
     return call$.pipe(
-      tap(() =>
-        this.logger.debug(`--- Response：${content} +${+new Date() - now}ms`),
-      ),
+      tap(() => this.logger.debug(`--- Response：${content} +${+new Date() - now}ms`)),
     )
   }
 

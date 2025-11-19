@@ -1,9 +1,6 @@
 import { merge } from 'lodash'
 
-import {
-  BizEventDataMap,
-  BusinessEvents,
-} from '@core/constants/business-event.constant'
+import { BizEventDataMap, BusinessEvents } from '@core/constants/business-event.constant'
 import { EventBusEvents } from '@core/constants/event-bus.constant'
 import { EventScope } from '@core/constants/event-scope.constant'
 import { scheduleManager } from '@core/shared/utils/schedule.util'
@@ -46,35 +43,14 @@ export class EventManagerService {
     this.logger.debug('EventManagerService is ready')
   }
 
-  private mapScopeToInstance: Record<
-    EventScope,
-    (
-      | WebEventsGateway
-      | AdminEventsGateway
-      | EventEmitter2
-      | SystemEventsGateway
-    )[]
-  > = {
-    [EventScope.ALL]: [
-      this.webGateway,
-      this.adminGateway,
-      this.emitter2,
-      this.systemGateway,
-    ],
+  private mapScopeToInstance: Record<EventScope, Array<BroadcastBaseGateway | EventEmitter2>> = {
+    [EventScope.ALL]: [this.webGateway, this.adminGateway, this.emitter2, this.systemGateway],
     [EventScope.TO_VISITOR]: [this.webGateway],
     [EventScope.TO_ADMIN]: [this.adminGateway],
     [EventScope.TO_SYSTEM]: [this.emitter2, this.systemGateway],
     [EventScope.TO_VISITOR_ADMIN]: [this.webGateway, this.adminGateway],
-    [EventScope.TO_SYSTEM_VISITOR]: [
-      this.emitter2,
-      this.webGateway,
-      this.systemGateway,
-    ],
-    [EventScope.TO_SYSTEM_ADMIN]: [
-      this.emitter2,
-      this.adminGateway,
-      this.systemGateway,
-    ],
+    [EventScope.TO_SYSTEM_VISITOR]: [this.emitter2, this.webGateway, this.systemGateway],
+    [EventScope.TO_SYSTEM_ADMIN]: [this.emitter2, this.adminGateway, this.systemGateway],
   }
 
   #key = 'event-manager'
@@ -84,21 +60,10 @@ export class EventManagerService {
     data?: BizEventDataMap[T],
     options?: EventManagerOptions,
   ): Promise<void>
-  emit(
-    event: EventBusEvents,
-    data?: any,
-    options?: EventManagerOptions,
-  ): Promise<void>
-  async emit(event: string, data: any = null, _options?: EventManagerOptions) {
-    const options = merge(
-      {},
-      this.defaultOptions,
-      _options,
-    ) as EventManagerOptions
-    const {
-      scope = this.defaultOptions.scope,
-      nextTick = this.defaultOptions.nextTick,
-    } = options
+  emit(event: EventBusEvents, data?: unknown, options?: EventManagerOptions): Promise<void>
+  async emit(event: string, data: unknown = null, _options?: EventManagerOptions): Promise<void> {
+    const options = merge({}, this.defaultOptions, _options) as EventManagerOptions
+    const { scope = this.defaultOptions.scope, nextTick = this.defaultOptions.nextTick } = options
 
     const instances = this.mapScopeToInstance[scope]
 
@@ -129,19 +94,20 @@ export class EventManagerService {
   on<T extends BusinessEvents>(
     event: T,
     handler: (data: BizEventDataMap[T]) => void,
-    options?: Pick<EventManagerOptions, 'scope'>,
+    options?: EventManagerOptions,
   ): IEventManagerHandlerDisposer
   on(
     event: EventBusEvents,
-    handler: (data: any) => void,
-    options?: Pick<EventManagerOptions, 'scope'>,
+    handler: (data: unknown) => void,
+    options?: EventManagerOptions,
   ): IEventManagerHandlerDisposer
 
   on(
     event: string,
-    handler: (data: any) => void,
+    handler: (data: unknown) => void,
+    _options?: EventManagerOptions,
   ): IEventManagerHandlerDisposer {
-    const handler_ = (payload) => {
+    const handler_ = (payload: { event: string; payload: unknown }) => {
       if (payload.event === event) {
         handler(payload.payload)
       }
@@ -156,13 +122,9 @@ export class EventManagerService {
   #handlers: ((type: string, data: any) => void)[] = []
 
   registerHandler(
-    handler: (type: EventBusEvents, data: any) => void,
-  ): IEventManagerHandlerDisposer
-  registerHandler(
-    handler: (type: BusinessEvents, data: any) => void,
-  ): IEventManagerHandlerDisposer
-  registerHandler(handler: Function) {
-    this.#handlers.push(handler as any)
+    handler: (type: EventBusEvents | BusinessEvents | string, data: unknown) => void,
+  ): IEventManagerHandlerDisposer {
+    this.#handlers.push(handler)
     return () => {
       const index = this.#handlers.findIndex((h) => h === handler)
       this.#handlers.splice(index, 1)
@@ -170,7 +132,7 @@ export class EventManagerService {
   }
 
   private listenSystemEvents() {
-    this.emitter2.on(this.#key, (data) => {
+    this.emitter2.on(this.#key, (data: { event: string; payload: unknown }) => {
       const { event, payload } = data
       console.debug(`Received event: [${event}]`, payload)
       // emit current event directly
@@ -182,13 +144,10 @@ export class EventManagerService {
   /**
    * system event
    */
-  event<T extends BusinessEvents>(
-    event: T,
-    data: BizEventDataMap[T],
-  ): IEventManagerHandlerDisposer
-  event(event: EventBusEvents, data: any): IEventManagerHandlerDisposer
+  event<T extends BusinessEvents>(event: T, data: BizEventDataMap[T]): Promise<void>
+  event(event: EventBusEvents, data: any): Promise<void>
 
-  event(event: any, data: any): any {
+  event(event: any, data: any): Promise<void> {
     return this.emit(event, data, {
       scope: EventScope.TO_SYSTEM,
     })

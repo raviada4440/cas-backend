@@ -24,10 +24,7 @@ describe('ROUTE /user', () => {
     const res = data.json()
     expect(res.password).toBeUndefined()
     expect(res).toMatchObject(
-      snakecaseKeys(
-        omit(mockUserInputData1, UserSchemaSerializeProjection.keys),
-        { deep: true },
-      ),
+      snakecaseKeys(omit(mockUserInputData1, UserSchemaSerializeProjection.keys), { deep: true }),
     )
   })
 

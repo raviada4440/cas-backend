@@ -1,17 +1,8 @@
 import { prisma } from './prisma'
 
-const TABLES = [
-  '"ApiToken"',
-  '"OAuth"',
-  '"Post"',
-  '"Category"',
-  '"Tag"',
-  '"User"',
-]
+const TABLES = ['"ApiToken"', '"OAuth"', '"Post"', '"Category"', '"Tag"', '"User"']
 
 // eslint-disable-next-line import/no-default-export
 export default async () => {
-  await prisma.$executeRawUnsafe(
-    `TRUNCATE TABLE ${TABLES.join(', ')} RESTART IDENTITY CASCADE`,
-  )
+  await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${TABLES.join(', ')} RESTART IDENTITY CASCADE`)
 }

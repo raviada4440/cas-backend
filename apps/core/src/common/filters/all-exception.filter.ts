@@ -49,10 +49,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           (exception as myError)?.statusCode ||
           HttpStatus.INTERNAL_SERVER_ERROR
 
-    const message =
-      (exception as any)?.response?.message ||
-      (exception as myError)?.message ||
-      ''
+    const message = (exception as any)?.response?.message || (exception as myError)?.message || ''
 
     const url = request.raw.url!
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
@@ -69,16 +66,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
         this.errorLogPipe.write(
           `[${new Date().toISOString()}] ${decodeURI(url)}: ${
-            (exception as any)?.response?.message ||
-            (exception as myError)?.message
+            (exception as any)?.response?.message || (exception as myError)?.message
           }\n${(exception as Error).stack}\n`,
         )
       }
     } else {
       const ip = getIp(request)
-      const logMessage = `IP: ${ip} Error Info: (${status}) ${message} Path: ${decodeURI(
-        url,
-      )}`
+      const logMessage = `IP: ${ip} Error Info: (${status}) ${message} Path: ${decodeURI(url)}`
       if (isTest) console.log(logMessage)
       this.logger.warn(logMessage)
     }
@@ -88,9 +82,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (prevRequestTs) {
       const content = `${request.method} -> ${request.url}`
       Logger.debug(
-        `--- ResponseError：${content}${chalk.yellow(
-          ` +${+new Date() - prevRequestTs}ms`,
-        )}`,
+        `--- ResponseError：${content}${chalk.yellow(` +${+new Date() - prevRequestTs}ms`)}`,
         LoggingInterceptor.name,
       )
     }
@@ -103,9 +95,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         code: res?.code || status,
         chMessage: res?.chMessage,
         message:
-          (exception as any)?.response?.message ||
-          (exception as any)?.message ||
-          'Unknown Error',
+          (exception as any)?.response?.message || (exception as any)?.message || 'Unknown Error',
       })
   }
 }

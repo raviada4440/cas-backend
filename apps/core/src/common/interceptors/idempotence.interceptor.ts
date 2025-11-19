@@ -1,10 +1,7 @@
 import { FastifyRequest } from 'fastify'
 import { catchError, tap } from 'rxjs'
 
-import {
-  HTTP_IDEMPOTENCE_KEY,
-  HTTP_IDEMPOTENCE_OPTIONS,
-} from '@core/constants/meta.constant'
+import { HTTP_IDEMPOTENCE_KEY, HTTP_IDEMPOTENCE_OPTIONS } from '@core/constants/meta.constant'
 import { REFLECTOR } from '@core/constants/system.constant'
 import { CacheService } from '@core/processors/cache/cache.service'
 import { getIp } from '@core/shared/utils/ip.util'
@@ -88,8 +85,8 @@ export class IdempotenceInterceptor implements NestInterceptor {
     const key = disableGenerateKey
       ? undefined
       : options.generateKey
-      ? options.generateKey(request)
-      : this.generateKey(request)
+        ? options.generateKey(request)
+        : this.generateKey(request)
 
     const idempotenceKey =
       !!(idempotence || key) && getRedisKey(`idempotence:${idempotence || key}`)
@@ -97,9 +94,7 @@ export class IdempotenceInterceptor implements NestInterceptor {
     SetMetadata(HTTP_IDEMPOTENCE_KEY, idempotenceKey)(handler)
 
     if (idempotenceKey) {
-      const resultValue: '0' | '1' | null = (await redis.get(
-        idempotenceKey,
-      )) as any
+      const resultValue: '0' | '1' | null = (await redis.get(idempotenceKey)) as any
       if (resultValue !== null) {
         if (errorHandler) {
           return await errorHandler(request)

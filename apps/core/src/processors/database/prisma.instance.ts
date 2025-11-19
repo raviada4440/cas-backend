@@ -3,46 +3,41 @@ import { PaginationResult } from '@core/shared/interface/paginator.interface'
 import { Prisma, PrismaClient } from '@db/client'
 import { Logger } from '@nestjs/common'
 
-import { loggingMiddleware, QueryInfo } from './middlewares/logger.middleware'
-import { snowflakeGeneratorMiddleware } from './middlewares/snowflake.middleware'
+import { createLoggingExtension, QueryInfo } from './middlewares/logger.middleware'
+import { snowflakeExtension } from './middlewares/snowflake.middleware'
 
 export const createExtendedPrismaClient = ({ url }: { url?: string } = {}) => {
-  const prismaClient = new PrismaClient({
+  const baseClient = new PrismaClient({
     datasources: {
       db: {
         url,
       },
     },
   })
-  prismaClient.$use(snowflakeGeneratorMiddleware)
+  const withSnowflake = baseClient.$extends(snowflakeExtension)
 
-  if (isDev)
-    prismaClient.$use(
-      loggingMiddleware({
-        logger: new Logger('Prisma'),
-        logLevel: 'log', // default is `debug`
-        logMessage: (query: QueryInfo) =>
-          `[Query] ${query.model}.${query.action} - ${query.executionTime}ms`,
-      }),
-    )
+  const withLogging = isDev
+    ? withSnowflake.$extends(
+        createLoggingExtension({
+          logger: new Logger('Prisma'),
+          logLevel: 'log', // default is `debug`
+          logMessage: (query: QueryInfo) =>
+            `[Query] ${query.model}.${query.action} - ${query.executionTime}ms`,
+        }),
+      )
+    : withSnowflake
 
-  const extendedPrismaClient = prismaClient.$extends({
+  const extendedPrismaClient = withLogging.$extends({
     model: {
       $allModels: {
-        async paginate<T, A>(
-          this: T,
-          x: Prisma.Exact<
-            A,
-            Pick<
-              Prisma.Args<T, 'findFirst'>,
-              'where' | 'select' | 'include' | 'orderBy'
-            >
-          >,
+        async paginate(
+          this: unknown,
+          x: Prisma.Exact<unknown, unknown>,
           options: {
             page: number
             size: number
           },
-        ): Promise<PaginationResult<Prisma.Result<T, A, 'findFirst'>>> {
+        ): Promise<PaginationResult<unknown>> {
           if (typeof x !== 'object') {
             return {
               data: [],
@@ -60,7 +55,9 @@ export const createExtendedPrismaClient = ({ url }: { url?: string } = {}) => {
 
           const { page, size: perPage } = options
           const skip = page > 0 ? perPage * (page - 1) : 0
-          const countArgs = 'select' in x ? { where: x.where } : {}
+          const normalizedArgs = x as { where?: Prisma.PostWhereInput }
+          const countArgs =
+            typeof normalizedArgs.where !== 'undefined' ? { where: normalizedArgs.where } : {}
           const [total, data] = await Promise.all([
             (this as any).count(countArgs),
             (this as any).findMany({
@@ -87,12 +84,9 @@ export const createExtendedPrismaClient = ({ url }: { url?: string } = {}) => {
               hasNextPage: page < lastPage,
               hasPrevPage: page > 1,
             },
-          } as PaginationResult<any>
+          } as PaginationResult<unknown>
         },
-        async exists<T, A>(
-          this: T,
-          x: Prisma.Exact<A, Pick<Prisma.Args<T, 'findFirst'>, 'where'>>,
-        ): Promise<boolean> {
+        async exists(this: unknown, x: Prisma.Exact<unknown, unknown>): Promise<boolean> {
           if (typeof x !== 'object') {
             return false
           }

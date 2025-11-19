@@ -2,20 +2,34 @@ import { Prisma } from '@db/client'
 
 import { snowflake } from '../snowflake.util'
 
-export const snowflakeGeneratorMiddleware: Prisma.Middleware = async (
-  params,
-  next,
-) => {
-  if (params.action === 'create') {
-    const id = snowflake.nextId()
-
-    params.args.data.id = id
+const assignId = (data: unknown) => {
+  if (!data || typeof data !== 'object') {
+    return
   }
 
-  if (params.action === 'createMany') {
-    params.args.data.forEach((item) => {
-      item.id = snowflake.nextId()
-    })
+  if (Array.isArray(data)) {
+    data.forEach((item) => assignId(item))
+    return
   }
-  return next(params)
+
+  const record = data as Record<string, unknown>
+  if (record.id === undefined) {
+    record.id = snowflake.nextId()
+  }
 }
+
+export const snowflakeExtension = Prisma.defineExtension({
+  name: 'snowflake-generator',
+  query: {
+    $allModels: {
+      async create({ args, query }) {
+        assignId(args.data)
+        return query(args)
+      },
+      async createMany({ args, query }) {
+        assignId(args.data)
+        return query(args)
+      },
+    },
+  },
+})

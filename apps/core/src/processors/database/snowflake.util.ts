@@ -7,13 +7,11 @@ class Snowflake {
   private static readonly sequenceBits = 12n
 
   private static readonly maxWorkerId = (1n << Snowflake.workerIdBits) - 1n
-  private static readonly maxDatacenterId =
-    (1n << Snowflake.datacenterIdBits) - 1n
+  private static readonly maxDatacenterId = (1n << Snowflake.datacenterIdBits) - 1n
   private static readonly maxSequence = (1n << Snowflake.sequenceBits) - 1n
 
   private static readonly workerIdShift = Snowflake.sequenceBits
-  private static readonly datacenterIdShift =
-    Snowflake.sequenceBits + Snowflake.workerIdBits
+  private static readonly datacenterIdShift = Snowflake.sequenceBits + Snowflake.workerIdBits
   private static readonly timestampLeftShift =
     Snowflake.sequenceBits + Snowflake.workerIdBits + Snowflake.datacenterIdBits
 
@@ -24,9 +22,7 @@ class Snowflake {
 
   constructor(workerId: bigint, datacenterId: bigint) {
     if (workerId > Snowflake.maxWorkerId || workerId < 0n) {
-      throw new Error(
-        `worker Id can't be greater than ${Snowflake.maxWorkerId} or less than 0`,
-      )
+      throw new Error(`worker Id can't be greater than ${Snowflake.maxWorkerId} or less than 0`)
     }
     if (datacenterId > Snowflake.maxDatacenterId || datacenterId < 0n) {
       throw new Error(
@@ -98,8 +94,7 @@ function getWorkerAndDatacenterId(): [number, number] {
 
   // 将 IP 地址转换为一个数字，然后提取低 5 位作为 workerId，高 5 位作为 datacenterId
   const ipParts = ip.split('.').map((part) => parseInt(part, 10))
-  const ipNumber =
-    (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3]
+  const ipNumber = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3]
   const workerId = ipNumber & 0x1f // 取低 5 位
   const datacenterId = (ipNumber >> 5) & 0x1f // 取接下来的 5 位
 

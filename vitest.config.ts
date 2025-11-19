@@ -25,11 +25,10 @@ export default defineConfig({
     poolOptions: {
       forks: {
         singleFork: true,
+        isolate: true,
+        maxForks: 1,
       },
     },
-    maxWorkers: 1,
-    minWorkers: 1,
-    threads: false,
     globals: true,
     setupFiles: [resolve(__dirname, './test/setup-file.ts')],
     environment: 'node',

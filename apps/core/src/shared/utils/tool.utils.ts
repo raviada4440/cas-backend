@@ -31,22 +31,20 @@ export const hashString = function (str, seed = 0) {
     h1 = Math.imul(h1 ^ ch, 2654435761)
     h2 = Math.imul(h2 ^ ch, 1597334677)
   }
-  h1 =
-    Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^
-    Math.imul(h2 ^ (h2 >>> 13), 3266489909)
-  h2 =
-    Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^
-    Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
   return 4294967296 * (2097151 & h2) + (h1 >>> 0)
 }
 
-export async function* asyncPool<T = any>(
+export async function* asyncPool<T, R>(
   concurrency: number,
-  iterable: T[],
-  iteratorFn: (item: T, arr: T[]) => any,
-) {
-  const executing = new Set<Promise<any>>()
-  async function consume() {
+  iterable: readonly T[],
+  iteratorFn: (item: T, arr: readonly T[]) => Promise<R> | R,
+): AsyncGenerator<R, void, unknown> {
+  type WrappedPromise = Promise<[WrappedPromise, R]>
+  const executing = new Set<WrappedPromise>()
+
+  async function consume(): Promise<R> {
     const [promise, value] = await Promise.race(executing)
     executing.delete(promise)
     return value
@@ -55,10 +53,10 @@ export async function* asyncPool<T = any>(
     // Wrap iteratorFn() in an async fn to ensure we get a promise.
     // Then expose such promise, so it's possible to later reference and
     // remove it from the executing pool.
-    const promise = (async () => await iteratorFn(item, iterable))().then(
-      (value) => [promise, value],
-    )
-    executing.add(promise)
+    const wrappedPromise: WrappedPromise = Promise.resolve(iteratorFn(item, iterable)).then(
+      (value) => [wrappedPromise, value],
+    ) as WrappedPromise
+    executing.add(wrappedPromise)
     if (executing.size >= concurrency) {
       yield await consume()
     }

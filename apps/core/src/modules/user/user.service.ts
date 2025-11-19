@@ -1,17 +1,14 @@
 import { compareSync, hashSync } from 'bcrypt'
 
+import { Prisma } from '@db/client'
+
 import { BizException } from '@core/common/exceptions/biz.exception'
 import { ErrorCodeEnum } from '@core/constants/error-code.constant'
 import { DatabaseService } from '@core/processors/database/database.service'
 import { resourceNotFoundWrapper } from '@core/shared/utils/prisma.util'
-import { Prisma } from '@db/client'
-import {
-  Injectable,
-  Logger,
-  UnprocessableEntityException,
-} from '@nestjs/common'
+import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
 
-import { UserRegisterDto } from './dtos/register.dto'
+import { UserRegisterDto, UserRegisterInput } from './dtos/register.dto'
 import { UserSchemaProjection } from './user.protect'
 
 @Injectable()
@@ -20,9 +17,10 @@ export class UserService {
   constructor(private readonly db: DatabaseService) {}
 
   async register(userDto: UserRegisterDto) {
+    const userInput = userDto as UserRegisterInput
     const isExist = await this.db.prisma.user.findUnique({
       where: {
-        username: userDto.username,
+        username: userInput.username,
       },
       select: {
         id: true,
@@ -35,8 +33,8 @@ export class UserService {
 
     const model = await this.db.prisma.user.create({
       data: {
-        ...userDto,
-        password: hashSync(userDto.password, 10),
+        ...userInput,
+        password: hashSync(userInput.password, 10),
       },
     })
 
@@ -50,7 +48,10 @@ export class UserService {
    * @param {string} id - 用户 id
    * @param {Partial} data - 部分修改数据
    */
-  async patchUserData(id: string, data: Partial<Prisma.UserCreateInput>) {
+  async patchUserData(
+    id: string,
+    data: Partial<Record<string, unknown>> & { password?: string },
+  ): Promise<void> {
     const { password } = data
 
     for (const key in UserSchemaProjection) {
@@ -59,7 +60,7 @@ export class UserService {
       }
     }
 
-    const doc = { ...data }
+    const doc: Record<string, unknown> = { ...data }
     if (password !== undefined) {
       const currentUser = await this.db.prisma.user.findUnique({
         where: {
@@ -79,13 +80,14 @@ export class UserService {
       if (isSamePassword) {
         throw new UnprocessableEntityException('密码可不能和原来的一样哦')
       }
+      doc.password = hashSync(password, 10)
     }
 
     await this.db.prisma.user.update({
       where: {
         id,
       },
-      data: doc,
+      data: doc as Prisma.UserUpdateInput,
     })
   }
 
@@ -96,7 +98,7 @@ export class UserService {
    * @param {string} ip - string
    * @return {Promise<Record<string, Date|string>>} 返回上次足迹
    */
-  async recordFootstep(ip: string): Promise<Record<string, Date | string>> {
+  async recordFootstep(ip: string): Promise<{ lastLoginTime: Date; lastLoginIp: string | null }> {
     const master = await this.db.prisma.user.findFirst()
     if (!master) {
       throw new BizException(ErrorCodeEnum.UserNotFound)
@@ -116,15 +118,13 @@ export class UserService {
     })
 
     this.Logger.warn(`主人已登录，IP: ${ip}`)
-    return PrevFootstep as any
+    return PrevFootstep
   }
 
   getOwner() {
     // TODO omit keys
     return this.db.prisma.user
       .findFirstOrThrow()
-      .catch(
-        resourceNotFoundWrapper(new BizException(ErrorCodeEnum.UserNotFound)),
-      )
+      .catch(resourceNotFoundWrapper(new BizException(ErrorCodeEnum.UserNotFound)))
   }
 }

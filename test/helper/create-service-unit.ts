@@ -6,12 +6,12 @@ import { mockedEventManagerServiceProvider } from '@test/mock/helper/helper.even
 import { MockedDatabaseModule } from '@test/mock/processors/database/database.module'
 
 type ClassType<T> = new (...args: any[]) => T
-export const createServiceUnitTestApp = <T>(
-  Service: ClassType<T>,
+export const createServiceUnitTestApp = <_T>(
+  Service: ClassType<_T>,
   module?: ModuleMetadata,
-) => {
+): { service: _T; app: TestingModule } => {
   const proxy = {} as {
-    service: T
+    service: _T
     app: TestingModule
   }
 
@@ -38,7 +38,7 @@ export const createServiceUnitTestApp = <T>(
     }).compile()
     await app.init()
 
-    const service = app.get<T>(Service)
+    const service = app.get<_T>(Service)
     proxy.service = service
     proxy.app = app
   })

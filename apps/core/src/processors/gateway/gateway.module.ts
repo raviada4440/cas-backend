@@ -9,17 +9,7 @@ import { WebEventsGateway } from './web/events.gateway'
 @Global()
 @Module({
   imports: [AuthModule],
-  providers: [
-    AdminEventsGateway,
-    WebEventsGateway,
-    SharedGateway,
-    SystemEventsGateway,
-  ],
-  exports: [
-    AdminEventsGateway,
-    WebEventsGateway,
-    SharedGateway,
-    SystemEventsGateway,
-  ],
+  providers: [AdminEventsGateway, WebEventsGateway, SharedGateway, SystemEventsGateway],
+  exports: [AdminEventsGateway, WebEventsGateway, SharedGateway, SystemEventsGateway],
 })
 export class GatewayModule {}

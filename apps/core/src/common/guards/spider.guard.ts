@@ -7,18 +7,11 @@ import { Observable } from 'rxjs'
 
 import { isDev } from '@core/global/env.global'
 import { getNestExecutionContextRequest } from '@core/transformers/get-req.transformer'
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common'
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common'
 
 @Injectable()
 export class SpiderGuard implements CanActivate {
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
+  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
     if (isDev) {
       return true
     }
@@ -35,7 +28,9 @@ export class SpiderGuard implements CanActivate {
     throw new ForbiddenException(`爬虫是被禁止的哦，UA: ${ua}`)
   }
 
-  getRequest(context: ExecutionContext) {
+  protected getRequest(
+    context: ExecutionContext,
+  ): ReturnType<typeof getNestExecutionContextRequest> {
     return getNestExecutionContextRequest(context)
   }
 }

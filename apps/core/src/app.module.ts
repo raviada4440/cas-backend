@@ -1,14 +1,8 @@
-import { ConfigModule } from '@nestjs/config'
 import { LoggerModule } from 'nestjs-pretty-logger'
 
 import { Module, Type } from '@nestjs/common'
-import {
-  APP_FILTER,
-  APP_GUARD,
-  APP_INTERCEPTOR,
-  APP_PIPE,
-  HttpAdapterHost,
-} from '@nestjs/core'
+import { ConfigModule } from '@nestjs/config'
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE, HttpAdapterHost } from '@nestjs/core'
 import { ThrottlerGuard } from '@nestjs/throttler'
 
 import { AppController } from './app.controller'
@@ -30,7 +24,7 @@ import { HelperModule } from './processors/helper/helper.module'
 
 // Request ----->
 // Response <-----
-const appInterceptors: Type<any>[] = [
+const appInterceptors: Type[] = [
   IdempotenceInterceptor,
   HttpCacheInterceptor,
   JSONTransformerInterceptor,

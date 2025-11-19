@@ -5,9 +5,10 @@ import { DatabaseService } from '@core/processors/database/database.service'
 import { EventManagerService } from '@core/processors/helper/helper.event.service'
 import { PagerDto } from '@core/shared/dto/pager.dto'
 import { resourceNotFoundWrapper } from '@core/shared/utils/prisma.util'
+import { Prisma } from '@db/client'
 import { Injectable } from '@nestjs/common'
 
-import { PostDto } from './post.dto'
+import { PostDto, PostInput } from './post.dto'
 
 @Injectable()
 export class PostService {
@@ -17,7 +18,7 @@ export class PostService {
   ) {}
 
   async create(dto: PostDto) {
-    const { slug, categoryId } = dto
+    const { slug, categoryId } = dto as PostInput
     const exist = await this.db.prisma.post.findUnique({
       where: {
         slug_categoryId: {
@@ -44,9 +45,16 @@ export class PostService {
       throw new BizException(ErrorCodeEnum.CategoryNotFound)
     }
 
+    const data: Prisma.PostUncheckedCreateInput = {
+      slug,
+      text: dto.text,
+      title: dto.title,
+      categoryId,
+    }
+
     const model = await this.db.prisma.post.create({
       data: {
-        ...dto,
+        ...data,
       },
       include: { category: true },
     })
@@ -84,8 +92,6 @@ export class PostService {
           category: true,
         },
       })
-      .catch(
-        resourceNotFoundWrapper(new BizException(ErrorCodeEnum.PostNotFound)),
-      )
+      .catch(resourceNotFoundWrapper(new BizException(ErrorCodeEnum.PostNotFound)))
   }
 }

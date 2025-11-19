@@ -3,17 +3,15 @@ import { exec, execSync } from 'child_process'
 import { createHash } from 'crypto'
 
 const { platform }: NodeJS.Process = process
-const win32RegBinPath: Record<string, string> = {
+const win32RegBinPath: Record<'native' | 'mixed', string> = {
   native: '%windir%\\System32',
   mixed: '%windir%\\sysnative\\cmd.exe /c %windir%\\System32',
 }
 
-const guid: Record<string, string> = {
+const guid: Record<'darwin' | 'win32' | 'linux' | 'freebsd', string> = {
   darwin: 'ioreg -rd1 -c IOPlatformExpertDevice',
   win32:
-    `${
-      win32RegBinPath[isWindowsProcessMixedOrNativeArchitecture()]
-    }\\REG.exe ` +
+    `${win32RegBinPath[isWindowsProcessMixedOrNativeArchitecture()]}\\REG.exe ` +
     'QUERY HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography ' +
     '/v MachineGuid',
   linux:
@@ -21,16 +19,13 @@ const guid: Record<string, string> = {
   freebsd: 'kenv -q smbios.system.uuid || sysctl -n kern.hostuuid',
 }
 
-function isWindowsProcessMixedOrNativeArchitecture(): string {
+function isWindowsProcessMixedOrNativeArchitecture(): 'native' | 'mixed' {
   // detect if the node binary is the same arch as the Windows OS.
   // or if this is 32 bit node on 64 bit windows.
   if (process.platform !== 'win32') {
-    return ''
+    return 'native'
   }
-  if (
-    process.arch === 'ia32' &&
-    process.env.hasOwnProperty('PROCESSOR_ARCHITEW6432')
-  ) {
+  if (process.arch === 'ia32' && process.env.hasOwnProperty('PROCESSOR_ARCHITEW6432')) {
     return 'mixed'
   }
   return 'native'
@@ -70,17 +65,17 @@ function expose(result: string): string {
 }
 
 export function machineIdSync(original?: boolean): string {
-  const id: string = expose(execSync(guid[platform]).toString())
+  const key = platform as keyof typeof guid
+  const id: string = expose(execSync(guid[key]).toString())
   return original ? id : hash(id)
 }
 
 export function machineId(original?: boolean): Promise<string> {
   return new Promise((resolve, reject) => {
-    return exec(guid[platform], {}, (err, stdout, stderr) => {
+    const key = platform as keyof typeof guid
+    return exec(guid[key], {}, (err, stdout, _stderr) => {
       if (err) {
-        return reject(
-          new Error(`Error while obtaining machine id: ${err.stack}`),
-        )
+        return reject(new Error(`Error while obtaining machine id: ${err.stack}`))
       }
       const id: string = expose(stdout.toString())
       return resolve(original ? id : hash(id))

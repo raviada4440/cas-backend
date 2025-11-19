@@ -1,10 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
-import {
-  createExtendedPrismaClient,
-  extendedPrismaClient,
-} from './prisma.instance'
+import { createExtendedPrismaClient, extendedPrismaClient } from './prisma.instance'
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {

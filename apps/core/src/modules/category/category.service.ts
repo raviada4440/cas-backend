@@ -1,8 +1,9 @@
 import { BizException } from '@core/common/exceptions/biz.exception'
 import { ErrorCodeEnum } from '@core/constants/error-code.constant'
 import { DatabaseService } from '@core/processors/database/database.service'
-import { Prisma } from '@db/client'
 import { Injectable } from '@nestjs/common'
+
+import { CategoryInput } from './category.dto'
 
 @Injectable()
 export class CategoryService {
@@ -10,11 +11,11 @@ export class CategoryService {
     this.createDefaultCategory()
   }
 
-  async create(dto: Prisma.CategoryCreateInput) {
+  async create(dto: CategoryInput) {
     const { name, slug } = dto
     const existed = await this.database.prisma.category.findFirst({
       where: {
-        OR: [{ name }, { slug }],
+        OR: [{ name }, ...(slug ? [{ slug }] : [])],
       },
       select: {
         id: true,

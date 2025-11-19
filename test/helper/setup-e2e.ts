@@ -8,7 +8,7 @@ import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { Test } from '@nestjs/testing'
 
 const interceptorProviders = [JSONTransformerInterceptor, ResponseInterceptor]
-export const setupE2EApp = async (module: ModuleMetadata) => {
+export const setupE2EApp = async (module: ModuleMetadata): Promise<NestFastifyApplication> => {
   const nextModule: ModuleMetadata = {
     exports: module.exports || [],
     imports: module.imports || [],
@@ -28,10 +28,9 @@ export const setupE2EApp = async (module: ModuleMetadata) => {
   )
   const testingModule = await Test.createTestingModule(nextModule).compile()
 
-  const app = testingModule.createNestApplication<NestFastifyApplication>(
-    fastifyApp,
-    { logger: ['log', 'warn', 'error', 'debug'] },
-  )
+  const app = testingModule.createNestApplication<NestFastifyApplication>(fastifyApp, {
+    logger: ['log', 'warn', 'error', 'debug'],
+  })
 
   await app.init()
 

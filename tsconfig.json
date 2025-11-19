@@ -16,6 +16,10 @@
     "incremental": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
     "paths": {
       "@core": [
         "./apps/core/src"
@@ -24,13 +28,16 @@
         "./apps/core/src/*"
       ],
       "@test": [
-        "."
+        "./test"
       ],
       "@test/*": [
-        "./*"
+        "./test/*"
       ],
       "@db/client": [
         "./prisma/client"
+      ],
+      "@db/client/zod": [
+        "./prisma/zod"
       ]
     },
   },

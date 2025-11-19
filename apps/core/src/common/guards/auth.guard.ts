@@ -30,13 +30,13 @@ export class AuthGuard implements CanActivate {
 
     @Inject(UserService) private readonly userService: UserService,
   ) {}
-  async canActivate(context: ExecutionContext): Promise<any> {
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = this.getRequest(context)
 
     const query = request.query as any
     const headers = request.headers
-    const Authorization: string =
-      headers.authorization || headers.Authorization || query.token
+    const Authorization: string = headers.authorization || headers.Authorization || query.token
 
     if (!Authorization) {
       throw new UnauthorizedException('未登录')
@@ -69,7 +69,9 @@ export class AuthGuard implements CanActivate {
     return true
   }
 
-  getRequest(context: ExecutionContext) {
+  protected getRequest(
+    context: ExecutionContext,
+  ): ReturnType<typeof getNestExecutionContextRequest> {
     return getNestExecutionContextRequest(context)
   }
 }

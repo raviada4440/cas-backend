@@ -35,10 +35,7 @@ export class JWTService {
       consola.debug(secret)
     }
     if (!CLUSTER.enable || cluster.isPrimary) {
-      consola.debug(
-        'JWT Secret start with :',
-        secret.slice(0, 5) + '*'.repeat(secret.length - 5),
-      )
+      consola.debug('JWT Secret start with :', secret.slice(0, 5) + '*'.repeat(secret.length - 5))
     }
     this.secret = secret
   }
@@ -80,16 +77,10 @@ export class JWTService {
     if (delay) {
       // FIXME
       setTimeout(() => {
-        redis.hdel(
-          key,
-          token.startsWith(`jwt-`) ? token.replace(`jwt-`, '') : md5(token),
-        )
+        redis.hdel(key, token.startsWith(`jwt-`) ? token.replace(`jwt-`, '') : md5(token))
       }, delay)
     } else {
-      await redis.hdel(
-        key,
-        token.startsWith(`jwt-`) ? token.replace(`jwt-`, '') : md5(token),
-      )
+      await redis.hdel(key, token.startsWith(`jwt-`) ? token.replace(`jwt-`, '') : md5(token))
     }
   }
 

@@ -1,13 +1,8 @@
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { HTTPDecorators } from '@core/common/decorators/http.decorator'
 import { Body, HttpCode, Post } from '@nestjs/common'
+import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
-import {
-  ApiCreatedResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger'
 
 import { AuthService } from '../auth/auth.service'
 import { UserLoginDto } from './dtos/login.dto'
@@ -36,10 +31,7 @@ export class UserController {
   @ApiOkResponse({ description: 'Returns user info with JWT token' })
   async login(@Body() body: UserLoginDto) {
     const { username, password } = body
-    const user = await this.authService.validateUsernameAndPassword(
-      username,
-      password,
-    )
+    const user = await this.authService.validateUsernameAndPassword(username, password)
     const jwt = await this.authService.signToken(user.id)
 
     return {

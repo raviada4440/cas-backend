@@ -38,17 +38,15 @@ export class HttpService {
     )
   }
 
-  private axiosDefaultConfig: AxiosRequestConfig<any> = {
+  private axiosDefaultConfig: AxiosRequestConfig = {
     ...AXIOS_CONFIG,
     headers: {
       'user-agent': `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.55 Safari/537.36 MX-Space/${version}`,
     },
   }
 
-  extend(config: AxiosRequestConfig<any>) {
-    return this.bindDebugVerboseInterceptor(
-      axios.create({ ...this.axiosDefaultConfig, ...config }),
-    )
+  extend(config: AxiosRequestConfig) {
+    return this.bindDebugVerboseInterceptor(axios.create({ ...this.axiosDefaultConfig, ...config }))
   }
 
   /**
@@ -84,9 +82,7 @@ export class HttpService {
       req.__requestStartedAt = performance.now()
 
       this.logger.log(
-        `HTTP Request: [${req.method?.toUpperCase()}] ${req.baseURL || ''}${
-          req.url
-        } 
+        `HTTP Request: [${req.method?.toUpperCase()}] ${req.baseURL || ''}${req.url} 
 params: ${this.prettyStringify(req.params)}
 data: ${this.prettyStringify(req.data)}`,
       )
@@ -107,9 +103,7 @@ data: ${this.prettyStringify(req.data)}`,
         this.logger.log(
           `HTTP Response ${`${res.config.baseURL || ''}${
             res.config.url
-          }`} +${res.config.__requestDuration.toFixed(
-            2,
-          )}ms: \n${this.prettyStringify(res.data)} `,
+          }`} +${res.config.__requestDuration.toFixed(2)}ms: \n${this.prettyStringify(res.data)} `,
         )
         return res
       },
@@ -119,9 +113,7 @@ data: ${this.prettyStringify(req.data)}`,
         const error = Promise.reject(err)
         if (!res) {
           this.logger.error(
-            `HTTP Response Failed ${err.config.url || ''}, Network Error: ${
-              err.message
-            }`,
+            `HTTP Response Failed ${err.config.url || ''}, Network Error: ${err.message}`,
           )
           return error
         }

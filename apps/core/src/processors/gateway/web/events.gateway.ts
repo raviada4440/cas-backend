@@ -53,10 +53,7 @@ export class WebEventsGateway
 
       // get and store max_online_count
       const maxOnlineCount =
-        +(await redisClient.hget(
-          getRedisKey(RedisKeys.MaxOnlineCount),
-          dateFormat,
-        ))! || 0
+        +(await redisClient.hget(getRedisKey(RedisKeys.MaxOnlineCount), dateFormat))! || 0
       await redisClient.hset(
         getRedisKey(RedisKeys.MaxOnlineCount),
         dateFormat,
@@ -72,13 +69,10 @@ export class WebEventsGateway
   }
   async handleDisconnect(client: SocketIO.Socket) {
     super.handleDisconnect(client)
-    this.broadcast(
-      BusinessEvents.VISITOR_OFFLINE,
-      await this.sendOnlineNumber(),
-    )
+    this.broadcast(BusinessEvents.VISITOR_OFFLINE, await this.sendOnlineNumber())
   }
 
-  override broadcast(event: BusinessEvents, data: any) {
+  override broadcast(_event: BusinessEvents, _data: any) {
     // TODO
     // const emitter = this.cacheService.emitter
     //

@@ -1,25 +1,19 @@
 import { z } from 'zod'
 
-export function makeOptionalPropsNullable<Schema extends z.AnyZodObject>(
-  schema: Schema,
-) {
-  const entries = Object.entries(schema.shape) as [
-    keyof Schema['shape'],
-    z.ZodTypeAny,
-  ][]
-  const newProps = entries.reduce(
-    (acc, [key, value]) => {
-      acc[key] =
-        value instanceof z.ZodOptional ? value.unwrap().nullable() : value
-      return acc
-    },
-    {} as {
-      [key in keyof Schema['shape']]: Schema['shape'][key] extends z.ZodOptional<
-        infer T
-      >
-        ? z.ZodOptional<T>
-        : Schema['shape'][key]
-    },
-  )
-  return z.object(newProps)
+export function makeOptionalPropsNullable(
+  schema: z.ZodObject<z.ZodRawShape, any>,
+): z.ZodObject<z.ZodRawShape, any> {
+  const overrides: Record<string, z.ZodTypeAny> = {}
+
+  for (const [key, value] of Object.entries(schema.shape)) {
+    if (value instanceof z.ZodOptional) {
+      overrides[key] = z.optional((value.unwrap() as z.ZodTypeAny).nullable())
+    }
+  }
+
+  if (Object.keys(overrides).length === 0) {
+    return schema
+  }
+
+  return schema.extend(overrides)
 }

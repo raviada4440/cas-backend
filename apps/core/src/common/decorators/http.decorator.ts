@@ -7,11 +7,7 @@ import { IdempotenceOption } from '../interceptors/idempotence.interceptor'
 /**
  * @description 跳过响应体处理
  */
-const Bypass: MethodDecorator = (
-  target,
-  key,
-  descriptor: PropertyDescriptor,
-) => {
+const Bypass: MethodDecorator = (target, key, descriptor: PropertyDescriptor) => {
   SetMetadata(SYSTEM.RESPONSE_PASSTHROUGH_METADATA, true)(descriptor.value)
 }
 

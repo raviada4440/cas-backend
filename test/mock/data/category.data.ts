@@ -5,10 +5,7 @@ import { categorySchemaProjection } from '@core/modules/category/category.projec
 import { CategorySchema } from '@db/client/zod'
 
 export const generateMockCategory = () => {
-  return omit(
-    createFixture(CategorySchema, {}),
-    ...categorySchemaProjection.keys,
-  )
+  return omit(createFixture(CategorySchema, {}), ...categorySchemaProjection.keys)
 }
 
 const mockCategoryInputData1 = createFixture(CategorySchema)

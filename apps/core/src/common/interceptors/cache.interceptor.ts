@@ -5,7 +5,7 @@
  * @author Surmon <https://github.com/surmon-china>
  * @author Innei <https://innei.in>
  */
-import { Observable, of } from 'rxjs'
+import { of } from 'rxjs'
 import { tap } from 'rxjs/operators'
 
 import { REDIS } from '@core/app.config'
@@ -39,8 +39,8 @@ export class HttpCacheInterceptor implements NestInterceptor {
   // 自定义装饰器，修饰 ttl 参数
   async intercept(
     context: ExecutionContext,
-    next: CallHandler<any>,
-  ): Promise<Observable<any>> {
+    next: CallHandler,
+  ): Promise<ReturnType<CallHandler['handle']>> {
     // 如果想彻底禁用缓存服务，则直接返回 -> return call$;
     const call$ = next.handle()
 
@@ -71,12 +71,7 @@ export class HttpCacheInterceptor implements NestInterceptor {
 
       return value
         ? of(value)
-        : call$.pipe(
-            tap(
-              (response) =>
-                response && this.cacheManager.set(key, response, ttl),
-            ),
-          )
+        : call$.pipe(tap((response) => response && this.cacheManager.set(key, response, ttl)))
     } catch (error) {
       console.error(error)
 
@@ -93,12 +88,8 @@ export class HttpCacheInterceptor implements NestInterceptor {
     const httpServer = this.httpAdapterHost.httpAdapter
     const isHttpApp = Boolean(httpServer?.getRequestMethod)
     const isGetRequest =
-      isHttpApp &&
-      httpServer.getRequestMethod(request) === RequestMethod[RequestMethod.GET]
-    const cacheKey = this.reflector.get(
-      META.HTTP_CACHE_KEY_METADATA,
-      context.getHandler(),
-    )
+      isHttpApp && httpServer.getRequestMethod(request) === RequestMethod[RequestMethod.GET]
+    const cacheKey = this.reflector.get(META.HTTP_CACHE_KEY_METADATA, context.getHandler())
     const isMatchedCache = isHttpApp && isGetRequest && cacheKey
     return isMatchedCache ? cacheKey : undefined
   }

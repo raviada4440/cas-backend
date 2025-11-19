@@ -6,7 +6,7 @@ import { generateMockPost, mockPostInputData } from '@test/mock/data/post.data'
 import { mockedEventManagerService } from '@test/mock/helper/helper.event'
 
 describe('/modules/post/post.service', () => {
-  const proxy = createServiceUnitTestApp(PostService)
+  const proxy = createServiceUnitTestApp<PostService>(PostService)
 
   const createMockCategory = async () => {
     const unique = `category-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
@@ -32,10 +32,7 @@ describe('/modules/post/post.service', () => {
       categoryId: id,
       category,
     })
-    expect(mockedEventManagerService.event).toBeCalledWith(
-      'POST_CREATE',
-      result,
-    )
+    expect(mockedEventManagerService.event).toBeCalledWith('POST_CREATE', result)
   })
 
   it('should throw when post exist', async () => {
@@ -84,7 +81,8 @@ describe('/modules/post/post.service', () => {
     })
 
     expect(pagination.pagination).toMatchSnapshot()
-    expect(pagination.data[0]!.category).toMatchObject(cate)
+    const firstPost = pagination.data[0] as { category: typeof cate }
+    expect(firstPost.category).toMatchObject(cate)
   })
 
   it('should get post by id successful', async () => {
@@ -102,8 +100,6 @@ describe('/modules/post/post.service', () => {
   })
 
   it('should get post throw when 404', async () => {
-    expect(
-      proxy.service.getPostById('not-found'),
-    ).rejects.toThrowErrorMatchingSnapshot()
+    expect(proxy.service.getPostById('not-found')).rejects.toThrowErrorMatchingSnapshot()
   })
 })

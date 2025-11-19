@@ -1,7 +1,7 @@
-import { UserRegisterDto } from '@core/modules/user/dtos/register.dto'
+import { UserRegisterInput } from '@core/modules/user/dtos/register.dto'
 import { snowflake } from '@core/processors/database/snowflake.util'
 
-export const generateMockUser = (): UserRegisterDto => {
+export const generateMockUser = (): UserRegisterInput => {
   return {
     username: `mockUser_${snowflake.nextId()}`,
     name: `Mock User${snowflake.nextId()}`,
