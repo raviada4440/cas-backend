@@ -1,103 +1,1688 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "./client"
+  provider        = "prisma-client-js"
+  output          = "./client"
+  previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-1.1.x", "rhel-openssl-3.0.x"]
 }
 
-generator json {
-  provider  = "prisma-json-types-generator"
-  namespace = "PrismaJson"
-  allowAny  = "false"
-}
-
-generator zod-prisma-types {
-  provider                         = "zod-prisma-types"
-  output                           = "./zod"
-  coerceDate                       = "true"
-  writeBarrelFiles                 = "true"
-  createModelTypes                 = "true"
-  addIncludeType                   = "false"
-  writeNullishInModelTypes         = "false"
-  addInputTypeValidation           = "false"
-  createInputTypes                 = "false"
-  useMultipleFiles                 = "true"
-  createPartialTypes               = "false"
-  validateWhereUniqueInput         = "false"
-  createOptionalDefaultValuesTypes = "true"
-  addSelectType                    = "false"
-  useDefaultValidators             = "true"
-  createRelationValuesTypes        = "false"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./zod"
 }
 
 datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")
+  provider = "postgresql"
+}
+
+// Enums for Catalog Lifecycle Management
+enum TestCatalogVersionStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+  RETIRED
+}
+
+enum TestCatalogStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+  RETIRED
+}
+
+enum TestCatalogChannel {
+  INTERNAL
+  CUSTOMER_PORTAL
+  PUBLIC_CATALOG
+  API_ONLY
+}
+
+enum TestCatalogConfigurationStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum TestCatalogConfigurationType {
+  OPERATIONAL
+  CUSTOMER
+}
+
+enum FamilyStructure {
+  NONE
+  PROBAND
+  DUO
+  TRIO
+}
+
+enum ParticipantRole {
+  PROBAND
+  MOTHER
+  FATHER
+  TUMOR
+  NORMAL
+}
+
+enum VariantDimension {
+  FAMILY_STRUCTURE
+  SPECIMEN_RELATIONSHIP
+  REFLEX_MODE
+  PANEL_COMPOSITION
+  SPECIMEN_TYPE
+  METHOD_VARIANT
+  TURNAROUND_VARIANT
+  OPERATIONAL_MODE
+  REPORTING_VARIANT
+}
+
+enum BiomarkerOverrideAction {
+  INCLUDE
+  EXCLUDE
+  OVERRIDE
+}
+
+enum ConsentType {
+  GENERAL_CONSENT
+  SPECIFIC_CONSENT
+  RESEARCH_CONSENT
+  MINOR_CONSENT
+  EMERGENCY_CONSENT
+  CUSTOM_CONSENT
+  HIPAA_PRIVACY_CONSENT
+}
+
+enum ConsentTemplateStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum OrderFormTemplateStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  PUBLISH
+  ARCHIVE
+  RETIRE
+  RESTORE
+  APPROVE
+  REJECT
+  VERSION_CREATE
+  REVIEWER_ASSIGNED
+  STATUS_CHANGE
+  VERSION_CHANGE
+  CONFIGURATION_CREATE
+  CONFIGURATION_UPDATE
+  CONFIGURATION_DELETE
+}
+
+enum SpecimenType {
+  BLOOD_IN_EDTA_PURPLE_TOP
+  EXTRACTED_DNA
+  CULTURED_SKIN_FIBROBLAST
+  BUCCAL_SWAB
+  SALIVA
+  FFPE_TISSUE
+  FFPE_TISSUE_OR_PLASMA
+  PERIPHERAL_BLOOD_OR_BONE_MARROW
+  WHOLE_BLOOD
+  WHOLE_BLOOD_OR_BONE_MARROW
+  WHOLE_BLOOD_EDTA
+  SERUM
+  VARIES
+  URINE
+  SERUM_RED
+  TISSUE
+  AMNIOTIC_FLD
+  TECHONLY
+  WHOLE_BLOOD_ACD
+  PLASMA_NA_CIT
+  PLASMA_EDTA
+  PLASMA
+  CSF
+  PERITONEAL
+  BODY_FLUID
+  PLEURAL_FLUID
+  WHOLE_BLOOD_ACD_B
+  FECAL
+  SYNOVIAL_FLUID
+  SPECIAL
+  WASHED_RBC
+  MECONIUM
+  PANCREATIC_CYST_FLUID
+  AMYLOID
+  HAIR
+  NAIL
+  PLASMA_HEPARIN
+  SERUM_SST
+  LAVAGE
+  WB_SODIUM_HEPARIN
+  WHOLE_BLOOD_EDTA_METAL_FREE_ERB
+  PLASMA_NA_HEPARIN
+  FINE_NEEDLE_WASH
+  SWAB
+  PLASMA_EDTA_META
+  GI_PLASMA
+  BONE_MARROW
+  TISSUE_PARAFFIN
+  LIVER_TISSUE
+  RBCS
+  WHOLE_BLOOD_NAFL_KOX
+  PLASMA_NAFL_KOX
+  EM
+  WHOLE_BLOOD_NA_CIT
+  SEMEN
+  BRONCHIAL_WASHING
+  BREATH
+  CONTROL
+  WB_HEPARIN
+  VAGINAL
+  STONE
+  METAL_FREE_EDTA_PLASMA
+  WB_STRECK
+  FIBROBLASTS
+  SPUTUM
+  FIXED_CELL_PELLET_BONE_MARROW
+  DIALYSATE_FLUID
+  Z_TUBE_PLASMA
+  MMLDRY
+  WHOLE_BLOOD_SLIDE
+  KIDNEY_BIOPSY
+  SUDC_STUDY_SPECIMEN
+  PLASMA_LI_HEPARIN
+  PERIPHERAL_BLOOD
+  PERIPHERAL_WHOLE_BLOOD
+  PLASMA_FROZEN
+  WHOLE_BLOOD_OR_SALIVA
+}
+
+// All models from casandra-order with PostgreSQL and camelCase conversion
+model Account {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                String   @db.Uuid
+  type                  String
+  provider              String
+  providerAccountId     String
+  refreshToken          String?  @db.Text
+  accessToken           String?  @db.Text
+  expiresAt             Int?
+  tokenType             String?
+  scope                 String?
+  state                 String?  @db.VarChar(256)
+  idToken               String?  @db.Text
+  sessionState          String?
+  refreshTokenExpiresIn Int?
+  epicDstu2Patient      String?  @db.VarChar(45)
+  appointment           String?  @db.VarChar(45)
+  dob                   String?  @db.VarChar(45)
+  encounter             String?  @db.VarChar(45)
+  location              String?  @db.VarChar(45)
+  loginDepartment       String?  @db.VarChar(45)
+  needPatientBanner     String?  @db.VarChar(45)
+  patient               String?  @db.VarChar(45)
+  smartStyleUrl         String?  @db.Text
+  unconfirmedStatus     String?  @db.VarChar(45)
+  userEmail             String?  @db.VarChar(45)
+  username              String?  @db.VarChar(45)
+  tenant                String?  @db.VarChar(256)
+  createdAt             DateTime @default(now()) @db.Timestamp(0)
+  updatedAt             DateTime @db.Timestamp(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@unique([userId, provider])
+}
+
+model Admin {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String?
+  email           String?  @db.VarChar(255)
+  userAttributeId String   @unique @db.Uuid
+  createdAt       DateTime @default(now()) @db.Timestamp(0)
+  updatedAt       DateTime @updatedAt @db.Timestamp(0)
+
+  userAttribute UserAttribute @relation(fields: [userAttributeId], references: [id], onDelete: NoAction)
+}
+
+model Attachment {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attachmentType String?  @db.VarChar(45)
+  attachmentUrl  String?  @db.VarChar(512)
+  fileName       String   @unique
+  fileType       String
+  fileSize       Int
+  fileExt        String?  @db.VarChar(10)
+  bucketName     String
+  storageKey     String
+  url            String?  @db.VarChar(512)
+  previewUrl     String?  @db.VarChar(512)
+  createdAt      DateTime @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @db.Timestamp(0)
+
+  labOrderAttachments LabOrderAttachment[]
+}
+
+model Biomarker {
+  hgncId             String   @id @db.VarChar(20)
+  hgncStatus         String?  @db.VarChar(128)
+  hgncApprovedSymbol String?  @unique @db.VarChar(512)
+  hgncApprovedName   String?  @db.VarChar(512)
+  createdAt          DateTime @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime @updatedAt @db.Timestamp(0)
+
+  testBiomarkers  TestCatalogVersionBiomarker[]
+  configOverrides TestConfigBiomarker[]
+}
+
+model Icd {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code             String?  @db.VarChar(45)
+  shortDescription String?  @db.Text
+  alias1           String?  @db.VarChar(512)
+  alias2           String?  @db.VarChar(512)
+  alias3           String?  @db.VarChar(512)
+  alias4           String?  @db.VarChar(512)
+  createdAt        DateTime @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime @updatedAt @db.Timestamp(0)
+
+  labOrderIcds LabOrderIcd[]
+}
+
+model CptCode {
+  code             String   @id @db.VarChar(10)
+  shortDescription String?  @db.Text
+  longDescription  String?  @db.Text
+  createdAt        DateTime @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime @updatedAt @db.Timestamp(0)
+}
+
+model Loinc {
+  loincNum                  String   @id @db.VarChar(128)
+  component                 String?  @db.Text
+  property                  String?  @db.Text
+  timeAspct                 String?  @db.Text
+  system                    String?  @db.Text
+  scaleTyp                  String?  @db.Text
+  methodTyp                 String?  @db.Text
+  class                     String?  @db.Text
+  versionLastChanged        String?  @db.Text
+  chngType                  String?  @db.Text
+  definitionDescription     String?  @db.Text
+  status                    String?  @db.Text
+  consumerName              String?  @db.Text
+  classtype                 Int?
+  formula                   String?  @db.Text
+  exmplAnswers              String?  @db.Text
+  surveyQuestText           String?  @db.Text
+  surveyQuestSrc            String?  @db.Text
+  unitsrequired             String?  @db.Text
+  relatednames2             String?  @db.Text
+  shortname                 String?  @db.Text
+  orderObs                  String?  @db.Text
+  hl7FieldSubfieldId        String?  @db.Text
+  externalCopyrightNotice   String?  @db.Text
+  exampleUnits              String?  @db.Text
+  longCommonName            String?  @db.Text
+  exampleUcumUnits          String?  @db.Text
+  statusReason              String?  @db.Text
+  statusText                String?  @db.Text
+  changeReasonPublic        String?  @db.Text
+  commonTestRank            Int?
+  commonOrderRank           Int?
+  hl7AttachmentStructure    String?  @db.Text
+  externalCopyrightLink     String?  @db.Text
+  panelType                 String?  @db.Text
+  askAtOrderEntry           String?  @db.Text
+  associatedObservations    String?  @db.Text
+  versionFirstReleased      String?  @db.Text
+  validHl7AttachmentRequest String?  @db.Text
+  displayName               String?  @db.Text
+  createdAt                 DateTime @default(now()) @db.Timestamp(0)
+  updatedAt                 DateTime @updatedAt @db.Timestamp(0)
+
+  testOrderLoincs    TestCatalogVersionOrderLoinc[]
+  testResultLoincs   TestCatalogVersionResultLoinc[]
+  configOrderLoincs  TestConfigOrderLoinc[]
+  configResultLoincs TestConfigResultLoinc[]
+}
+
+// Review threads for version feedback
+model ReviewThread {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId  String    @db.Uuid
+  createdBy  String    @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamp(0)
+  resolvedAt DateTime? @db.Timestamp(0)
+  title      String?   @db.VarChar(512)
+
+  version  TestCatalogVersion @relation(fields: [versionId], references: [id])
+  comments ReviewComment[]
+
+  @@index([versionId])
+}
+
+model ReviewComment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  threadId  String   @db.Uuid
+  body      String   @db.Text
+  createdBy String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+
+  thread ReviewThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId])
+}
+
+model Lab {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labName   String?  @db.VarChar(512)
+  labCode   String?  @db.VarChar(2)
+  address   String?  @db.VarChar(512)
+  city      String?  @db.VarChar(512)
+  state     String?  @db.VarChar(512)
+  zip       String?  @db.VarChar(512)
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  sponsoredTests SponsoredTest[]
+  testCatalogs   TestCatalog[]
+}
+
+model LabOrder {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber         Int       @default(autoincrement())
+  accessionNumber     Int       @default(autoincrement())
+  testVersionId       String    @db.Uuid
+  testConfigurationId String    @db.Uuid
+  orderingProviderId  String?   @db.Uuid
+  treatingProviderId  String?   @db.Uuid
+  patientId           String?   @db.Uuid
+  patientMRN          String?   @db.VarChar(45)
+  patientMobile       String?   @db.Text
+  patientEmail        String?   @db.Text
+  organizationId      String?   @db.Uuid
+  orderDate           DateTime? @default(now()) @db.Timestamp(0)
+  orderNotes          String?   @db.Text
+  createdAt           DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt           DateTime  @updatedAt @db.Timestamp(0)
+
+  orderingProvider              Provider?                      @relation("LabOrder_OrderingProviderIdToProvider", fields: [orderingProviderId], references: [id], onDelete: NoAction)
+  treatingProvider              Provider?                      @relation("LabOrder_TreatingProviderIdToProvider", fields: [treatingProviderId], references: [id], onDelete: NoAction)
+  patient                       Patient?                       @relation(fields: [patientId], references: [id], onDelete: NoAction)
+  organization                  Organization?                  @relation(fields: [organizationId], references: [id], onDelete: NoAction)
+  version                       TestCatalogVersion             @relation(fields: [testVersionId], references: [id], onDelete: Restrict)
+  configuration                 TestCatalogConfiguration       @relation(fields: [testConfigurationId], references: [id], onDelete: Restrict)
+  labOrderAttachments           LabOrderAttachment[]
+  labOrderBilling               LabOrderBilling[]
+  labOrderIcds                  LabOrderIcd[]
+  labOrderSpecimens             LabOrderSpecimen[]
+  labOrderSponsoredTestConsents LabOrderSponsoredTestConsent[]
+  labOrderStatuses              LabOrderStatus[]
+  labOrderTests                 LabOrderTest[]
+  consents                      LabOrderConsent[]
+  orderForms                    LabOrderForm[]
+
+  @@unique([orderNumber])
+  @@unique([accessionNumber])
+  @@index([testVersionId])
+  @@index([testConfigurationId])
+  @@index([orderingProviderId])
+  @@index([organizationId])
+  @@index([patientId])
+  @@index([treatingProviderId])
+}
+
+model LabOrderAttachment {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId   String?  @db.Uuid
+  attachmentId String?  @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamp(0)
+  updatedAt    DateTime @updatedAt @db.Timestamp(0)
+
+  labOrder   LabOrder?   @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
+  attachment Attachment? @relation(fields: [attachmentId], references: [id], onDelete: NoAction)
+
+  @@index([attachmentId])
+  @@index([labOrderId])
+}
+
+model LabOrderBilling {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId              String?  @db.Uuid
+  billToId                String?  @db.Uuid
+  healthPlanId            String?  @db.Uuid
+  patientStatus           String?  @db.VarChar(45)
+  sponsoredTestCouponCode String?  @db.VarChar(45)
+  billingType             String?  @db.VarChar(45)
+  insuranceProvider       String?  @db.VarChar(512)
+  policyNumber            String?  @db.VarChar(512)
+  copayAmount             Decimal? @db.Decimal(10, 2)
+  createdAt               DateTime @default(now()) @db.Timestamp(0)
+  updatedAt               DateTime @updatedAt @db.Timestamp(0)
+
+  labOrder LabOrder? @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
+
+  @@index([labOrderId])
+}
+
+model LabOrderIcd {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId String?  @db.Uuid
+  icdId      String?  @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime @updatedAt @db.Timestamp(0)
+
+  labOrder LabOrder? @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
+  icd      Icd?      @relation(fields: [icdId], references: [id], onDelete: NoAction)
+
+  @@index([icdId])
+  @@index([labOrderId])
+}
+
+model LabOrderSpecimen {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId         String?   @db.Uuid
+  specimenType       String?   @db.VarChar(45)
+  specimenCount      String?   @db.VarChar(45)
+  collectedDate      DateTime? @db.Date
+  collectedTime      String?   @db.VarChar(45)
+  specimenId         String?   @db.VarChar(45)
+  bodySite           String?   @db.VarChar(45)
+  tumorType          String?   @db.VarChar(45)
+  fixative           String?   @db.VarChar(45)
+  fixativeDuration   String?   @db.VarChar(45)
+  coldIschemicTime   String?   @db.VarChar(45)
+  patientAddress1    String?   @db.VarChar(45)
+  patientAddress2    String?   @db.VarChar(45)
+  patientCity        String?   @db.VarChar(45)
+  patientState       String?   @db.VarChar(45)
+  patientZip         String?   @db.VarChar(45)
+  pscLab             String?   @db.VarChar(45)
+  pscLocation        String?   @db.VarChar(45)
+  pscAppointmentAt   DateTime? @db.Date
+  pscAppointmentTime String?   @db.VarChar(45)
+  createdAt          DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime  @updatedAt @db.Timestamp(0)
+
+  labOrder LabOrder? @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
+
+  @@index([labOrderId])
+}
+
+model LabOrderSponsoredTestConsent {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId              String?   @db.Uuid
+  sponsoredCasandraTestId String?   @db.VarChar(512)
+  providerName            String?   @db.VarChar(45)
+  providerNpi             String?   @db.VarChar(45)
+  consentAt               DateTime? @default(now()) @db.Timestamp(0)
+  createdAt               DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt               DateTime  @updatedAt @db.Timestamp(0)
+
+  sponsoredTest SponsoredTest? @relation(fields: [sponsoredCasandraTestId], references: [casandraTestId], onDelete: NoAction)
+  labOrder      LabOrder?      @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
+
+  @@index([sponsoredCasandraTestId])
+  @@index([labOrderId])
+}
+
+model LabOrderStatus {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId String?   @db.Uuid
+  status     String?   @db.VarChar(45)
+  statusDate DateTime? @db.Timestamp(0)
+  createdAt  DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime  @updatedAt @db.Timestamp(0)
+
+  labOrder LabOrder? @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
+
+  @@index([labOrderId])
+}
+
+model LabOrderTest {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId String?  @db.Uuid
+  testId     String?  @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime @updatedAt @db.Timestamp(0)
+
+  labOrder    LabOrder?    @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
+  testCatalog TestCatalog? @relation(fields: [testId], references: [id], onDelete: NoAction)
+
+  @@index([labOrderId])
+  @@index([testId])
+}
+
+model LoincComponentHierarchy {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentId  String @db.Uuid
+  level     Int
+  code      String @db.VarChar(128)
+  sequence  String @db.VarChar(128)
+  codeText  String @db.VarChar(128)
+  component String @db.VarChar(128)
+  property  String @db.VarChar(128)
+  timing    String @db.VarChar(128)
+  scale     String @db.VarChar(128)
+  method    String @db.VarChar(128)
+}
+
+model LoincPanelHierarchy {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentId  String @db.Uuid
+  level     Int
+  code      String @db.VarChar(128)
+  sequence  String @db.VarChar(128)
+  codeText  String @db.VarChar(128)
+  component String @db.VarChar(128)
+  property  String @db.VarChar(128)
+  timing    String @db.VarChar(128)
+  scale     String @db.VarChar(128)
+  method    String @db.VarChar(128)
+}
+
+model LoincUniveralLabOrders {
+  loincNum       String  @id @db.VarChar(128)
+  longCommonName String? @db.Text
+  orderObs       String? @db.Text
+}
+
+model Organization {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  href          String?  @db.Text
+  parentId      String?  @db.Uuid
+  level         Int?
+  parentOrgName String?  @db.VarChar(512)
+  orgName       String?  @db.VarChar(512)
+  orgType       String?  @db.VarChar(512)
+  orgSpecialty  String?  @db.VarChar(512)
+  orgAddress    String?  @db.VarChar(512)
+  orgCity       String?  @db.VarChar(512)
+  orgState      String?  @db.VarChar(512)
+  orgZip        String?  @db.VarChar(512)
+  createdAt     DateTime @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime @updatedAt @db.Timestamp(0)
+
+  labOrders                 LabOrder[]
+  organizationFavoriteTests OrganizationFavoriteTest[]
+  patientOrganizations      PatientOrganization[]
+  providerOrganizations     ProviderOrganization[]
+  organizationEndpoints     OrganizationEndpoint[]
+  userIdentities            UserIdentity[]
+  orderFormSections         OrderFormSection[]
+  orderFormTemplates        OrderFormTemplate[]
+
+  @@index([parentId])
+}
+
+model OrganizationEndpoint {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String?  @db.Uuid
+  orgName        String?  @db.VarChar(512)
+  ehrVendor      String?  @db.VarChar(45)
+  fhirVersion    String?  @db.VarChar(45)
+  endpoint       String?  @db.VarChar(512)
+  issuer         String?  @db.VarChar(512)
+  clientId       String?  @db.VarChar(255)
+  clientSecret   String?  @db.VarChar(512)
+  isActive       Boolean? @default(true)
+  createdAt      DateTime @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @db.Timestamp(0)
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+}
+
+model OrganizationFavoriteTest {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String?  @db.Uuid
+  parentId       String?  @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentName     String?  @db.VarChar(512)
+  level          Int?     @default(0)
+  testId         String?  @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @db.Timestamp(0)
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: NoAction)
+  testCatalog  TestCatalog?  @relation(fields: [testId], references: [id], onDelete: NoAction)
+
+  @@index([parentId])
+  @@index([organizationId])
+  @@index([testId])
+}
+
+model Patient {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName   String?   @db.VarChar(45)
+  lastName    String?   @db.VarChar(512)
+  dateOfBirth DateTime? @db.Date
+  gender      String?   @db.VarChar(512)
+  email       String?   @db.VarChar(512)
+  mobile      String?   @db.Text
+  createdAt   DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt   DateTime  @updatedAt @db.Timestamp(0)
+
+  labOrders            LabOrder[]
+  patientOrganizations PatientOrganization[]
+}
+
+model PatientOrganization {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId      String   @db.Uuid
+  organizationId String   @db.Uuid
+  mrn            String?  @db.VarChar(45)
+  mobile         String?  @db.VarChar(45)
+  email          String?  @db.VarChar(512)
+  createdAt      DateTime @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @db.Timestamp(0)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction)
+  patient      Patient      @relation(fields: [patientId], references: [id], onDelete: NoAction)
+
+  @@index([organizationId])
+  @@index([patientId])
+}
+
+model Provider {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  href                  String?  @db.Text
+  npi                   String?  @db.VarChar(45)
+  name                  String?  @db.VarChar(512)
+  firstName             String?  @db.VarChar(255)
+  lastName              String?  @db.VarChar(255)
+  email                 String?  @db.VarChar(255)
+  credentials           String?  @db.VarChar(512)
+  specialty             String?  @db.VarChar(512)
+  aboutme               String?  @db.Text
+  gender                String?  @db.VarChar(512)
+  providerType          String?  @db.VarChar(512)
+  affiliation           String?  @db.VarChar(512)
+  proceduresAndResearch String?  @db.Text
+  specialInterests      String?  @db.Text
+  userAttributeId       String?  @unique @db.Uuid
+  createdAt             DateTime @default(now()) @db.Timestamp(0)
+  updatedAt             DateTime @updatedAt @db.Timestamp(0)
+
+  orderingProviderLabOrders LabOrder[]             @relation("LabOrder_OrderingProviderIdToProvider")
+  treatingProviderLabOrders LabOrder[]             @relation("LabOrder_TreatingProviderIdToProvider")
+  userAttribute             UserAttribute?         @relation(fields: [userAttributeId], references: [id], onDelete: NoAction)
+  providerEducation         ProviderEducation[]
+  providerFavoriteTests     ProviderFavoriteTest[]
+  providerOrganizations     ProviderOrganization[]
+
+  @@index([userAttributeId])
+}
+
+model ProviderEducation {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerId      String   @db.Uuid
+  providerNpi     String?  @db.VarChar(45)
+  name            String?  @db.VarChar(512)
+  educationType   String?  @db.VarChar(512)
+  schoolName      String?  @db.VarChar(512)
+  areaOfEducation String?  @db.Text
+  createdAt       DateTime @default(now()) @db.Timestamp(0)
+  updatedAt       DateTime @updatedAt @db.Timestamp(0)
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: NoAction)
+
+  @@index([providerId])
+}
+
+model ProviderFavoriteTest {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerId String?  @db.Uuid
+  parentId   String?  @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentName String?  @db.Uuid
+  level      Int?     @default(0)
+  testId     String?  @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime @updatedAt @db.Timestamp(0)
+
+  provider    Provider?    @relation(fields: [providerId], references: [id], onDelete: NoAction)
+  testCatalog TestCatalog? @relation(fields: [testId], references: [id], onDelete: NoAction)
+
+  @@index([parentId])
+  @@index([providerId])
+  @@index([testId])
+}
+
+model ProviderOrganization {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerId     String   @db.Uuid
+  organizationId String   @db.Uuid
+  providerNpi    String?  @db.VarChar(45)
+  name           String?  @db.VarChar(512)
+  parentOrgName  String?  @db.VarChar(512)
+  orgName        String?  @db.VarChar(512)
+  orgAddress     String?  @db.VarChar(512)
+  orgCity        String?  @db.VarChar(512)
+  orgState       String?  @db.VarChar(512)
+  orgZip         String?  @db.VarChar(512)
+  createdAt      DateTime @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @db.Timestamp(0)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: NoAction)
+  provider     Provider     @relation(fields: [providerId], references: [id], onDelete: NoAction)
+
+  @@index([organizationId])
+  @@index([providerId])
+}
+
+model Session {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+  createdAt    DateTime @default(now()) @db.Timestamp(0)
+  updatedAt    DateTime @updatedAt @db.Timestamp(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Sponsor {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sponsorName    String?  @db.VarChar(512)
+  sponsorCode    String?  @db.VarChar(2)
+  sponsorWebsite String?  @db.VarChar(512)
+  sponsorType    String?  @db.VarChar(45)
+  address        String?  @db.VarChar(512)
+  city           String?  @db.VarChar(512)
+  state          String?  @db.VarChar(512)
+  zip            String?  @db.VarChar(512)
+  createdAt      DateTime @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @db.Timestamp(0)
+
+  sponsoredPrograms SponsoredProgram[]
+}
+
+model SponsoredProgram {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sponsorId           String?  @db.Uuid
+  therapeuticArea     String?  @db.VarChar(128)
+  programName         String?  @db.VarChar(512)
+  programUrl          String?  @db.VarChar(512)
+  programLabUrl       String?  @db.VarChar(512)
+  sponsoredTestingUrl String?  @db.VarChar(512)
+  programEligibility  String?  @db.Text
+  createdAt           DateTime @default(now()) @db.Timestamp(0)
+  updatedAt           DateTime @updatedAt @db.Timestamp(0)
+
+  sponsor        Sponsor?        @relation(fields: [sponsorId], references: [id], onDelete: NoAction)
+  sponsoredTests SponsoredTest[]
+
+  @@index([sponsorId])
+}
+
+model SponsoredTest {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  testId             String   @db.Uuid
+  labTestId          String?  @db.VarChar(512)
+  sponsoredProgramId String?  @db.Uuid
+  labId              String?  @db.Uuid
+  casandraTestId     String   @unique @db.VarChar(512)
+  category           String   @db.VarChar(512)
+  subCategory        String?  @db.VarChar(512)
+  createdAt          DateTime @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime @updatedAt @db.Timestamp(0)
+
+  labOrderSponsoredTestConsents LabOrderSponsoredTestConsent[]
+  lab                           Lab?                           @relation(fields: [labId], references: [id], onDelete: NoAction)
+  sponsoredProgram              SponsoredProgram?              @relation(fields: [sponsoredProgramId], references: [id], onDelete: NoAction)
+  testCatalog                   TestCatalog                    @relation(fields: [testId], references: [id], onDelete: NoAction)
+
+  @@index([labId])
+  @@index([sponsoredProgramId])
+  @@index([casandraTestId])
+  @@index([testId])
+}
+
+model TestCatalog {
+  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labId          String? @db.Uuid
+  casandraTestId String  @db.VarChar(512)
+  labTestId      String? @db.VarChar(512)
+
+  // Minimal overview
+  testName        String? @db.VarChar(512)
+  specialNotes    String? @db.Text
+  testCategory    String? @db.VarChar(512)
+  testSubCategory String? @db.VarChar(512)
+
+  // Lifecycle pointers
+  status           TestCatalogStatus @default(DRAFT)
+  defaultVersionId String?           @db.Uuid
+  currentVersion   Int               @default(1)
+
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  // Relations
+  versions       TestCatalogVersion[]
+  defaultVersion TestCatalogVersion?        @relation("TestDefaultVersion", fields: [defaultVersionId], references: [id])
+  configurations TestCatalogConfiguration[]
+
+  // Other relations (keep your existing definitions elsewhere)
+  lab                       Lab?                       @relation(fields: [labId], references: [id], onDelete: NoAction)
+  labOrderTests             LabOrderTest[]
+  organizationFavoriteTests OrganizationFavoriteTest[]
+  providerFavoriteTests     ProviderFavoriteTest[]
+  sponsoredTests            SponsoredTest[]
+  auditLogs                 TestCatalogAuditLog[]
+  consentAuditLogs          ConsentAuditLog[]
+  testGenes                 TestGene[]
+
+  @@unique([labId, labTestId])
+  @@index([labId])
+  @@index([defaultVersionId])
+}
+
+model TestCatalogVersion {
+  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  testId        String @db.Uuid
+  versionNumber Int
+
+  status        TestCatalogVersionStatus @default(DRAFT)
+  effectiveDate DateTime?                @db.Timestamp(0)
+  retiredDate   DateTime?                @db.Timestamp(0)
+  changeReason  String?                  @db.Text
+  changeNotes   String?                  @db.Text
+
+  // Snapshotted attributes from TestCatalog
+  href                 String? @db.Text
+  testName             String? @db.VarChar(512)
+  alternativeName      String? @db.VarChar(512)
+  alternativeName1     String? @db.VarChar(512)
+  alternativeName2     String? @db.VarChar(512)
+  alternativeName3     String? @db.VarChar(512)
+  alternativeName4     String? @db.VarChar(512)
+  alternativeName5     String? @db.VarChar(512)
+  testIncludes         String? @db.Text
+  methodology          String? @db.Text
+  testDescription      String? @db.Text
+  diseases             String? @db.Text
+  probes               String? @db.Text
+  clinicalSignificance String? @db.Text
+  diseaseIndications   String? @db.Text
+  testUsage            String? @db.Text
+  testLimitations      String? @db.Text
+  isNewYorkApproved    Boolean @default(false)
+  levelOfService       String? @db.VarChar(512)
+  turnAroundTime       String? @db.VarChar(512)
+  referenceRanges      String? @db.Text
+  setupSchedule        String? @db.Text
+  testCategory         String? @db.VarChar(512)
+  testSubCategory      String? @db.VarChar(512)
+  specialNotes         String? @db.Text
+  patientResources     String? @db.Text
+  providerResources    String? @db.Text
+  patientResourcesUrl  String? @db.Text
+  providerResourcesUrl String? @db.Text
+  additionalNotes      String? @db.Text
+  isFDAApproved        Boolean @default(false)
+
+  // Audit
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  // Version-scoped artifacts
+  specimens        TestCatalogVersionSpecimen[]
+  biomarkers       TestCatalogVersionBiomarker[]
+  cptCodes         TestCatalogVersionCptCode[]
+  orderLoincs      TestCatalogVersionOrderLoinc[]
+  resultLoincs     TestCatalogVersionResultLoinc[]
+  orderForms       TestCatalogVersionOrderForm[]
+  consents         TestCatalogVersionConsent[]
+  consentAuditLogs ConsentAuditLog[]
+  labOrders        LabOrder[]
+
+  // Relations
+  test            TestCatalog                @relation(fields: [testId], references: [id], onDelete: Cascade)
+  approvals       TestCatalogApproval[]
+  defaultForTests TestCatalog[]              @relation("TestDefaultVersion")
+  configurations  TestCatalogConfiguration[]
+  reviewThreads   ReviewThread[]
+
+  @@unique([testId, versionNumber])
+  @@index([testId])
+  @@index([testId, status])
+  @@index([testId, effectiveDate])
+  @@index([testId, retiredDate])
+}
+
+/// =======================
+/// Version-scoped Specimens
+/// =======================
+
+model TestCatalogVersionSpecimen {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId String @db.Uuid
+
+  displayName String? @db.VarChar(256)
+  isPrimary   Boolean @default(false)
+  isRequired  Boolean @default(true)
+
+  // Specimen details
+  specimenType          SpecimenType?
+  specimenRequirements  String?                      @db.Text
+  volume                String?                      @db.VarChar(512)
+  minimumVolume         String?                      @db.VarChar(512)
+  container             String?                      @db.Text
+  specialInstructions   String?                      @db.Text
+  alternateContainers   String?                      @db.Text
+  preferredVolume       String?                      @db.VarChar(64)
+  collectionMethod      TestCatalogCollectionMethod?
+  collection            String?                      @db.Text
+  stabilityRequirements String?                      @db.Text
+  storageTransportation String?                      @db.Text
+  patientPreparation    String?                      @db.Text
+  causesForRejection    String?                      @db.Text
+  processingNotes       String?                      @db.Text
+  displayOrder          Int                          @default(0)
+
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  version          TestCatalogVersion           @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  variantManifests TestConfigSpecimenManifest[]
+
+  @@unique([versionId, displayName])
+  @@index([versionId])
+}
+
+/// =======================
+/// Version-scoped Artifacts
+/// =======================
+
+model TestCatalogVersionBiomarker {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId           String   @db.Uuid
+  hgncId              String   @db.VarChar(20)
+  transcriptReference String?  @db.Text
+  createdAt           DateTime @default(now()) @db.Timestamp(0)
+  updatedAt           DateTime @updatedAt @db.Timestamp(0)
+
+  version   TestCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  biomarker Biomarker          @relation(fields: [hgncId], references: [hgncId], onDelete: NoAction)
+
+  @@unique([versionId, hgncId])
+  @@index([versionId])
+  @@index([hgncId])
+}
+
+model TestCatalogVersionCptCode {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId String   @db.Uuid
+  cptCode   String   @db.VarChar(10)
+  modifier  String?  @db.VarChar(8)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  version TestCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, cptCode, modifier])
+  @@index([versionId])
+  @@index([cptCode])
+}
+
+model TestCatalogVersionOrderLoinc {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId String   @db.Uuid
+  loincCode String   @db.VarChar(32)
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  version TestCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  loinc   Loinc              @relation(fields: [loincCode], references: [loincNum], onDelete: NoAction)
+
+  @@unique([versionId, loincCode])
+  @@index([versionId])
+  @@index([loincCode])
+}
+
+model TestCatalogVersionResultLoinc {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId      String   @db.Uuid
+  resultCode     String?  @db.VarChar(32)
+  resultCodeName String?  @db.Text
+  uom            String?  @db.VarChar(32)
+  loincCode      String   @db.VarChar(32)
+  createdAt      DateTime @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @db.Timestamp(0)
+
+  version TestCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  loinc   Loinc              @relation(fields: [loincCode], references: [loincNum], onDelete: NoAction)
+
+  @@unique([versionId, loincCode])
+  @@index([versionId])
+  @@index([loincCode])
+}
+
+model TestConfigCptCode {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configurationId String   @db.Uuid
+  cptCode         String   @db.VarChar(10)
+  modifier        String?  @db.VarChar(8)
+  isPrimary       Boolean  @default(false)
+  createdAt       DateTime @default(now()) @db.Timestamp(0)
+  updatedAt       DateTime @updatedAt @db.Timestamp(0)
+
+  configuration TestCatalogConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+
+  @@unique([configurationId, cptCode, modifier])
+  @@index([configurationId])
+  @@index([cptCode])
+}
+
+model TestConfigOrderLoinc {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configurationId String   @db.Uuid
+  loincCode       String   @db.VarChar(32)
+  createdAt       DateTime @default(now()) @db.Timestamp(0)
+  updatedAt       DateTime @updatedAt @db.Timestamp(0)
+
+  configuration TestCatalogConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  loinc         Loinc                    @relation(fields: [loincCode], references: [loincNum], onDelete: NoAction)
+
+  @@unique([configurationId, loincCode])
+  @@index([configurationId])
+  @@index([loincCode])
+}
+
+model TestConfigResultLoinc {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configurationId String   @db.Uuid
+  resultCode      String?  @db.VarChar(32)
+  resultCodeName  String?  @db.Text
+  uom             String?  @db.VarChar(32)
+  loincCode       String   @db.VarChar(32)
+  createdAt       DateTime @default(now()) @db.Timestamp(0)
+  updatedAt       DateTime @updatedAt @db.Timestamp(0)
+
+  configuration TestCatalogConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  loinc         Loinc                    @relation(fields: [loincCode], references: [loincNum], onDelete: NoAction)
+
+  @@unique([configurationId, loincCode])
+  @@index([configurationId])
+  @@index([loincCode])
+}
+
+model TestConfigSpecimenManifest {
+  id                            String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configurationId               String                       @db.Uuid
+  versionSpecimenId             String                       @db.Uuid
+  participantRole               ParticipantRole
+  isRequired                    Boolean                      @default(true)
+  specimenTypeOverride          SpecimenType?
+  specimenDisplayNameOverride   String?                      @db.VarChar(256)
+  volumeOverride                String?                      @db.VarChar(512)
+  minimumVolumeOverride         String?                      @db.VarChar(256)
+  preferredVolumeOverride       String?                      @db.VarChar(64)
+  alternateContainersOverride   String?                      @db.Text
+  containerOverride             String?                      @db.Text
+  specialInstructionsOverride   String?                      @db.Text
+  collectionMethodOverride      TestCatalogCollectionMethod?
+  specimenRequirementsOverride  String?                      @db.Text
+  collectionOverride            String?                      @db.Text
+  stabilityRequirementsOverride String?                      @db.Text
+  storageTransportationOverride String?                      @db.Text
+  patientPreparationOverride    String?                      @db.Text
+  causesForRejectionOverride    String?                      @db.Text
+  processingNotesOverride       String?                      @db.Text
+  displayOrder                  Int?                         @default(0)
+  createdAt                     DateTime                     @default(now()) @db.Timestamp(0)
+  updatedAt                     DateTime                     @updatedAt @db.Timestamp(0)
+
+  configuration   TestCatalogConfiguration   @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  versionSpecimen TestCatalogVersionSpecimen @relation(fields: [versionSpecimenId], references: [id], onDelete: Cascade)
+
+  @@unique([configurationId, versionSpecimenId, participantRole])
+  @@index([configurationId])
+  @@index([versionSpecimenId])
+}
+
+model TestConfigBiomarker {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configurationId     String                  @db.Uuid
+  hgncId              String                  @db.VarChar(20)
+  action              BiomarkerOverrideAction
+  transcriptReference String?                 @db.Text
+  reportTier          String?                 @db.VarChar(32)
+  isReportable        Boolean?
+  displayOrder        Int?
+  notes               String?                 @db.Text
+  createdAt           DateTime                @default(now()) @db.Timestamp(0)
+  updatedAt           DateTime                @updatedAt @db.Timestamp(0)
+
+  configuration TestCatalogConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  biomarker     Biomarker                @relation(fields: [hgncId], references: [hgncId], onDelete: NoAction)
+
+  @@unique([configurationId, hgncId])
+  @@index([configurationId])
+  @@index([hgncId])
+}
+
+/// =======================
+/// Order Form Management
+/// =======================
+
+model OrderFormSection {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String   @db.VarChar(255)
+  description    String?  @db.Text
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  organizationId String?  @db.Uuid
+  createdBy      String?  @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @db.Timestamp(0)
+
+  organization Organization?       @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  templates    OrderFormTemplate[]
+
+  @@unique([name, organizationId])
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+model OrderFormTemplate {
+  id                 String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderFormSectionId String                  @db.Uuid
+  name               String                  @db.VarChar(255)
+  description        String?                 @db.Text
+  status             OrderFormTemplateStatus @default(DRAFT)
+  version            Int                     @default(1)
+  effectiveDate      DateTime?               @db.Timestamp(0)
+  retiredDate        DateTime?               @db.Timestamp(0)
+  formSchema         Json?
+  layoutSchema       Json?
+  organizationId     String?                 @db.Uuid
+  isGlobal           Boolean                 @default(false)
+  createdBy          String?                 @db.Uuid
+  createdAt          DateTime                @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime                @updatedAt @db.Timestamp(0)
+
+  section       OrderFormSection              @relation(fields: [orderFormSectionId], references: [id], onDelete: Cascade)
+  organization  Organization?                 @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  assignments   TestCatalogVersionOrderForm[]
+  labOrderForms LabOrderForm[]
+
+  @@unique([orderFormSectionId, name, organizationId])
+  @@index([orderFormSectionId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+model TestCatalogVersionOrderForm {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId           String   @db.Uuid
+  configurationId     String?  @db.Uuid
+  orderFormTemplateId String   @db.Uuid
+  displayOrder        Int      @default(0)
+  customTitle         String?  @db.VarChar(255)
+  isRequired          Boolean  @default(true)
+  isVisible           Boolean  @default(true)
+  createdBy           String?  @db.Uuid
+  createdAt           DateTime @default(now()) @db.Timestamp(0)
+  updatedAt           DateTime @updatedAt @db.Timestamp(0)
+
+  version       TestCatalogVersion        @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  configuration TestCatalogConfiguration? @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  template      OrderFormTemplate         @relation(fields: [orderFormTemplateId], references: [id], onDelete: Cascade)
+  labOrderForms LabOrderForm[]
+
+  @@unique([versionId, orderFormTemplateId, configurationId])
+  @@index([versionId])
+  @@index([configurationId])
+  @@index([orderFormTemplateId])
+  @@index([displayOrder])
+}
+
+model LabOrderForm {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId          String    @db.Uuid
+  versionOrderFormId  String?   @db.Uuid
+  orderFormTemplateId String?   @db.Uuid
+  displayOrder        Int       @default(0)
+  sectionName         String    @db.VarChar(255)
+  templateName        String?   @db.VarChar(255)
+  formSchema          Json?
+  layoutSchema        Json?
+  responses           Json?
+  isCompleted         Boolean   @default(false)
+  completedAt         DateTime? @db.Timestamp(0)
+  createdAt           DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt           DateTime  @updatedAt @db.Timestamp(0)
+
+  labOrder         LabOrder                     @relation(fields: [labOrderId], references: [id], onDelete: Cascade)
+  versionOrderForm TestCatalogVersionOrderForm? @relation(fields: [versionOrderFormId], references: [id], onDelete: SetNull)
+  template         OrderFormTemplate?           @relation(fields: [orderFormTemplateId], references: [id], onDelete: SetNull)
+
+  @@index([labOrderId])
+  @@index([versionOrderFormId])
+  @@index([orderFormTemplateId])
+  @@index([displayOrder])
+}
+
+/// =======================
+/// Customer Config / Pinning
+/// =======================
+
+model TestCatalogConfiguration {
+  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  testId            String                       @db.Uuid
+  versionId         String?                      @db.Uuid
+  configurationName String                       @db.VarChar(255)
+  versionNumber     Int                          @default(1)
+  customerId        String?                      @db.Uuid
+  organizationId    String?                      @db.Uuid
+  type              TestCatalogConfigurationType @default(CUSTOMER)
+  dimension         VariantDimension
+  dimensionValue    String                       @db.VarChar(64)
+  operationalCode   String?                      @db.VarChar(64)
+
+  status    TestCatalogConfigurationStatus @default(DRAFT)
+  isDefault Boolean                        @default(false)
+  isActive  Boolean                        @default(true)
+
+  // Customer overrides
+  customTestName             String?  @db.VarChar(512)
+  customDescription          String?  @db.Text
+  customTurnAroundTime       String?  @db.VarChar(512)
+  customPricing              Decimal? @db.Decimal(10, 2)
+  customInstructions         String?  @db.Text
+  customSpecimenRequirements String?  @db.Text
+  customCollectionMethod     String?  @db.Text
+
+  // Lifecycle window
+  effectiveDate     DateTime? @db.Timestamp(0)
+  expirationDate    DateTime? @db.Timestamp(0)
+  lastActivatedAt   DateTime? @db.Timestamp(0)
+  lastDeactivatedAt DateTime? @db.Timestamp(0)
+
+  // Consents / approvals
+  requiresConsent    Boolean  @default(false)
+  consentTemplateIds String[] @default([])
+  customConsentText  String?  @db.Text
+
+  requiresApproval   Boolean   @default(false)
+  approvalWorkflowId String?   @db.Uuid
+  approvedBy         String?   @db.Uuid
+  approvedAt         DateTime? @db.Timestamp(0)
+
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  // Relations
+  test                    TestCatalog                   @relation(fields: [testId], references: [id], onDelete: Cascade)
+  version                 TestCatalogVersion?           @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  consents                TestCatalogVersionConsent[]
+  approvals               TestCatalogApproval[]
+  labOrders               LabOrder[]
+  cptOverrides            TestConfigCptCode[]
+  orderLoincOverrides     TestConfigOrderLoinc[]
+  resultLoincOverrides    TestConfigResultLoinc[]
+  specimenManifestEntries TestConfigSpecimenManifest[]
+  biomarkerOverrides      TestConfigBiomarker[]
+  orderForms              TestCatalogVersionOrderForm[]
+
+  @@unique([testId, configurationName, customerId, versionNumber])
+  @@index([testId])
+  @@index([customerId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([isActive])
+  @@index([versionId, isActive])
+  @@index([testId, type, dimension, dimensionValue, effectiveDate, expirationDate])
+}
+
+/// =======================
+/// Consents & Approvals
+/// =======================
+
+model ConsentTemplate {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String      @db.VarChar(255)
+  description String?     @db.Text
+  consentType ConsentType
+  isRequired  Boolean     @default(true)
+
+  title      String  @db.VarChar(255)
+  content    String  @db.Text
+  legalText  String? @db.Text
+  formSchema Json?
+
+  status        ConsentTemplateStatus @default(DRAFT)
+  version       Int                   @default(1)
+  effectiveDate DateTime?             @db.Timestamp(0)
+  retiredDate   DateTime?             @db.Timestamp(0)
+
+  organizationId String? @db.Uuid
+  isGlobal       Boolean @default(false)
+
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  versionConsents  TestCatalogVersionConsent[]
+  labOrderConsents LabOrderConsent[]
+  auditLogs        ConsentAuditLog[]
+
+  @@unique([name, organizationId])
+  @@index([consentType])
+  @@index([status])
+  @@index([organizationId])
+  @@index([isGlobal])
+}
+
+model TestCatalogVersionConsent {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId         String  @db.Uuid
+  configurationId   String? @db.Uuid
+  consentTemplateId String  @db.Uuid
+
+  isRequired    Boolean @default(true)
+  displayOrder  Int     @default(0)
+  customTitle   String? @db.VarChar(255)
+  customContent String? @db.Text
+
+  conditionalLogic String? @db.Text
+  dependsOnConsent String? @db.Uuid
+
+  createdBy String?  @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  version          TestCatalogVersion        @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  configuration    TestCatalogConfiguration? @relation(fields: [configurationId], references: [id], onDelete: Cascade)
+  consentTemplate  ConsentTemplate           @relation(fields: [consentTemplateId], references: [id], onDelete: Cascade)
+  labOrderConsents LabOrderConsent[]
+  auditLogs        ConsentAuditLog[]
+
+  @@unique([versionId, consentTemplateId])
+  @@index([versionId])
+  @@index([configurationId])
+  @@index([consentTemplateId])
+  @@index([isRequired])
+}
+
+model LabOrderConsent {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId        String  @db.Uuid
+  versionConsentId  String? @db.Uuid
+  consentTemplateId String  @db.Uuid
+
+  consentTitle   String    @db.VarChar(255)
+  consentContent String    @db.Text
+  isAccepted     Boolean
+  acceptedAt     DateTime? @db.Timestamp(0)
+  declinedAt     DateTime? @db.Timestamp(0)
+
+  patientSignature String? @db.Text
+  witnessSignature String? @db.Text
+
+  ipAddress      String?  @db.VarChar(45)
+  userAgent      String?  @db.Text
+  consentVersion Int      @default(1)
+  collectedBy    String?  @db.Uuid
+  collectedAt    DateTime @default(now()) @db.Timestamp(0)
+  createdAt      DateTime @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @db.Timestamp(0)
+
+  labOrder        LabOrder                   @relation(fields: [labOrderId], references: [id], onDelete: Cascade)
+  consent         TestCatalogVersionConsent? @relation(fields: [versionConsentId], references: [id], onDelete: SetNull)
+  consentTemplate ConsentTemplate            @relation(fields: [consentTemplateId], references: [id], onDelete: Cascade)
+
+  @@index([labOrderId])
+  @@index([consentTemplateId])
+  @@index([isAccepted])
+  @@index([collectedAt])
+}
+
+model TestCatalogApproval {
+  id                  String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId           String? @db.Uuid
+  testConfigurationId String? @db.Uuid
+
+  workflowStep Int     @default(1)
+  stepName     String  @db.VarChar(255)
+  requiredRole String? @db.VarChar(100)
+
+  status     ApprovalStatus @default(PENDING)
+  comments   String?        @db.Text
+  approvedBy String?        @db.Uuid
+  approvedAt DateTime?      @db.Timestamp(0)
+
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  version       TestCatalogVersion?       @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  configuration TestCatalogConfiguration? @relation(fields: [testConfigurationId], references: [id], onDelete: Cascade)
+
+  @@index([versionId])
+  @@index([testConfigurationId])
+  @@index([status])
+  @@index([workflowStep])
+}
+
+// Role-Based Access Control
+model Role {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  permissions String[] @default([])
+
+  // Audit fields
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  // Relations
+  userRoles UserRole[]
+
+  @@index([name])
+}
+
+model UserRole {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @db.Uuid
+  roleId String @db.Uuid
+
+  // Audit fields
+  assignedBy String?   @db.Uuid
+  assignedAt DateTime  @default(now()) @db.Timestamp(0)
+  expiresAt  DateTime? @db.Timestamp(0)
+  createdAt  DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime  @updatedAt @db.Timestamp(0)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+// Comprehensive Audit Trail
+model TestCatalogAuditLog {
+  id              String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  testId          String  @db.Uuid
+  versionNumber   Int?
+  configurationId String? @db.Uuid
+
+  // Action Details
+  action       AuditAction
+  fieldName    String?     @db.VarChar(255)
+  oldValue     String?     @db.Text
+  newValue     String?     @db.Text
+  changeReason String?     @db.Text
+
+  // Context Information
+  ipAddress   String?  @db.VarChar(45)
+  userAgent   String?  @db.Text
+  performedBy String?  @db.Uuid
+  performedAt DateTime @default(now()) @db.Timestamp(0)
+
+  createdAt DateTime    @default(now()) @db.Timestamp(0)
+  updatedAt DateTime    @updatedAt @db.Timestamp(0)
+  // Relations
+  test      TestCatalog @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([testId])
+  @@index([action])
+  @@index([performedBy])
+  @@index([performedAt])
+  @@index([versionNumber])
+  @@index([configurationId])
+}
+
+model ConsentAuditLog {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consentTemplateId String? @db.Uuid
+  testId            String? @db.Uuid
+  versionId         String? @db.Uuid
+  versionConsentId  String? @db.Uuid
+
+  action       AuditAction
+  fieldName    String?     @db.VarChar(255)
+  oldValue     String?     @db.Text
+  newValue     String?     @db.Text
+  changeReason String?     @db.Text
+
+  performedBy String?  @db.Uuid
+  performedAt DateTime @default(now()) @db.Timestamp(0)
+  createdAt   DateTime @default(now()) @db.Timestamp(0)
+  updatedAt   DateTime @updatedAt @db.Timestamp(0)
+
+  consentTemplate ConsentTemplate?           @relation(fields: [consentTemplateId], references: [id], onDelete: Cascade)
+  test            TestCatalog?               @relation(fields: [testId], references: [id], onDelete: Cascade)
+  version         TestCatalogVersion?        @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  versionConsent  TestCatalogVersionConsent? @relation(fields: [versionConsentId], references: [id], onDelete: Cascade)
+
+  @@index([consentTemplateId])
+  @@index([testId])
+  @@index([versionId])
+  @@index([versionConsentId])
+  @@index([action])
+  @@index([performedBy])
+  @@index([performedAt])
+}
+
+model TestGene {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  testId              String   @db.Uuid
+  labTestId           String?  @db.VarChar(512)
+  gene                String   @db.VarChar(20)
+  transcriptReference String?  @db.VarChar(512)
+  createdAt           DateTime @default(now()) @db.Timestamp(0)
+  updatedAt           DateTime @updatedAt @db.Timestamp(0)
+
+  testCatalog TestCatalog @relation(fields: [testId], references: [id], onDelete: NoAction)
+
+  @@unique([testId, gene])
+  @@index([gene])
+  @@index([testId])
 }
 
 model User {
-  id            String     @id @default("")
-  username      String     @unique @db.VarChar(80)
-  name          String     @db.VarChar(80)
-  introduce     String?    @db.VarChar(255)
-  avatar        String?    @db.VarChar(1024)
-  password      String     @db.VarChar(80)
-  mail          String?    @db.VarChar(80)
-  url           String?    @db.VarChar(1024)
-  lastLoginTime DateTime?  @map("last_login_time")
-  lastLoginIp   String?    @map("last_login_ip")
-  socialIds     Json?      @default("{}") @map("social_ids")
-  created       DateTime   @default(now()) @map("created_at")
-  modified      DateTime?  @updatedAt @map("updated_at")
-  apiTokens     ApiToken[]
-  oauths        OAuth[]
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String?
+  email         String?   @unique
+  password      String?   @db.VarChar(255)
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime  @updatedAt @db.Timestamp(0)
+
+  accounts       Account[]
+  sessions       Session[]
+  userAttribute  UserAttribute?
+  userIdentities UserIdentity[]
+  userRoles      UserRole[]
 }
 
-model ApiToken {
-  id      String    @id @default("")
-  userId  String
-  created DateTime  @default(now())
-  token   String
-  expired DateTime?
-  name    String    @unique
-  user    User      @relation(fields: [userId], references: [id])
+model UserAttribute {
+  id        String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String                 @unique @db.Uuid
+  userType  UserAttributeUserType?
+  createdAt DateTime               @default(now()) @db.Timestamp(0)
+  updatedAt DateTime               @updatedAt @db.Timestamp(0)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: NoAction)
+  admin    Admin?
+  provider Provider?
 }
 
-model OAuth {
-  id       String @id @default("")
-  userId   String
-  platform String
-  oauthId  String
-  user     User   @relation(fields: [userId], references: [id])
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
-model Post {
-  id         String    @id @default("")
-  slug       String
-  text       String
-  title      String    @db.VarChar(255)
-  created    DateTime  @default(now()) @map("created_at")
-  modified   DateTime? @updatedAt @map("updated_at")
-  categoryId String
-  category   Category  @relation(fields: [categoryId], references: [id])
-
-  @@unique([slug, categoryId])
-  @@index([slug])
-  @@index([created])
+// Enums from casandra-order
+enum UserAttributeUserType {
+  Admin
+  Provider
+  Organization
 }
 
-model Category {
-  id      String   @id @default("")
-  /// @zod.string.max(80)
-  name    String   @unique
-  /// @zod.string.max(255)
-  slug    String   @unique @db.VarChar(255)
-  created DateTime @default(now()) @map("created_at")
-  Post    Post[]
-
-  @@index([slug], map: "slugIndex")
+enum TestCatalogCollectionMethod {
+  KIT
+  PSC
 }
 
-model Tag {
-  id      String   @id @default("")
-  name    String   @unique
-  created DateTime @default(now()) @map("created_at")
+// Enhanced auth models for multi-tenant EHR support
+model UserIdentity {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // External identity triple for deterministic linking
+  provider     String        @db.VarChar(50) // "epic" | "cerner" | "okta" | etc.
+  issuer       String        @db.VarChar(500) // OIDC/SMART issuer URL
+  subject      String        @db.VarChar(255) // sub from ID token
+  fhirUser     String?       @db.VarChar(255) // optional: "Practitioner/123" or "Patient/456"
+  orgId        String?       @db.Uuid // link to Organization table
+  organization Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  @@unique([provider, issuer, subject], name: "provider_issuer_subject")
+  @@index([userId])
+  @@index([orgId])
+}
+
+model KeyPairRef {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kid       String   @unique @db.VarChar(100)
+  alg       String   @db.VarChar(20)
+  provider  String   @db.VarChar(50) // "aws-kms" | "gcp-kms" | "azure-keyvault" | "file"
+  locator   String   @db.VarChar(500) // e.g., arn:aws:kms:... or projects/.../locations/.../keyRings/.../cryptoKeys/..
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
 }
