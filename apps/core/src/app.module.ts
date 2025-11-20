@@ -15,7 +15,9 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe'
 import { AuthModule } from './modules/auth/auth.module'
 import { CategoryModule } from './modules/category/category.module'
+import { CatalogModule } from './modules/catalog/catalog.module'
 import { PostModule } from './modules/post/post.module'
+import { ReferenceDataModule } from './modules/reference-data/reference-data.module'
 import { UserModule } from './modules/user/user.module'
 import { CacheModule } from './processors/cache/cache.module'
 import { DatabaseModule } from './processors/database/database.module'
@@ -53,6 +55,8 @@ const envFilePath = process.env['DOTENV_CONFIG_PATH'] || '.env'
     PostModule,
     UserModule,
     CategoryModule,
+    CatalogModule,
+    ReferenceDataModule,
   ],
   controllers: [AppController],
   providers: [

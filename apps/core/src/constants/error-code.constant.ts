@@ -12,6 +12,14 @@ export enum ErrorCodeEnum {
 
   UserNotFound = 30000,
   UserExist = 30001,
+
+  LabNotFound = 40000,
+  BiomarkerNotFound = 40010,
+  IcdNotFound = 40020,
+  CptNotFound = 40030,
+  LoincNotFound = 40040,
+  TestNotFound = 41000,
+  TestVersionNotFound = 41010,
 }
 
 export const ErrorCode = Object.freeze<Record<ErrorCodeEnum, [string, string, number]>>({
@@ -37,4 +45,11 @@ export const ErrorCode = Object.freeze<Record<ErrorCodeEnum, [string, string, nu
   ],
   [ErrorCodeEnum.UserNotFound]: ['user not found', '用户不存在', 404],
   [ErrorCodeEnum.UserExist]: ['user already exist', '用户已存在', 400],
+  [ErrorCodeEnum.LabNotFound]: ['lab not found', '实验室不存在', 404],
+  [ErrorCodeEnum.BiomarkerNotFound]: ['biomarker not found', '生物标记物不存在', 404],
+  [ErrorCodeEnum.IcdNotFound]: ['icd not found', 'ICD 不存在', 404],
+  [ErrorCodeEnum.CptNotFound]: ['cpt not found', 'CPT 不存在', 404],
+  [ErrorCodeEnum.LoincNotFound]: ['loinc not found', 'LOINC 不存在', 404],
+  [ErrorCodeEnum.TestNotFound]: ['test not found', '检测不存在', 404],
+  [ErrorCodeEnum.TestVersionNotFound]: ['test version not found', '检测版本不存在', 404],
 })
