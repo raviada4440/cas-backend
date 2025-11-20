@@ -54,3 +54,5 @@ prisma/dist
 apps/core/dist
 
 consolidate/
+
+.corepack/
