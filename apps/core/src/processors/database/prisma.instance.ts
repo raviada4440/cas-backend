@@ -1,23 +1,43 @@
 import { isDev } from '@core/global/env.global'
 import { PaginationResult } from '@core/shared/interface/paginator.interface'
 import { Prisma, PrismaClient } from '@db/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { PoolConfig } from 'pg'
 import { Logger } from '@nestjs/common'
 
 import { createLoggingExtension, QueryInfo } from './middlewares/logger.middleware'
-import { snowflakeExtension } from './middlewares/snowflake.middleware'
 
 export const createExtendedPrismaClient = ({ url }: { url?: string } = {}) => {
+  if (!process.env.PRISMA_CLIENT_ENGINE_TYPE) {
+    process.env.PRISMA_CLIENT_ENGINE_TYPE = 'library'
+  }
+
+  const connectionString = url ?? process.env.DATABASE_URL
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is not defined')
+  }
+
+  const poolConfig: PoolConfig = { connectionString }
+  const adapter = new PrismaPg(poolConfig)
+
   const baseClient = new PrismaClient({
-    datasources: {
-      db: {
-        url,
+    adapter,
+    __internal: {
+      configOverride: (config) => {
+        const nextConfig = { ...config }
+        nextConfig.datasources = {
+          ...(config.datasources ?? {}),
+          db: {
+            ...(config.datasources?.db ?? {}),
+            url: connectionString,
+          },
+        }
+        return nextConfig
       },
     },
-  } as any)
-  const withSnowflake = baseClient.$extends(snowflakeExtension)
-
+  } as Prisma.PrismaClientOptions)
   const withLogging = isDev
-    ? withSnowflake.$extends(
+    ? baseClient.$extends(
         createLoggingExtension({
           logger: new Logger('Prisma'),
           logLevel: 'log', // default is `debug`
@@ -25,7 +45,7 @@ export const createExtendedPrismaClient = ({ url }: { url?: string } = {}) => {
             `[Query] ${query.model}.${query.action} - ${query.executionTime}ms`,
         }),
       )
-    : withSnowflake
+    : baseClient
 
   const extendedPrismaClient = withLogging.$extends({
     model: {

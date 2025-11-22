@@ -6,6 +6,12 @@ import { DatabaseService } from '@core/processors/database/database.service'
 import { resourceNotFoundWrapper } from '@core/shared/utils/prisma.util'
 import { Prisma, $Enums } from '@db/client'
 
+import {
+  CreateOperationalVariantInput,
+  UpsertCustomerVariantInput,
+  UpdateOperationalVariantInput,
+} from './variants.dto'
+
 const operationalVariantInclude = {
   version: {
     select: {
@@ -37,12 +43,6 @@ const operationalVariantInclude = {
     },
   },
 } as const
-
-import {
-  CreateOperationalVariantInput,
-  UpsertCustomerVariantInput,
-  UpdateOperationalVariantInput,
-} from './variants.dto'
 
 @Injectable()
 export class VariantsService {

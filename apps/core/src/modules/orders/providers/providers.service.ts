@@ -349,10 +349,10 @@ export class ProvidersService {
       const provider = await this.findProviderOrThrow(providerId, tx)
 
       const autoVerify = input.autoVerify ?? false
-    const email = input.email ?? provider.email ?? null
-    if (!email) {
-      throw new BizException(ErrorCodeEnum.UserNotFound)
-    }
+      const email = input.email ?? provider.email ?? null
+      if (!email) {
+        throw new BizException(ErrorCodeEnum.UserNotFound)
+      }
 
       const existingUserAttributeId = provider.userAttribute?.id ?? provider.userAttributeId ?? null
       if (existingUserAttributeId) {

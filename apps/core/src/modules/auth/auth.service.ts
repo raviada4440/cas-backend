@@ -40,7 +40,7 @@ export class AuthService {
     return token.startsWith('txo') && token.length - 3 === 40
   }
 
-  async verifyCustomToken(token: string) {
+  async verifyCustomToken(_token: string) {
     // API tokens are not modeled in the current schema; treat all custom tokens as invalid.
     return false
   }

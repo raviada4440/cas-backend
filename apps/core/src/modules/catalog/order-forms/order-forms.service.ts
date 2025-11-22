@@ -105,7 +105,8 @@ export class OrderFormsService {
         orderFormSectionId: input.orderFormSectionId,
         name: input.name,
         description: input.description ?? null,
-        status: (input.status ?? $Enums.OrderFormTemplateStatus.DRAFT) as $Enums.OrderFormTemplateStatus,
+        status: (input.status ??
+          $Enums.OrderFormTemplateStatus.DRAFT) as $Enums.OrderFormTemplateStatus,
         formSchema: input.formSchema ?? null,
         layoutSchema: input.layoutSchema ?? null,
         organizationId: input.organizationId ?? null,

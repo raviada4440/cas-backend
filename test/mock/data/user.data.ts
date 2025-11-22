@@ -1,10 +1,12 @@
+import { randomUUID } from 'node:crypto'
+
 import { UserRegisterInput } from '@core/modules/user/dtos/register.dto'
-import { snowflake } from '@core/processors/database/snowflake.util'
 
 export const generateMockUser = (): UserRegisterInput => {
+  const unique = randomUUID()
   return {
-    email: `mockuser_${snowflake.nextId()}@example.com`,
-    name: `Mock User ${snowflake.nextId()}`,
+    email: `mockuser_${unique}@example.com`,
+    name: `Mock User ${unique}`,
     image: 'https://example.com/avatar.jpg',
     password: 'mockPassword123',
   }

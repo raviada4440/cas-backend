@@ -4,12 +4,7 @@ import { BizException } from '@core/common/exceptions/biz.exception'
 import { ErrorCodeEnum } from '@core/constants/error-code.constant'
 import { DatabaseService } from '@core/processors/database/database.service'
 import { resourceNotFoundWrapper } from '@core/shared/utils/prisma.util'
-import {
-  Prisma,
-  $Enums,
-  TestCatalogVersion,
-  TestCatalogAuditLog,
-} from '@db/client'
+import { Prisma, $Enums, TestCatalogVersion, TestCatalogAuditLog } from '@db/client'
 
 import {
   CloneVersionInput,
