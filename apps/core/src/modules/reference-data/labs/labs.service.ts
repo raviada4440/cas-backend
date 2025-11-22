@@ -100,12 +100,16 @@ export class LabsService {
   }
 
   private prepareMutationData(input: CreateLabInput | UpdateLabInput) {
-    return Object.fromEntries(
-      Object.entries(input).filter(([, value]) => value !== undefined),
-    )
+    return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined))
   }
 
-  private mapToSummary = (lab: { id: string; labName: string | null; labCode: string | null; city: string | null; state: string | null }): LabSummary => ({
+  private mapToSummary = (lab: {
+    id: string
+    labName: string | null
+    labCode: string | null
+    city: string | null
+    state: string | null
+  }): LabSummary => ({
     id: lab.id,
     labName: lab.labName ?? null,
     labCode: lab.labCode ?? null,
@@ -137,4 +141,3 @@ export class LabsService {
     }
   }
 }
-

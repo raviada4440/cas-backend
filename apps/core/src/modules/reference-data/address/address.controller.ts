@@ -3,11 +3,7 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 
-import {
-  AddressAutocompleteDto,
-  AddressPlaceDetailsDto,
-  AddressValidationDto,
-} from './address.dto'
+import { AddressAutocompleteDto, AddressPlaceDetailsDto, AddressValidationDto } from './address.dto'
 import { AddressService } from './address.service'
 
 @ApiTags('Address')
@@ -34,4 +30,3 @@ export class AddressController {
     return this.addressService.validate(body)
   }
 }
-

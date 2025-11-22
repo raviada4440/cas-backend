@@ -68,4 +68,3 @@ export type LabDetail = z.infer<typeof labDetailSchema>
 
 export const LabDetailSchema = labDetailSchema
 export const LabSummarySchema = labSummarySchema
-

@@ -22,6 +22,18 @@
       ],
       "@core/*": [
         "./src/*"
+      ],
+      "@shared/contracts": [
+        "../../packages/shared-contracts/src"
+      ],
+      "@shared/contracts/*": [
+        "../../packages/shared-contracts/src/*"
+      ],
+      "@db/client": [
+        "../../prisma/client"
+      ],
+      "@db/client/zod": [
+        "../../prisma/dist/zod"
       ]
     }
   },

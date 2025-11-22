@@ -26,6 +26,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   public get prisma() {
-    return this.client
+    return this.client as any
   }
 }

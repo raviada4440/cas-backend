@@ -11,4 +11,3 @@ export const CptDetailSelect = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.CptCodeSelect
-

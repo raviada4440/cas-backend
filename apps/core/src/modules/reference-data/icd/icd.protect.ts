@@ -15,4 +15,3 @@ export const IcdDetailSelect = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.IcdSelect
-

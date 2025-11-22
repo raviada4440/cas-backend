@@ -24,4 +24,3 @@ const emailValidationResponseSchema = z.object({
 
 export class EmailValidationDto extends createZodDto(emailValidationInputSchema) {}
 export type EmailValidationResult = z.infer<typeof emailValidationResponseSchema>
-

@@ -6,7 +6,7 @@ const phoneValidationInputSchema = z.object({
     .string()
     .min(6, 'Phone number is too short')
     .max(20, 'Phone number is too long')
-    .regex(/[0-9()+\-\.\s]+/, 'Phone number contains invalid characters'),
+    .regex(/[0-9()+\-.\s]+/, 'Phone number contains invalid characters'),
 })
 
 const phoneValidationResultSchema = z.object({
@@ -26,4 +26,3 @@ const phoneValidationResponseSchema = z.object({
 
 export class PhoneValidationDto extends createZodDto(phoneValidationInputSchema) {}
 export type PhoneValidationResult = z.infer<typeof phoneValidationResponseSchema>
-

@@ -12,4 +12,3 @@ export const BiomarkerDetailSelect = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.BiomarkerSelect
-

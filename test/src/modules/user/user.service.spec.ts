@@ -15,12 +15,12 @@ describe('/modules/user/user.service', () => {
 
     const user = await prisma.user.findUnique({
       where: {
-        username: userModel.username,
+        email: userModel.email,
       },
     })
 
     expect(user).toBeDefined()
-    expect(user?.username).toBe(userModel.username)
+    expect(user?.email).toBe(userModel.email)
   })
 
   it('should throw if existed', async () => {

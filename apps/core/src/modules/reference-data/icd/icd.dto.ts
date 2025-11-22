@@ -78,4 +78,3 @@ export type IcdDetail = z.infer<typeof icdDetailSchema>
 
 export const IcdSummarySchema = icdSummarySchema
 export const IcdDetailSchema = icdDetailSchema
-

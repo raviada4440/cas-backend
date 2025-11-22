@@ -14,11 +14,11 @@ import { JSONTransformerInterceptor } from './common/interceptors/json-transform
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe'
 import { AuthModule } from './modules/auth/auth.module'
-import { CategoryModule } from './modules/category/category.module'
 import { CatalogModule } from './modules/catalog/catalog.module'
-import { PostModule } from './modules/post/post.module'
 import { ReferenceDataModule } from './modules/reference-data/reference-data.module'
 import { UserModule } from './modules/user/user.module'
+import { OrdersModule } from './modules/orders/orders.module'
+import { AdminModule } from './modules/admin/admin.module'
 import { CacheModule } from './processors/cache/cache.module'
 import { DatabaseModule } from './processors/database/database.module'
 import { GatewayModule } from './processors/gateway/gateway.module'
@@ -52,11 +52,11 @@ const envFilePath = process.env['DOTENV_CONFIG_PATH'] || '.env'
 
     // BIZ
     AuthModule,
-    PostModule,
     UserModule,
-    CategoryModule,
     CatalogModule,
     ReferenceDataModule,
+    OrdersModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

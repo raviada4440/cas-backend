@@ -27,6 +27,8 @@
       "@core/*": [
         "./apps/core/src/*"
       ],
+      "@shared/contracts": ["./packages/shared-contracts/src"],
+      "@shared/contracts/*": ["./packages/shared-contracts/src/*"],
       "@test": [
         "./test"
       ],
@@ -37,7 +39,7 @@
         "./prisma/client"
       ],
       "@db/client/zod": [
-        "./prisma/zod"
+        "./prisma/dist/zod"
       ]
     },
   },

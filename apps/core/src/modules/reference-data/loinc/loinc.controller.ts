@@ -42,4 +42,3 @@ export class LoincController {
     return this.loincService.delete(params.loincNum)
   }
 }
-

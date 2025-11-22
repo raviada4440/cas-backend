@@ -3,12 +3,7 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 
-import {
-  CreateIcdDto,
-  IcdIdParamDto,
-  IcdSearchQueryDto,
-  UpdateIcdDto,
-} from './icd.dto'
+import { CreateIcdDto, IcdIdParamDto, IcdSearchQueryDto, UpdateIcdDto } from './icd.dto'
 import { IcdService } from './icd.service'
 
 @ApiTags('ICD Codes')
@@ -47,4 +42,3 @@ export class IcdController {
     return this.icdService.delete(params.icdId)
   }
 }
-

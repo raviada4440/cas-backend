@@ -1,14 +1,14 @@
 import { AuthService } from '@core/modules/auth/auth.service'
 import { defineProvider } from '@test/helper/defineProvider'
 
-type ValidateReturn = Awaited<ReturnType<AuthService['validateUsernameAndPassword']>>
+type ValidateReturn = Awaited<ReturnType<AuthService['validateEmailAndPassword']>>
 
 export const authProvider = defineProvider({
   useValue: {
     async signToken() {
       return 'mock-token'
     },
-    async validateUsernameAndPassword(): Promise<ValidateReturn> {
+    async validateEmailAndPassword(): Promise<ValidateReturn> {
       return {} as ValidateReturn
     },
     isCustomToken() {

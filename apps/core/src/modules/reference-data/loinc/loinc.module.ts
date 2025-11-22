@@ -9,4 +9,3 @@ import { LoincService } from './loinc.service'
   exports: [LoincService],
 })
 export class LoincModule {}
-

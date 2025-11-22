@@ -19,4 +19,3 @@ export const LabDetailSelect = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.LabSelect
-

@@ -24,4 +24,3 @@ export class PhoneService {
     return DEFAULT_RESPONSE
   }
 }
-

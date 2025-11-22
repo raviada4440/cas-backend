@@ -19,4 +19,3 @@ export const LoincDetailSelect = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.LoincSelect
-

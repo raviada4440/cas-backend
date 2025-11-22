@@ -18,4 +18,3 @@ export class PhoneController {
     return this.phoneService.validate(body)
   }
 }
-

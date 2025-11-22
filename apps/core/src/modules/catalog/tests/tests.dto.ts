@@ -1,42 +1,80 @@
 import { createZodDto } from 'nestjs-zod/dto'
 import { z } from 'zod'
 
-const searchQuerySchema = z.object({
-  cursor: z.string().uuid().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  q: z.string().optional(),
-  labId: z.string().uuid().optional(),
-})
+import {
+  CloneVersionInput as CloneVersionSchema,
+  CreateDraftInput as CreateDraftVersionSchema,
+  CreateTestInput as CreateTestInputSchema,
+  ListTestsQuery as ListTestsQuerySchema,
+  PublishVersionInput as PublishVersionSchema,
+  RetireVersionInput as RetireVersionSchema,
+  SetDefaultVersionInput as SetDefaultVersionSchema,
+  TestAuditQuery as TestAuditQuerySchema,
+  TestSearchQuery as TestSearchQuerySchema,
+  UpdateTestInput as UpdateTestInputSchema,
+  UpdateVersionBiomarkersInput as UpdateVersionBiomarkersSchema,
+  UpdateVersionCptCodesInput as UpdateVersionCptCodesSchema,
+  UpdateVersionLoincCodesInput as UpdateVersionLoincCodesSchema,
+  UpdateVersionSpecimensInput as UpdateVersionSpecimensSchema,
+  VersionDiffQuery as VersionDiffQuerySchema,
+  VersionTypeQuery as VersionTypeQuerySchema,
+  VersionUpdateInput as VersionUpdateSchema,
+  AuditLog as AuditLogType,
+  AuditLogList as AuditLogListType,
+  CloneVersionInput as CloneVersionInputType,
+  CreateDraftInput as CreateDraftVersionInputType,
+  CreateTestInput as CreateTestInputType,
+  ListTestsQuery as ListTestsQueryType,
+  PagedTestSummary as TestListResponseType,
+  PublishVersionInput as PublishVersionInputType,
+  RetireVersionInput as RetireVersionInputType,
+  SetDefaultVersionInput as SetDefaultVersionInputType,
+  TestAuditQuery as TestAuditQueryType,
+  TestDetail as TestDetailType,
+  TestSearchQuery as TestSearchQueryType,
+  TestSummary as TestSummaryType,
+  UpdateTestInput as UpdateTestInputType,
+  UpdateVersionBiomarkersInput as UpdateVersionBiomarkersInputType,
+  UpdateVersionCptCodesInput as UpdateVersionCptCodesInputType,
+  UpdateVersionLoincCodesInput as UpdateVersionLoincCodesInputType,
+  UpdateVersionSpecimensInput as UpdateVersionSpecimensInputType,
+  VersionDiffQuery as VersionDiffQueryType,
+  VersionTypeQuery as VersionTypeQueryType,
+  VersionUpdateInput as VersionUpdateInputType,
+} from '@shared/contracts/catalog'
+import {
+  LabTestLookupResponse as LabTestLookupResponseSchema,
+  LabTestLookupResponse as LabTestLookupResponseType,
+} from '@shared/contracts/tests'
 
-const createTestSchema = z.object({
-  testName: z.string().min(1),
-  labId: z.string().uuid().optional(),
-  category: z.string().optional(),
-  subCategory: z.string().optional(),
-})
-
-const updateTestSchema = z.object({
-  testName: z.string().min(1).optional(),
-  labId: z.string().uuid().optional(),
-  status: z.string().optional(),
-  category: z.string().optional(),
-  subCategory: z.string().optional(),
-})
-
-export class ListTestsQueryDto extends createZodDto(searchQuerySchema) {}
-export type ListTestsQuery = z.infer<typeof searchQuerySchema>
-
-export class CreateTestDto extends createZodDto(createTestSchema) {}
-export type CreateTestInput = z.infer<typeof createTestSchema>
-
-export class UpdateTestDto extends createZodDto(updateTestSchema) {}
-export type UpdateTestInput = z.infer<typeof updateTestSchema>
-
-export class TestIdParamDto extends createZodDto(
-  z.object({
+const UuidParamSchema = z
+  .object({
     testId: z.string().uuid(),
-  }),
-) {}
+  })
+  .strict()
+
+const VersionIdSchema = z
+  .object({
+    versionId: z.string().uuid(),
+  })
+  .strict()
+
+export class ListTestsQueryDto extends createZodDto(ListTestsQuerySchema) {}
+export type ListTestsQuery = ListTestsQueryType
+
+export class TestSearchQueryDto extends createZodDto(TestSearchQuerySchema) {}
+export type TestSearchQuery = TestSearchQueryType
+
+export class LabTestLookupResponseDto extends createZodDto(LabTestLookupResponseSchema) {}
+export type LabTestLookupResponse = LabTestLookupResponseType
+
+export class CreateTestDto extends createZodDto(CreateTestInputSchema) {}
+export type CreateTestInput = CreateTestInputType
+
+export class UpdateTestDto extends createZodDto(UpdateTestInputSchema) {}
+export type UpdateTestInput = UpdateTestInputType
+
+export class TestIdParamDto extends createZodDto(UuidParamSchema) {}
 
 export class TestVersionQueryDto extends createZodDto(
   z.object({
@@ -44,96 +82,51 @@ export class TestVersionQueryDto extends createZodDto(
   }),
 ) {}
 
-export type TestSummary = {
-  testId: string
-  testName: string | null
-  labName: string | null
-  defaultVersion: number | null
-  status: string
-  casandraTestId?: string | null
-  versionsCount?: number
-}
+export class CreateDraftVersionDto extends createZodDto(CreateDraftVersionSchema) {}
+export type CreateDraftVersionInput = CreateDraftVersionInputType
 
-export type TestListResponse = {
-  items: TestSummary[]
-  nextCursor: string | null
-}
+export class CloneVersionDto extends createZodDto(CloneVersionSchema) {}
+export type CloneVersionInput = CloneVersionInputType
 
-export type TestVersionDetail = {
-  id: string
-  versionNumber: number
-  status: string
-  effectiveDate: string | null
-  retiredDate: string | null
-  changeReason: string | null
-  changeNotes: string | null
-  href: string | null
-  testName: string | null
-  alternativeName: string | null
-  alternativeName1: string | null
-  alternativeName2: string | null
-  alternativeName3: string | null
-  alternativeName4: string | null
-  alternativeName5: string | null
-  testIncludes: string | null
-  methodology: string | null
-  testDescription: string | null
-  diseases: string | null
-  probes: string | null
-  clinicalSignificance: string | null
-  diseaseIndications: string | null
-  testUsage: string | null
-  testLimitations: string | null
-  isNewYorkApproved: boolean | null
-  isFDAApproved: boolean | null
-  levelOfService: string | null
-  turnAroundTime: string | null
-  referenceRanges: string | null
-  setupSchedule: string | null
-  testCategory: string | null
-  testSubCategory: string | null
-  specialNotes: string | null
-  patientResources: string | null
-  providerResources: string | null
-  patientResourcesUrl: string | null
-  providerResourcesUrl: string | null
-  additionalNotes: string | null
-  createdBy: string | null
-  createdAt: string
-  updatedAt: string
-  specimens: Array<{
-    id: string
-    displayName: string | null
-    isPrimary: boolean
-    specimenType: string | null
-    specimenRequirements: string | null
-    volume: string | null
-    minimumVolume: string | null
-    container: string | null
-    specialInstructions: string | null
-    alternateContainers: string | null
-    preferredVolume: string | null
-    collectionMethod: string | null
-    collection: string | null
-    stabilityRequirements: string | null
-    storageTransportation: string | null
-    patientPreparation: string | null
-    causesForRejection: string | null
-    processingNotes: string | null
-    isRequired?: boolean
-    displayOrder: number
-  }>
-  cptCodes: Array<{ code: string; modifier: string | null }>
-  orderLoincs: Array<{ loincCode: string }>
-  resultLoincs: Array<{ loincCode: string }>
-  biomarkers: Array<{ id: string; hgncId: string; transcriptReference: string | null }>
-}
+export class SetDefaultVersionDto extends createZodDto(SetDefaultVersionSchema) {}
+export type SetDefaultVersionInput = SetDefaultVersionInputType
 
-export type TestDetail = {
-  testId: string
-  testName: string | null
-  labId: string | null
-  status: string
-  version: TestVersionDetail
-}
+export class PublishVersionDto extends createZodDto(PublishVersionSchema) {}
+export type PublishVersionInput = PublishVersionInputType
 
+export class RetireVersionDto extends createZodDto(RetireVersionSchema) {}
+export type RetireVersionInput = RetireVersionInputType
+
+export class VersionIdParamDto extends createZodDto(VersionIdSchema) {}
+
+export class VersionDiffQueryDto extends createZodDto(VersionDiffQuerySchema) {}
+export type VersionDiffQuery = VersionDiffQueryType
+
+export class VersionTypeQueryDto extends createZodDto(VersionTypeQuerySchema) {}
+export type VersionTypeQuery = VersionTypeQueryType
+
+export class VersionUpdateDto extends createZodDto(VersionUpdateSchema) {}
+export type VersionUpdateInput = VersionUpdateInputType
+
+export class UpdateVersionCptCodesDto extends createZodDto(UpdateVersionCptCodesSchema) {}
+export type UpdateVersionCptCodesInput = UpdateVersionCptCodesInputType
+
+export class UpdateVersionLoincCodesDto extends createZodDto(UpdateVersionLoincCodesSchema) {}
+export type UpdateVersionLoincCodesInput = UpdateVersionLoincCodesInputType
+
+export class UpdateVersionBiomarkersDto extends createZodDto(UpdateVersionBiomarkersSchema) {}
+export type UpdateVersionBiomarkersInput = UpdateVersionBiomarkersInputType
+
+export class UpdateVersionSpecimensDto extends createZodDto(UpdateVersionSpecimensSchema) {}
+export type UpdateVersionSpecimensInput = UpdateVersionSpecimensInputType
+
+export class TestAuditQueryDto extends createZodDto(TestAuditQuerySchema) {}
+export type TestAuditQuery = TestAuditQueryType
+
+export type AuditLog = AuditLogType
+export type AuditLogList = AuditLogListType
+
+export type TestSummary = TestSummaryType
+export type TestListResponse = TestListResponseType
+export type TestDetail = TestDetailType
+export type TestVersionDetail = TestDetailType['version']

@@ -1,7 +1,4 @@
 import { compareSync } from 'bcrypt'
-import dayjs from 'dayjs'
-import { isDate } from 'lodash'
-
 import { BizException } from '@core/common/exceptions/biz.exception'
 import { ErrorCodeEnum } from '@core/constants/error-code.constant'
 import { DatabaseService } from '@core/processors/database/database.service'
@@ -20,16 +17,16 @@ export class AuthService {
     return this.jwtService
   }
 
-  async validateUsernameAndPassword(username: string, password: string) {
+  async validateEmailAndPassword(email: string, password: string) {
     const user = await this.db.prisma.user.findUnique({
       where: {
-        username,
+        email,
       },
     })
 
-    if (!user || !compareSync(password, user.password)) {
+    if (!user?.password || !compareSync(password, user.password)) {
       await sleep(3000)
-      throw new BizException(ErrorCodeEnum.AuthFail)
+      throw new BizException(ErrorCodeEnum.UserNotFound)
     }
 
     return user
@@ -44,19 +41,7 @@ export class AuthService {
   }
 
   async verifyCustomToken(token: string) {
-    const apiTokenRecord = await this.db.prisma.apiToken.findFirst({
-      where: { token },
-    })
-
-    if (!apiTokenRecord) {
-      return false
-    }
-
-    if (typeof apiTokenRecord.expired === 'undefined') {
-      return true
-    } else if (isDate(apiTokenRecord.expired)) {
-      const isExpired = dayjs(new Date()).isAfter(apiTokenRecord.expired)
-      return isExpired ? false : true
-    }
+    // API tokens are not modeled in the current schema; treat all custom tokens as invalid.
+    return false
   }
 }

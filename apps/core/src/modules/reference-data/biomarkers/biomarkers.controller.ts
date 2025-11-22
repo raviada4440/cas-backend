@@ -48,4 +48,3 @@ export class BiomarkersController {
     return this.biomarkersService.delete(params.hgncId)
   }
 }
-

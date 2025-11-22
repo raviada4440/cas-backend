@@ -9,4 +9,3 @@ import { CptService } from './cpt.service'
   exports: [CptService],
 })
 export class CptModule {}
-

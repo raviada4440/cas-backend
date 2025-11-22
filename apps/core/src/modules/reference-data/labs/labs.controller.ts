@@ -42,4 +42,3 @@ export class LabsController {
     return this.labsService.delete(params.labId)
   }
 }
-

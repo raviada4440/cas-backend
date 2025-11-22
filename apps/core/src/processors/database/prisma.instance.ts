@@ -13,7 +13,7 @@ export const createExtendedPrismaClient = ({ url }: { url?: string } = {}) => {
         url,
       },
     },
-  })
+  } as any)
   const withSnowflake = baseClient.$extends(snowflakeExtension)
 
   const withLogging = isDev
@@ -55,7 +55,7 @@ export const createExtendedPrismaClient = ({ url }: { url?: string } = {}) => {
 
           const { page, size: perPage } = options
           const skip = page > 0 ? perPage * (page - 1) : 0
-          const normalizedArgs = x as { where?: Prisma.PostWhereInput }
+          const normalizedArgs = x as { where?: Record<string, unknown> }
           const countArgs =
             typeof normalizedArgs.where !== 'undefined' ? { where: normalizedArgs.where } : {}
           const [total, data] = await Promise.all([

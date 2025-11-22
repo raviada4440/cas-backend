@@ -7,9 +7,6 @@ export enum ErrorCodeEnum {
   CategoryCannotDeleted = 10003,
   CategoryAlreadyExists = 10004,
 
-  AuthFailUserNotExist = 20000,
-  AuthFail = 20001,
-
   UserNotFound = 30000,
   UserExist = 30001,
 
@@ -20,6 +17,14 @@ export enum ErrorCodeEnum {
   LoincNotFound = 40040,
   TestNotFound = 41000,
   TestVersionNotFound = 41010,
+  TestConfigurationNotFound = 41020,
+  OrderFormSectionNotFound = 41100,
+  OrderFormTemplateNotFound = 41110,
+  LabOrderNotFound = 42000,
+  PatientNotFound = 42010,
+  ProviderNotFound = 42020,
+  OrganizationNotFound = 42030,
+  OrganizationEndpointNotFound = 42040,
 }
 
 export const ErrorCode = Object.freeze<Record<ErrorCodeEnum, [string, string, number]>>({
@@ -33,16 +38,6 @@ export const ErrorCode = Object.freeze<Record<ErrorCodeEnum, [string, string, nu
     400,
   ],
   [ErrorCodeEnum.CategoryAlreadyExists]: ['category already exists', '分类已存在', 400],
-  [ErrorCodeEnum.AuthFailUserNotExist]: [
-    'auth failed, user not exist',
-    '认证失败，用户不存在',
-    400,
-  ],
-  [ErrorCodeEnum.AuthFail]: [
-    'auth failed, please check your username and password',
-    '认证失败，请检查用户名和密码',
-    400,
-  ],
   [ErrorCodeEnum.UserNotFound]: ['user not found', '用户不存在', 404],
   [ErrorCodeEnum.UserExist]: ['user already exist', '用户已存在', 400],
   [ErrorCodeEnum.LabNotFound]: ['lab not found', '实验室不存在', 404],
@@ -52,4 +47,20 @@ export const ErrorCode = Object.freeze<Record<ErrorCodeEnum, [string, string, nu
   [ErrorCodeEnum.LoincNotFound]: ['loinc not found', 'LOINC 不存在', 404],
   [ErrorCodeEnum.TestNotFound]: ['test not found', '检测不存在', 404],
   [ErrorCodeEnum.TestVersionNotFound]: ['test version not found', '检测版本不存在', 404],
+  [ErrorCodeEnum.TestConfigurationNotFound]: ['test configuration not found', '配置不存在', 404],
+  [ErrorCodeEnum.OrderFormSectionNotFound]: ['order form section not found', '表单分区不存在', 404],
+  [ErrorCodeEnum.OrderFormTemplateNotFound]: [
+    'order form template not found',
+    '表单模板不存在',
+    404,
+  ],
+  [ErrorCodeEnum.LabOrderNotFound]: ['lab order not found', '检测订单不存在', 404],
+  [ErrorCodeEnum.PatientNotFound]: ['patient not found', '患者不存在', 404],
+  [ErrorCodeEnum.ProviderNotFound]: ['provider not found', '医生不存在', 404],
+  [ErrorCodeEnum.OrganizationNotFound]: ['organization not found', '机构不存在', 404],
+  [ErrorCodeEnum.OrganizationEndpointNotFound]: [
+    'organization endpoint not found',
+    '机构接口不存在',
+    404,
+  ],
 })

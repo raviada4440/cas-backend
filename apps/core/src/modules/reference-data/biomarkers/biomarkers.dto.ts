@@ -71,4 +71,3 @@ export type BiomarkerDetail = z.infer<typeof biomarkerDetailSchema>
 
 export const BiomarkerSummarySchema = biomarkerSummarySchema
 export const BiomarkerDetailSchema = biomarkerDetailSchema
-

@@ -88,4 +88,3 @@ export type LoincDetail = z.infer<typeof loincDetailSchema>
 
 export const LoincSummarySchema = loincSummarySchema
 export const LoincDetailSchema = loincDetailSchema
-

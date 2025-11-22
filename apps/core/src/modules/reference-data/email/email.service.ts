@@ -26,4 +26,3 @@ export class EmailService {
     return DEFAULT_RESPONSE
   }
 }
-

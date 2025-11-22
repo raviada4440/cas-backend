@@ -9,4 +9,3 @@ import { LabsService } from './labs.service'
   exports: [LabsService],
 })
 export class LabsModule {}
-

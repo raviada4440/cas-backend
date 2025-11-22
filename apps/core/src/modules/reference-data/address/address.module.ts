@@ -9,4 +9,3 @@ import { AddressService } from './address.service'
   exports: [AddressService],
 })
 export class AddressModule {}
-

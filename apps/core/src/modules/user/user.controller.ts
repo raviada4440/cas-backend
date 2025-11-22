@@ -27,11 +27,11 @@ export class UserController {
   })
   @HttpCode(200)
   @HTTPDecorators.ProtectKeys(UserSchemaSerializeProjection.keys)
-  @ApiOperation({ summary: 'Authenticate with username and password' })
+  @ApiOperation({ summary: 'Authenticate with email and password' })
   @ApiOkResponse({ description: 'Returns user info with JWT token' })
   async login(@Body() body: UserLoginDto) {
-    const { username, password } = body
-    const user = await this.authService.validateUsernameAndPassword(username, password)
+    const { email, password } = body
+    const user = await this.authService.validateEmailAndPassword(email, password)
     const jwt = await this.authService.signToken(user.id)
 
     return {

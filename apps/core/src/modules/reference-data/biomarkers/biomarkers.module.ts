@@ -9,4 +9,3 @@ import { BiomarkersService } from './biomarkers.service'
   exports: [BiomarkersService],
 })
 export class BiomarkersModule {}
-

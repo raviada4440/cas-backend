@@ -6,7 +6,7 @@ import { UserModule } from '@core/modules/user/user.module'
 import { UserSchemaSerializeProjection } from '@core/modules/user/user.protect'
 import { createE2EApp } from '@test/helper/create-e2e-app'
 import { prisma } from '@test/lib/prisma'
-import { mockUserInputData1 } from '@test/mock/data/user.data'
+import { generateMockUser, mockUserInputData1 } from '@test/mock/data/user.data'
 
 describe('ROUTE /user', () => {
   const proxy = createE2EApp({
@@ -30,9 +30,10 @@ describe('ROUTE /user', () => {
 
   it('POST /login', async () => {
     const password = 'password'
-    const { username } = await prisma.user.create({
+    const loginUser = generateMockUser()
+    const { email } = await prisma.user.create({
       data: {
-        ...mockUserInputData1,
+        ...loginUser,
         password: hashSync(password, 8),
       },
     })
@@ -41,7 +42,7 @@ describe('ROUTE /user', () => {
       method: 'POST',
       url: '/user/login',
       body: {
-        username,
+        email,
         password,
       },
     })

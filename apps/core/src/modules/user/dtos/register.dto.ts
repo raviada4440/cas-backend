@@ -1,12 +1,17 @@
 import { createZodDto } from 'nestjs-zod'
 import { z } from 'zod'
 
-import { UserSchema } from '@db/client/zod'
-
-import { UserSchemaProjection } from '../user.protect'
-
-export const UserRegisterSchema = UserSchema.omit(UserSchemaProjection).extend({
-  socialIds: z.record(z.string(), z.string()).optional(),
+export const UserRegisterSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  name: z
+    .string()
+    .max(255)
+    .optional(),
+  image: z
+    .string()
+    .url()
+    .optional(),
 })
 
 export class UserRegisterDto extends createZodDto(UserRegisterSchema) {}

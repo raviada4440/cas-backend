@@ -3,17 +3,10 @@ import { snowflake } from '@core/processors/database/snowflake.util'
 
 export const generateMockUser = (): UserRegisterInput => {
   return {
-    username: `mockUser_${snowflake.nextId()}`,
-    name: `Mock User${snowflake.nextId()}`,
-    introduce: 'Hello, I am a mock user for testing.',
-    avatar: 'https://example.com/avatar.jpg',
+    email: `mockuser_${snowflake.nextId()}@example.com`,
+    name: `Mock User ${snowflake.nextId()}`,
+    image: 'https://example.com/avatar.jpg',
     password: 'mockPassword123',
-    mail: 'mockuser@example.com',
-    url: 'https://example.com/mockuser',
-    socialIds: {
-      facebook: 'mockFbId',
-      twitter: 'mockTwitterId',
-    },
   }
 }
 

@@ -64,4 +64,3 @@ export type CptDetail = z.infer<typeof cptDetailSchema>
 
 export const CptSummarySchema = cptSummarySchema
 export const CptDetailSchema = cptDetailSchema
-

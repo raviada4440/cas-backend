@@ -42,4 +42,3 @@ export class CptController {
     return this.cptService.delete(params.code)
   }
 }
-

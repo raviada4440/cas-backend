@@ -9,4 +9,3 @@ import { IcdService } from './icd.service'
   exports: [IcdService],
 })
 export class IcdModule {}
-

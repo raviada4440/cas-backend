@@ -32,12 +32,16 @@ export class AddressService {
   private readonly logger = new Logger(AddressService.name)
 
   async autocomplete(_: AddressAutocompleteDto): Promise<AddressAutocompleteResult> {
-    this.logger.warn('Address autocomplete provider not yet configured, returning empty suggestions.')
+    this.logger.warn(
+      'Address autocomplete provider not yet configured, returning empty suggestions.',
+    )
     return EMPTY_AUTOCOMPLETE
   }
 
   async resolvePlace(_: AddressPlaceDetailsDto): Promise<AddressPlaceDetailsResult> {
-    this.logger.warn('Address place resolution provider not yet configured, returning placeholder address.')
+    this.logger.warn(
+      'Address place resolution provider not yet configured, returning placeholder address.',
+    )
     return EMPTY_PLACE_DETAILS
   }
 
@@ -46,4 +50,3 @@ export class AddressService {
     return EMPTY_VALIDATION
   }
 }
-
