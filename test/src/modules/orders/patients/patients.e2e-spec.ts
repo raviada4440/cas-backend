@@ -147,5 +147,3 @@ describe('ROUTE /patients', () => {
     expect(stored).toBeNull()
   })
 })
-
-

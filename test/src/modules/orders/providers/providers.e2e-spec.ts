@@ -326,5 +326,3 @@ describe('ROUTE /providers', () => {
     expect(body.autoVerified).toBe(false)
   })
 })
-
-

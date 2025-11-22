@@ -333,9 +333,9 @@ describe('ROUTE /laborders', () => {
 
     expect(response.statusCode).toBe(200)
     const body = camelize(response.json())
-    expect(body.labOrderStatuses.some((status: { status: string }) => status.status === 'SUBMITTED')).toBe(
-      true,
-    )
+    expect(
+      body.labOrderStatuses.some((status: { status: string }) => status.status === 'SUBMITTED'),
+    ).toBe(true)
   })
 
   it('DELETE /laborders/:labOrderId should remove the lab order', async () => {
@@ -383,5 +383,3 @@ describe('ROUTE /laborders', () => {
     )
   })
 })
-
-

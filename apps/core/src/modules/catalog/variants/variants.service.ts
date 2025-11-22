@@ -20,14 +20,6 @@ const operationalVariantInclude = {
       turnAroundTime: true,
     },
   },
-  configuration: {
-    select: {
-      id: true,
-      configurationName: true,
-      customerId: true,
-      organizationId: true,
-    },
-  },
   cptOverrides: true,
   orderLoincOverrides: true,
   resultLoincOverrides: true,

@@ -32,6 +32,11 @@ const TABLES = [
   '"TestCatalogVersion"',
   '"TestCatalogConfiguration"',
   '"TestCatalogAuditLog"',
+  '"TestConfigBiomarker"',
+  '"TestConfigSpecimenManifest"',
+  '"TestConfigResultLoinc"',
+  '"TestConfigOrderLoinc"',
+  '"TestConfigCptCode"',
   '"TestCatalog"',
   '"User"',
 ]

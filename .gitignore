@@ -56,3 +56,5 @@ apps/core/dist
 consolidate/
 
 .corepack/
+
+prisma/generated/
