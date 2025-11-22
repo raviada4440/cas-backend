@@ -1,0 +1,22 @@
+import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
+import { ExternalIdentifierWhereUniqueInputSchema } from '../inputTypeSchemas/ExternalIdentifierWhereUniqueInputSchema'
+// Select schema needs to be in file to prevent circular imports
+//------------------------------------------------------
+
+export const ExternalIdentifierSelectSchema: z.ZodType<Prisma.ExternalIdentifierSelect> = z.object({
+  id: z.boolean().optional(),
+  resourceType: z.boolean().optional(),
+  resourceId: z.boolean().optional(),
+  system: z.boolean().optional(),
+  value: z.boolean().optional(),
+  createdAt: z.boolean().optional(),
+  updatedAt: z.boolean().optional(),
+}).strict()
+
+export const ExternalIdentifierDeleteArgsSchema: z.ZodType<Prisma.ExternalIdentifierDeleteArgs> = z.object({
+  select: ExternalIdentifierSelectSchema.optional(),
+  where: ExternalIdentifierWhereUniqueInputSchema, 
+}).strict();
+
+export default ExternalIdentifierDeleteArgsSchema;

@@ -1,0 +1,64 @@
+import { Prisma } from '@prisma/client';
+import Decimal from 'decimal.js';
+import { z } from 'zod';
+import { UuidFilterSchema } from './UuidFilterSchema';
+import { UuidNullableFilterSchema } from './UuidNullableFilterSchema';
+import { StringFilterSchema } from './StringFilterSchema';
+import { IntFilterSchema } from './IntFilterSchema';
+import { EnumTestCatalogConfigurationTypeFilterSchema } from './EnumTestCatalogConfigurationTypeFilterSchema';
+import { TestCatalogConfigurationTypeSchema } from './TestCatalogConfigurationTypeSchema';
+import { EnumVariantDimensionFilterSchema } from './EnumVariantDimensionFilterSchema';
+import { VariantDimensionSchema } from './VariantDimensionSchema';
+import { StringNullableFilterSchema } from './StringNullableFilterSchema';
+import { EnumTestCatalogConfigurationStatusFilterSchema } from './EnumTestCatalogConfigurationStatusFilterSchema';
+import { TestCatalogConfigurationStatusSchema } from './TestCatalogConfigurationStatusSchema';
+import { BoolFilterSchema } from './BoolFilterSchema';
+import { DecimalNullableFilterSchema } from './DecimalNullableFilterSchema';
+import { isValidDecimalInput } from './isValidDecimalInput';
+import { DecimalJsLikeSchema } from './DecimalJsLikeSchema';
+import { DateTimeNullableFilterSchema } from './DateTimeNullableFilterSchema';
+import { StringNullableListFilterSchema } from './StringNullableListFilterSchema';
+import { DateTimeFilterSchema } from './DateTimeFilterSchema';
+
+export const TestCatalogConfigurationScalarWhereInputSchema: z.ZodType<Prisma.TestCatalogConfigurationScalarWhereInput> = z.strictObject({
+  AND: z.union([ z.lazy(() => TestCatalogConfigurationScalarWhereInputSchema), z.lazy(() => TestCatalogConfigurationScalarWhereInputSchema).array() ]).optional(),
+  OR: z.lazy(() => TestCatalogConfigurationScalarWhereInputSchema).array().optional(),
+  NOT: z.union([ z.lazy(() => TestCatalogConfigurationScalarWhereInputSchema), z.lazy(() => TestCatalogConfigurationScalarWhereInputSchema).array() ]).optional(),
+  id: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  testId: z.union([ z.lazy(() => UuidFilterSchema), z.string() ]).optional(),
+  versionId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
+  configurationName: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  versionNumber: z.union([ z.lazy(() => IntFilterSchema), z.number() ]).optional(),
+  customerId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
+  organizationId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
+  type: z.union([ z.lazy(() => EnumTestCatalogConfigurationTypeFilterSchema), z.lazy(() => TestCatalogConfigurationTypeSchema) ]).optional(),
+  dimension: z.union([ z.lazy(() => EnumVariantDimensionFilterSchema), z.lazy(() => VariantDimensionSchema) ]).optional(),
+  dimensionValue: z.union([ z.lazy(() => StringFilterSchema), z.string() ]).optional(),
+  operationalCode: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  status: z.union([ z.lazy(() => EnumTestCatalogConfigurationStatusFilterSchema), z.lazy(() => TestCatalogConfigurationStatusSchema) ]).optional(),
+  isDefault: z.union([ z.lazy(() => BoolFilterSchema), z.boolean() ]).optional(),
+  isActive: z.union([ z.lazy(() => BoolFilterSchema), z.boolean() ]).optional(),
+  customTestName: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  customDescription: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  customTurnAroundTime: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  customPricing: z.union([ z.lazy(() => DecimalNullableFilterSchema), z.union([z.number(),z.string(),z.instanceof(Decimal),z.instanceof(Prisma.Decimal),DecimalJsLikeSchema,]).refine((v) => isValidDecimalInput(v), { message: 'Must be a Decimal' }) ]).optional().nullable(),
+  customInstructions: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  customSpecimenRequirements: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  customCollectionMethod: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  effectiveDate: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.date() ]).optional().nullable(),
+  expirationDate: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.date() ]).optional().nullable(),
+  lastActivatedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.date() ]).optional().nullable(),
+  lastDeactivatedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.date() ]).optional().nullable(),
+  requiresConsent: z.union([ z.lazy(() => BoolFilterSchema), z.boolean() ]).optional(),
+  consentTemplateIds: z.lazy(() => StringNullableListFilterSchema).optional(),
+  customConsentText: z.union([ z.lazy(() => StringNullableFilterSchema), z.string() ]).optional().nullable(),
+  requiresApproval: z.union([ z.lazy(() => BoolFilterSchema), z.boolean() ]).optional(),
+  approvalWorkflowId: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
+  approvedBy: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
+  approvedAt: z.union([ z.lazy(() => DateTimeNullableFilterSchema), z.date() ]).optional().nullable(),
+  createdBy: z.union([ z.lazy(() => UuidNullableFilterSchema), z.string() ]).optional().nullable(),
+  createdAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.date() ]).optional(),
+  updatedAt: z.union([ z.lazy(() => DateTimeFilterSchema), z.date() ]).optional(),
+});
+
+export default TestCatalogConfigurationScalarWhereInputSchema;

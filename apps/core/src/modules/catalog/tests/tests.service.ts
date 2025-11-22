@@ -330,8 +330,10 @@ export class TestsService {
         methodology: true,
         turnAroundTime: true,
         createdAt: true,
-        isDefaultForTests: {
-          select: { id: true },
+        test: {
+          select: {
+            defaultVersionId: true,
+          },
         },
       },
     })
@@ -340,7 +342,7 @@ export class TestsService {
       id: version.id,
       versionNumber: version.versionNumber,
       status: version.status,
-      isDefault: version.isDefaultForTests.length > 0,
+      isDefault: version.test?.defaultVersionId === version.id,
       effectiveDate: version.effectiveDate?.toISOString() ?? null,
       retiredDate: version.retiredDate?.toISOString() ?? null,
       methodology: version.methodology ?? null,

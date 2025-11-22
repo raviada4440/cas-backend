@@ -1,0 +1,75 @@
+import type { Prisma } from '@prisma/client';
+
+import { z } from 'zod';
+import { TestCatalogVersionStatusSchema } from './TestCatalogVersionStatusSchema';
+import { TestCatalogVersionSpecimenUncheckedCreateNestedManyWithoutVersionInputSchema } from './TestCatalogVersionSpecimenUncheckedCreateNestedManyWithoutVersionInputSchema';
+import { TestCatalogVersionBiomarkerUncheckedCreateNestedManyWithoutVersionInputSchema } from './TestCatalogVersionBiomarkerUncheckedCreateNestedManyWithoutVersionInputSchema';
+import { TestCatalogVersionCptCodeUncheckedCreateNestedManyWithoutVersionInputSchema } from './TestCatalogVersionCptCodeUncheckedCreateNestedManyWithoutVersionInputSchema';
+import { TestCatalogVersionOrderLoincUncheckedCreateNestedManyWithoutVersionInputSchema } from './TestCatalogVersionOrderLoincUncheckedCreateNestedManyWithoutVersionInputSchema';
+import { TestCatalogVersionResultLoincUncheckedCreateNestedManyWithoutVersionInputSchema } from './TestCatalogVersionResultLoincUncheckedCreateNestedManyWithoutVersionInputSchema';
+import { TestCatalogVersionOrderFormUncheckedCreateNestedManyWithoutVersionInputSchema } from './TestCatalogVersionOrderFormUncheckedCreateNestedManyWithoutVersionInputSchema';
+import { TestCatalogVersionConsentUncheckedCreateNestedManyWithoutVersionInputSchema } from './TestCatalogVersionConsentUncheckedCreateNestedManyWithoutVersionInputSchema';
+import { ConsentAuditLogUncheckedCreateNestedManyWithoutVersionInputSchema } from './ConsentAuditLogUncheckedCreateNestedManyWithoutVersionInputSchema';
+import { TestCatalogApprovalUncheckedCreateNestedManyWithoutVersionInputSchema } from './TestCatalogApprovalUncheckedCreateNestedManyWithoutVersionInputSchema';
+import { TestCatalogUncheckedCreateNestedManyWithoutDefaultVersionInputSchema } from './TestCatalogUncheckedCreateNestedManyWithoutDefaultVersionInputSchema';
+import { TestCatalogConfigurationUncheckedCreateNestedManyWithoutVersionInputSchema } from './TestCatalogConfigurationUncheckedCreateNestedManyWithoutVersionInputSchema';
+import { ReviewThreadUncheckedCreateNestedManyWithoutVersionInputSchema } from './ReviewThreadUncheckedCreateNestedManyWithoutVersionInputSchema';
+
+export const TestCatalogVersionUncheckedCreateWithoutLabOrdersInputSchema: z.ZodType<Prisma.TestCatalogVersionUncheckedCreateWithoutLabOrdersInput> = z.strictObject({
+  id: z.string().optional(),
+  testId: z.string(),
+  versionNumber: z.number(),
+  status: z.lazy(() => TestCatalogVersionStatusSchema).optional(),
+  effectiveDate: z.date().optional().nullable(),
+  retiredDate: z.date().optional().nullable(),
+  changeReason: z.string().optional().nullable(),
+  changeNotes: z.string().optional().nullable(),
+  href: z.string().optional().nullable(),
+  testName: z.string().optional().nullable(),
+  alternativeName: z.string().optional().nullable(),
+  alternativeName1: z.string().optional().nullable(),
+  alternativeName2: z.string().optional().nullable(),
+  alternativeName3: z.string().optional().nullable(),
+  alternativeName4: z.string().optional().nullable(),
+  alternativeName5: z.string().optional().nullable(),
+  testIncludes: z.string().optional().nullable(),
+  methodology: z.string().optional().nullable(),
+  testDescription: z.string().optional().nullable(),
+  diseases: z.string().optional().nullable(),
+  probes: z.string().optional().nullable(),
+  clinicalSignificance: z.string().optional().nullable(),
+  diseaseIndications: z.string().optional().nullable(),
+  testUsage: z.string().optional().nullable(),
+  testLimitations: z.string().optional().nullable(),
+  isNewYorkApproved: z.boolean().optional(),
+  levelOfService: z.string().optional().nullable(),
+  turnAroundTime: z.string().optional().nullable(),
+  referenceRanges: z.string().optional().nullable(),
+  setupSchedule: z.string().optional().nullable(),
+  testCategory: z.string().optional().nullable(),
+  testSubCategory: z.string().optional().nullable(),
+  specialNotes: z.string().optional().nullable(),
+  patientResources: z.string().optional().nullable(),
+  providerResources: z.string().optional().nullable(),
+  patientResourcesUrl: z.string().optional().nullable(),
+  providerResourcesUrl: z.string().optional().nullable(),
+  additionalNotes: z.string().optional().nullable(),
+  isFDAApproved: z.boolean().optional(),
+  createdBy: z.string().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+  specimens: z.lazy(() => TestCatalogVersionSpecimenUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+  biomarkers: z.lazy(() => TestCatalogVersionBiomarkerUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+  cptCodes: z.lazy(() => TestCatalogVersionCptCodeUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+  orderLoincs: z.lazy(() => TestCatalogVersionOrderLoincUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+  resultLoincs: z.lazy(() => TestCatalogVersionResultLoincUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+  orderForms: z.lazy(() => TestCatalogVersionOrderFormUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+  consents: z.lazy(() => TestCatalogVersionConsentUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+  consentAuditLogs: z.lazy(() => ConsentAuditLogUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+  approvals: z.lazy(() => TestCatalogApprovalUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+  defaultForTests: z.lazy(() => TestCatalogUncheckedCreateNestedManyWithoutDefaultVersionInputSchema).optional(),
+  configurations: z.lazy(() => TestCatalogConfigurationUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+  reviewThreads: z.lazy(() => ReviewThreadUncheckedCreateNestedManyWithoutVersionInputSchema).optional(),
+});
+
+export default TestCatalogVersionUncheckedCreateWithoutLabOrdersInputSchema;

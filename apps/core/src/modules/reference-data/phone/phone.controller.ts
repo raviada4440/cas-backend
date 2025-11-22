@@ -1,4 +1,4 @@
-import { Body, Post } from '@nestjs/common'
+import { Body, HttpCode, Post } from '@nestjs/common'
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
@@ -14,6 +14,7 @@ export class PhoneController {
   @Post('/validate')
   @ApiOperation({ summary: 'Validate phone number' })
   @ApiOkResponse({ description: 'Validation result' })
+  @HttpCode(200)
   validate(@Body() body: PhoneValidationDto) {
     return this.phoneService.validate(body)
   }

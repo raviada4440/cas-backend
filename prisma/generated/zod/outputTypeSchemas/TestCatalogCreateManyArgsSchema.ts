@@ -1,0 +1,10 @@
+import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
+import { TestCatalogCreateManyInputSchema } from '../inputTypeSchemas/TestCatalogCreateManyInputSchema'
+
+export const TestCatalogCreateManyArgsSchema: z.ZodType<Prisma.TestCatalogCreateManyArgs> = z.object({
+  data: z.union([ TestCatalogCreateManyInputSchema, TestCatalogCreateManyInputSchema.array() ]),
+  skipDuplicates: z.boolean().optional(),
+}).strict();
+
+export default TestCatalogCreateManyArgsSchema;

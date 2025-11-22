@@ -1,0 +1,35 @@
+import type { Prisma } from '@prisma/client';
+
+import { z } from 'zod';
+import { StringFieldUpdateOperationsInputSchema } from './StringFieldUpdateOperationsInputSchema';
+import { BoolFieldUpdateOperationsInputSchema } from './BoolFieldUpdateOperationsInputSchema';
+import { NullableDateTimeFieldUpdateOperationsInputSchema } from './NullableDateTimeFieldUpdateOperationsInputSchema';
+import { NullableStringFieldUpdateOperationsInputSchema } from './NullableStringFieldUpdateOperationsInputSchema';
+import { IntFieldUpdateOperationsInputSchema } from './IntFieldUpdateOperationsInputSchema';
+import { DateTimeFieldUpdateOperationsInputSchema } from './DateTimeFieldUpdateOperationsInputSchema';
+import { LabOrderUpdateOneRequiredWithoutConsentsNestedInputSchema } from './LabOrderUpdateOneRequiredWithoutConsentsNestedInputSchema';
+import { TestCatalogVersionConsentUpdateOneWithoutLabOrderConsentsNestedInputSchema } from './TestCatalogVersionConsentUpdateOneWithoutLabOrderConsentsNestedInputSchema';
+import { ConsentTemplateUpdateOneRequiredWithoutLabOrderConsentsNestedInputSchema } from './ConsentTemplateUpdateOneRequiredWithoutLabOrderConsentsNestedInputSchema';
+
+export const LabOrderConsentUpdateInputSchema: z.ZodType<Prisma.LabOrderConsentUpdateInput> = z.strictObject({
+  id: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  consentTitle: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  consentContent: z.union([ z.string(),z.lazy(() => StringFieldUpdateOperationsInputSchema) ]).optional(),
+  isAccepted: z.union([ z.boolean(),z.lazy(() => BoolFieldUpdateOperationsInputSchema) ]).optional(),
+  acceptedAt: z.union([ z.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  declinedAt: z.union([ z.date(),z.lazy(() => NullableDateTimeFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  patientSignature: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  witnessSignature: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  ipAddress: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  userAgent: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  consentVersion: z.union([ z.number(),z.lazy(() => IntFieldUpdateOperationsInputSchema) ]).optional(),
+  collectedBy: z.union([ z.string(),z.lazy(() => NullableStringFieldUpdateOperationsInputSchema) ]).optional().nullable(),
+  collectedAt: z.union([ z.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  createdAt: z.union([ z.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  updatedAt: z.union([ z.date(),z.lazy(() => DateTimeFieldUpdateOperationsInputSchema) ]).optional(),
+  labOrder: z.lazy(() => LabOrderUpdateOneRequiredWithoutConsentsNestedInputSchema).optional(),
+  consent: z.lazy(() => TestCatalogVersionConsentUpdateOneWithoutLabOrderConsentsNestedInputSchema).optional(),
+  consentTemplate: z.lazy(() => ConsentTemplateUpdateOneRequiredWithoutLabOrderConsentsNestedInputSchema).optional(),
+});
+
+export default LabOrderConsentUpdateInputSchema;

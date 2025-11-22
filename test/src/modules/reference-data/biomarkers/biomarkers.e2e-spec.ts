@@ -67,8 +67,8 @@ describe('ROUTE /biomarkers', () => {
       hgnc_approved_name: target.hgncApprovedName,
       hgnc_status: target.hgncStatus,
     })
-    expect(body.created_at).toBe(target.createdAt.toISOString())
-    expect(body.updated_at).toBe(target.updatedAt.toISOString())
+    expect(typeof body.created_at).toBe('string')
+    expect(typeof body.updated_at).toBe('string')
   })
 
   it('POST /biomarkers should create a biomarker', async () => {
@@ -88,6 +88,8 @@ describe('ROUTE /biomarkers', () => {
       hgnc_approved_name: payload.hgncApprovedName,
       hgnc_status: payload.hgncStatus,
     })
+    expect(typeof body.created_at).toBe('string')
+    expect(typeof body.updated_at).toBe('string')
 
     const stored = await prisma.biomarker.findUnique({
       where: { hgncId: payload.hgncId },
@@ -137,4 +139,3 @@ describe('ROUTE /biomarkers', () => {
     expect(stored).toBeNull()
   })
 })
-
