@@ -47,7 +47,7 @@ export const CreateLabOrderSchema = z
         z
           .object({
             specimenType: z.string(),
-            collectedDate: z.union([z.string().datetime(), z.date()]).optional(),
+            collectedDate: z.string().datetime().optional(),
             specimenCount: nullableString().optional(),
             bodySite: nullableString().optional(),
           })
@@ -71,7 +71,7 @@ export const UpdateLabOrderSchema = z
           .object({
             id: uuid().optional(),
             specimenType: z.string(),
-            collectedDate: z.union([z.string().datetime(), z.date()]).optional(),
+            collectedDate: z.string().datetime().optional(),
             specimenCount: nullableString().optional(),
             bodySite: nullableString().optional(),
             _delete: z.boolean().optional(),

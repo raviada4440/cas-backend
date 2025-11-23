@@ -1,8 +1,8 @@
 import * as z from 'zod/v4'
 
-import { FormSchema } from './consents.js'
-export type { FormSchema } from './consents.js'
-import { JsonValue, UtcDateTime, Uuid } from './common.js'
+import { FormSchema } from './consents'
+export type { FormSchema } from './consents'
+import { JsonValue, UtcDateTime, Uuid } from './common'
 
 export const OrderFormTemplateStatus = z.enum(['DRAFT', 'ACTIVE', 'RETIRED'])
 export type OrderFormTemplateStatus = z.infer<typeof OrderFormTemplateStatus>

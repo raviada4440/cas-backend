@@ -1,5 +1,5 @@
-import { FamilyStructure, FamilyStructureType } from './catalog.js'
-import { LabOrderFormSnapshot } from './order-forms.js'
+import { FamilyStructure, FamilyStructureType } from './catalog'
+import { LabOrderFormSnapshot } from './order-forms'
 
 export type SexAtBirth = 'MALE' | 'FEMALE' | 'UNKNOWN'
 

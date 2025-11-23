@@ -1,7 +1,7 @@
 import * as z from 'zod/v4'
 
-import { FileUploadRequirement, ResolvedOrderFormSection } from './order-forms.js'
-import { Uuid, UtcDateTime } from './common.js'
+import { FileUploadRequirement, ResolvedOrderFormSection } from './order-forms'
+import { Uuid, UtcDateTime } from './common'
 
 export const CatalogStatus = z.enum(['DRAFT', 'REVIEW', 'APPROVED', 'PUBLISHED', 'ARCHIVED', 'RETIRED'])
 export type CatalogStatusType = z.infer<typeof CatalogStatus>

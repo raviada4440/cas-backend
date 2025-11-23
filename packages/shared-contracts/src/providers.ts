@@ -1,6 +1,6 @@
 import * as z from 'zod/v4'
 
-import { Uuid, UtcDateTime } from './common.js'
+import { Uuid, UtcDateTime } from './common'
 
 export const ProviderSummary = z.object({
   id: Uuid,

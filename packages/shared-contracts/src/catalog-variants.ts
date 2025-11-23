@@ -6,8 +6,8 @@ import {
   SpecimenType,
   TestCatalogCollectionMethod,
   VariantDimension,
-} from './catalog.js'
-import { UtcDateTime, Uuid } from './common.js'
+} from './catalog'
+import { UtcDateTime, Uuid } from './common'
 
 export const CatalogConfigurationStatus = z.enum(['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'])
 export type CatalogConfigurationStatusType = z.infer<typeof CatalogConfigurationStatus>

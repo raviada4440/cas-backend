@@ -14,8 +14,8 @@ import { Injectable } from '@nestjs/common'
 @Injectable()
 export class CacheConfigService implements CacheOptionsFactory {
   // 缓存配置
-  public createCacheOptions(): CacheModuleOptions {
-    const redisOptions: any = {
+  public async createCacheOptions(): Promise<CacheModuleOptions> {
+    const redisOptions: Record<string, unknown> = {
       host: REDIS.host as string,
       port: REDIS.port as number,
     }
@@ -25,14 +25,20 @@ export class CacheConfigService implements CacheOptionsFactory {
     if (REDIS.username) {
       redisOptions.username = REDIS.username
     }
+    if (REDIS.ttl !== null && REDIS.ttl !== undefined) {
+      redisOptions.ttl = REDIS.ttl
+    }
+    if (REDIS.max !== null && REDIS.max !== undefined) {
+      redisOptions.max = REDIS.max
+    }
+
+    const store = await redisStore.create(redisOptions)
+
     return {
-      store: redisStore,
-      ttl: REDIS.ttl,
-      // https://github.com/dabroek/node-cache-manager-redis-store/blob/master/CHANGELOG.md#breaking-changes
-      // Any value (undefined | null) return true (cacheable) after redisStore v2.0.0
-      is_cacheable_value: () => true,
+      store,
+      ttl: REDIS.ttl ?? undefined,
       max: REDIS.max,
-      ...redisOptions,
+      isCacheableValue: () => true,
     }
   }
 }

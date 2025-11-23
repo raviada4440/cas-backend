@@ -1,7 +1,7 @@
 import { z } from 'zod/v4'
 
-import { JsonValue as JsonValueSchema, Uuid } from './common.js'
-import type { JsonValue } from './common.js'
+import { JsonValue as JsonValueSchema, Uuid } from './common'
+import type { JsonValue } from './common'
 
 const NullableString = z.string().nullable()
 
