@@ -82,7 +82,7 @@ describe('ROUTE /cpt-codes', () => {
   })
 
   it('POST /cpt-codes should create a CPT code', async () => {
-    const { data, snapshot } = buildCptPayload()
+    const { snapshot } = buildCptPayload()
     const response = await proxy.app.inject({
       method: 'POST',
       url: '/cpt-codes',

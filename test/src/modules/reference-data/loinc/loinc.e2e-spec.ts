@@ -97,7 +97,7 @@ describe('ROUTE /loinc', () => {
   })
 
   it('POST /loinc should create a LOINC code', async () => {
-    const { data: payload, snapshot } = buildLoincPayload()
+    const { snapshot } = buildLoincPayload()
 
     const response = await proxy.app.inject({
       method: 'POST',

@@ -92,7 +92,7 @@ describe('ROUTE /labs', () => {
   })
 
   it('POST /labs should create a lab', async () => {
-    const { data: payload, snapshot } = buildLabPayload()
+    const { snapshot } = buildLabPayload()
 
     const response = await proxy.app.inject({
       method: 'POST',
@@ -122,7 +122,7 @@ describe('ROUTE /labs', () => {
 
   it('PUT /labs/:labId should update a lab', async () => {
     const record = await prisma.lab.create({
-      data: buildLabPayload(),
+      data: buildLabPayload().data,
     })
     const updatePayload = {
       labName: 'Updated Lab Name',
@@ -141,7 +141,7 @@ describe('ROUTE /labs', () => {
     expect(body.city).toBe(updatePayload.city)
 
     const stored = await prisma.lab.findUnique({
-      where: { id: response.json().id },
+      where: { id: body.id },
     })
     expect(stored).not.toBeNull()
   })
