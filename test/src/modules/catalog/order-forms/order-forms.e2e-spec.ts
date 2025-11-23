@@ -87,7 +87,10 @@ describe('Catalog Order Forms', () => {
     return camelize(response.json())
   }
 
-  const createTemplateViaApi = async (sectionId: string, overrides: Record<string, unknown> = {}) => {
+  const createTemplateViaApi = async (
+    sectionId: string,
+    overrides: Record<string, unknown> = {},
+  ) => {
     const response = await proxy.app.inject({
       method: 'POST',
       url: '/order-forms/templates',

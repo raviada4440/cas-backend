@@ -344,5 +344,3 @@ describe('Catalog Variants', () => {
     expect(deleteBody.overrides.length).toBe(0)
   })
 })
-
-

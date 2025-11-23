@@ -1,6 +1,5 @@
 import { $Enums } from '@db/client'
 import { OrganizationsModule } from '@core/modules/orders/organizations/organizations.module'
-import { OrganizationsService } from '@core/modules/orders/organizations/organizations.service'
 import { createE2EApp } from '@test/helper/create-e2e-app'
 import { prisma } from '@test/lib/prisma'
 
@@ -167,7 +166,9 @@ describe('ROUTE /organizations', () => {
   })
 
   it('GET /organizations/facilities should list facilities scoped to parent', async () => {
-    const { organization: parent } = await createOrganizationViaApi(proxy, { orgName: 'Parent Org' })
+    const { organization: parent } = await createOrganizationViaApi(proxy, {
+      orgName: 'Parent Org',
+    })
     const { organization: facility } = await createOrganizationViaApi(proxy, {
       orgName: 'Child Facility',
       parentId: parent.id,
@@ -367,5 +368,3 @@ describe('ROUTE /organizations', () => {
     expect(link).not.toBeNull()
   })
 })
-
-
