@@ -26,13 +26,7 @@ import { HelperModule } from './processors/helper/helper.module'
 
 // Request ----->
 // Response <-----
-const appInterceptors: Type[] = [
-  IdempotenceInterceptor,
-  HttpCacheInterceptor,
-  JSONTransformerInterceptor,
-
-  ResponseInterceptor,
-]
+const appInterceptors: Type[] = [IdempotenceInterceptor, HttpCacheInterceptor, ResponseInterceptor]
 const envFilePath = process.env['DOTENV_CONFIG_PATH'] || '.env'
 
 @Module({
