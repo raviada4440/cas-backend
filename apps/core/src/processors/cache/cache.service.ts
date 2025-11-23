@@ -1,5 +1,5 @@
 import { Cache } from 'cache-manager'
-import type { Redis } from 'ioredis'
+import { Redis } from 'ioredis'
 
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Inject, Injectable, Logger } from '@nestjs/common'

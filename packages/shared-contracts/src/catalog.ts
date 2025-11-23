@@ -239,7 +239,7 @@ export type VersionSummary = z.infer<typeof VersionSummary>
 
 export const ListTestsQuery = z.object({
   cursor: z.string().uuid().optional(),
-  limit: z.number().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
   q: z.string().optional(),
   labId: z.string().uuid().optional(),
 })

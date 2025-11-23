@@ -26,7 +26,7 @@ export const OrderableQuery = z.object({
   customerId: Uuid.optional(),
   asOf: UtcDateTime.optional(),
   q: z.string().optional(),
-  limit: z.number().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
 })
 export type OrderableQuery = z.infer<typeof OrderableQuery>
 
