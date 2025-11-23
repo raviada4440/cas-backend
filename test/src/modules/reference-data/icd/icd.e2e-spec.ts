@@ -1,16 +1,31 @@
-import { CreateIcdInput } from '@core/modules/reference-data/icd/icd.dto'
 import { IcdModule } from '@core/modules/reference-data/icd/icd.module'
 import { createE2EApp } from '@test/helper/create-e2e-app'
 import { prisma } from '@test/lib/prisma'
+import { Prisma } from '@db/client'
 
-const buildIcdPayload = (overrides: Partial<CreateIcdInput> = {}): CreateIcdInput => {
+type IcdSeed = {
+  code: string
+  shortDescription: string | null
+  alias1: string | null
+  alias2: string | null
+  alias3: string | null
+  alias4: string | null
+}
+
+const buildIcdPayload = (overrides: Partial<IcdSeed> = {}) => {
   const unique = Math.random().toString(36).slice(2, 10).toUpperCase()
-  return {
-    code: `I${unique}`,
-    shortDescription: `ICD short description ${unique}`,
-    alias1: `Alias 1 ${unique}`,
-    alias2: `Alias 2 ${unique}`,
+  const snapshot: IcdSeed = {
+    code: `I${unique}`.slice(0, 7),
+    shortDescription: `ICD description ${unique}`,
+    alias1: `Alias1 ${unique}`,
+    alias2: null,
+    alias3: null,
+    alias4: null,
     ...overrides,
+  }
+  return {
+    data: snapshot as Prisma.IcdCreateInput,
+    snapshot,
   }
 }
 
@@ -20,18 +35,19 @@ describe('ROUTE /icd-codes', () => {
   })
 
   it('GET /icd-codes should list ICD codes with pagination cursor', async () => {
+    const { data, snapshot } = buildIcdPayload()
     const target = await prisma.icd.create({
-      data: buildIcdPayload(),
+      data,
     })
     await prisma.icd.create({
-      data: buildIcdPayload(),
+      data: buildIcdPayload().data,
     })
 
     const response = await proxy.app.inject({
       method: 'GET',
       url: '/icd-codes',
       query: {
-        search: target.code ?? '',
+        search: snapshot.code ?? '',
       },
     })
 
@@ -52,7 +68,7 @@ describe('ROUTE /icd-codes', () => {
 
   it('GET /icd-codes/:icdId should return ICD detail', async () => {
     const record = await prisma.icd.create({
-      data: buildIcdPayload(),
+      data: buildIcdPayload().data,
     })
 
     const response = await proxy.app.inject({
@@ -74,7 +90,7 @@ describe('ROUTE /icd-codes', () => {
   })
 
   it('POST /icd-codes should create an ICD code', async () => {
-    const payload = buildIcdPayload()
+    const { data: payload, snapshot } = buildIcdPayload()
 
     const response = await proxy.app.inject({
       method: 'POST',
@@ -85,19 +101,24 @@ describe('ROUTE /icd-codes', () => {
     expect(response.statusCode).toBe(201)
     const body = response.json()
     expect(body).toMatchObject({
-      code: payload.code,
-      short_description: payload.shortDescription,
-      alias1: payload.alias1,
-      alias2: payload.alias2,
+      code: snapshot.code,
+      short_description: snapshot.shortDescription,
+      alias1: snapshot.alias1,
+      alias2: snapshot.alias2,
     })
     expect(body.id).toBeDefined()
     expect(typeof body.created_at).toBe('string')
     expect(typeof body.updated_at).toBe('string')
+
+    const stored = await prisma.icd.findUnique({
+      where: { id: body.id },
+    })
+    expect(stored).not.toBeNull()
   })
 
   it('PUT /icd-codes/:icdId should update the ICD code', async () => {
     const record = await prisma.icd.create({
-      data: buildIcdPayload(),
+      data: buildIcdPayload().data,
     })
     const updatePayload = {
       shortDescription: 'Updated ICD description',
@@ -124,7 +145,7 @@ describe('ROUTE /icd-codes', () => {
 
   it('DELETE /icd-codes/:icdId should delete the ICD code', async () => {
     const record = await prisma.icd.create({
-      data: buildIcdPayload(),
+      data: buildIcdPayload().data,
     })
 
     const response = await proxy.app.inject({

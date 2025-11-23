@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@db/client";
 import * as dotenv from "dotenv";
 
 // Load environment variables

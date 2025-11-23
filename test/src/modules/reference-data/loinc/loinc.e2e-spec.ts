@@ -1,18 +1,37 @@
-import { CreateLoincInput } from '@core/modules/reference-data/loinc/loinc.dto'
 import { LoincModule } from '@core/modules/reference-data/loinc/loinc.module'
 import { createE2EApp } from '@test/helper/create-e2e-app'
 import { prisma } from '@test/lib/prisma'
+import { Prisma } from '@db/client'
 
-const buildLoincPayload = (overrides: Partial<CreateLoincInput> = {}): CreateLoincInput => {
+type LoincSeed = {
+  loincNum: string
+  component: string | null
+  property: string | null
+  system: string | null
+  scaleTyp: string | null
+  methodTyp: string | null
+  longCommonName: string | null
+  status: string | null
+  shortname: string | null
+}
+
+const buildLoincPayload = (overrides: Partial<LoincSeed> = {}) => {
   const unique = Math.random().toString(36).slice(2, 10).toUpperCase()
-  return {
-    loincNum: `L${unique}`,
-    longCommonName: `Long common name ${unique}`,
-    shortname: `Short name ${unique}`,
+  const snapshot: LoincSeed = {
+    loincNum: `LN${unique}`.slice(0, 10),
     component: `Component ${unique}`,
-    property: `Property ${unique}`,
-    status: 'Active',
+    property: 'Prop',
+    system: 'System',
+    scaleTyp: 'Scale',
+    methodTyp: 'Method',
+    longCommonName: `LOINC description ${unique}`,
+    status: 'ACTIVE',
+    shortname: null,
     ...overrides,
+  }
+  return {
+    data: snapshot as Prisma.LoincCreateInput,
+    snapshot,
   }
 }
 
@@ -22,18 +41,19 @@ describe('ROUTE /loinc', () => {
   })
 
   it('GET /loinc should list LOINC codes with pagination cursor', async () => {
+    const first = buildLoincPayload()
     const target = await prisma.loinc.create({
-      data: buildLoincPayload(),
+      data: first.data,
     })
     await prisma.loinc.create({
-      data: buildLoincPayload(),
+      data: buildLoincPayload().data,
     })
 
     const response = await proxy.app.inject({
       method: 'GET',
       url: '/loinc',
       query: {
-        search: target.loincNum,
+        search: first.snapshot.loincNum,
       },
     })
 
@@ -54,7 +74,7 @@ describe('ROUTE /loinc', () => {
 
   it('GET /loinc/:loincNum should return LOINC detail', async () => {
     const record = await prisma.loinc.create({
-      data: buildLoincPayload(),
+      data: buildLoincPayload().data,
     })
 
     const response = await proxy.app.inject({
@@ -77,20 +97,20 @@ describe('ROUTE /loinc', () => {
   })
 
   it('POST /loinc should create a LOINC code', async () => {
-    const payload = buildLoincPayload()
+    const { data: payload, snapshot } = buildLoincPayload()
 
     const response = await proxy.app.inject({
       method: 'POST',
       url: '/loinc',
-      body: payload,
+      body: snapshot,
     })
 
     expect(response.statusCode).toBe(201)
     const body = response.json()
     expect(body).toMatchObject({
-      loinc_num: payload.loincNum,
-      long_common_name: payload.longCommonName,
-      shortname: payload.shortname,
+      loinc_num: snapshot.loincNum,
+      long_common_name: snapshot.longCommonName,
+      shortname: snapshot.shortname,
     })
     expect(typeof body.created_at).toBe('string')
     expect(typeof body.updated_at).toBe('string')
@@ -98,7 +118,7 @@ describe('ROUTE /loinc', () => {
 
   it('PUT /loinc/:loincNum should update the LOINC code', async () => {
     const record = await prisma.loinc.create({
-      data: buildLoincPayload(),
+      data: buildLoincPayload().data,
     })
     const updatePayload = {
       longCommonName: 'Updated LOINC long name',
@@ -125,7 +145,7 @@ describe('ROUTE /loinc', () => {
 
   it('DELETE /loinc/:loincNum should delete the LOINC code', async () => {
     const record = await prisma.loinc.create({
-      data: buildLoincPayload(),
+      data: buildLoincPayload().data,
     })
 
     const response = await proxy.app.inject({

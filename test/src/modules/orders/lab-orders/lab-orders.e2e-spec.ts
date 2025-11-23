@@ -229,13 +229,14 @@ describe('ROUTE /laborders', () => {
     expect(Array.isArray(body.items)).toBe(true)
     expect(body.total).toBe(1)
     expect(body.nextCursor).toBeNull()
+    const patientFirstName = patient.firstName ?? ''
     expect(body.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: labOrder.id,
           casandraTestId: test.casandraTestId,
           labName: lab.labName,
-          patientName: expect.stringContaining(patient.firstName),
+          patientName: expect.stringContaining(patientFirstName),
           status: 'DRAFT',
           versionNumber: 1,
         }),

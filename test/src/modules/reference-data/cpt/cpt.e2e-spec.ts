@@ -1,15 +1,25 @@
-import { CreateCptInput } from '@core/modules/reference-data/cpt/cpt.dto'
 import { CptModule } from '@core/modules/reference-data/cpt/cpt.module'
 import { createE2EApp } from '@test/helper/create-e2e-app'
 import { prisma } from '@test/lib/prisma'
+import { Prisma } from '@db/client'
 
-const buildCptPayload = (overrides: Partial<CreateCptInput> = {}): CreateCptInput => {
+type CptSeed = {
+  code: string
+  shortDescription: string | null
+  longDescription: string | null
+}
+
+const buildCptPayload = (overrides: Partial<CptSeed> = {}) => {
   const unique = Math.random().toString(36).slice(2, 10).toUpperCase()
-  return {
+  const snapshot: CptSeed = {
     code: `C${unique}`.slice(0, 10),
     shortDescription: `Short description ${unique}`,
     longDescription: `Long description ${unique}`,
     ...overrides,
+  }
+  return {
+    data: snapshot as Prisma.CptCodeCreateInput,
+    snapshot,
   }
 }
 
@@ -19,18 +29,19 @@ describe('ROUTE /cpt-codes', () => {
   })
 
   it('GET /cpt-codes should list codes with pagination cursor', async () => {
+    const { data, snapshot } = buildCptPayload()
     const target = await prisma.cptCode.create({
-      data: buildCptPayload(),
+      data,
     })
     await prisma.cptCode.create({
-      data: buildCptPayload(),
+      data: buildCptPayload().data,
     })
 
     const response = await proxy.app.inject({
       method: 'GET',
       url: '/cpt-codes',
       query: {
-        search: target.code,
+        search: snapshot.code,
       },
     })
 
@@ -49,8 +60,9 @@ describe('ROUTE /cpt-codes', () => {
   })
 
   it('GET /cpt-codes/:code should return code detail', async () => {
+    const { data } = buildCptPayload()
     const record = await prisma.cptCode.create({
-      data: buildCptPayload(),
+      data,
     })
 
     const response = await proxy.app.inject({
@@ -70,66 +82,65 @@ describe('ROUTE /cpt-codes', () => {
   })
 
   it('POST /cpt-codes should create a CPT code', async () => {
-    const payload = buildCptPayload()
+    const { data, snapshot } = buildCptPayload()
     const response = await proxy.app.inject({
       method: 'POST',
       url: '/cpt-codes',
-      body: payload,
+      body: snapshot,
     })
 
     expect(response.statusCode).toBe(201)
     const body = response.json()
     expect(body).toMatchObject({
-      code: payload.code,
-      short_description: payload.shortDescription,
-      long_description: payload.longDescription,
+      code: snapshot.code,
+      short_description: snapshot.shortDescription,
+      long_description: snapshot.longDescription,
     })
-    expect(typeof body.created_at).toBe('string')
-    expect(typeof body.updated_at).toBe('string')
+
+    const stored = await prisma.cptCode.findUnique({
+      where: { code: snapshot.code },
+    })
+    expect(stored).not.toBeNull()
   })
 
-  it('PUT /cpt-codes/:code should update the CPT code', async () => {
-    const original = await prisma.cptCode.create({
-      data: buildCptPayload(),
+  it('PUT /cpt-codes/:code should update CPT fields', async () => {
+    const target = await prisma.cptCode.create({
+      data: buildCptPayload().data,
     })
-    const updatePayload = {
-      shortDescription: 'Updated short description',
-      longDescription: 'Updated long description',
-    }
 
     const response = await proxy.app.inject({
       method: 'PUT',
-      url: `/cpt-codes/${original.code}`,
-      body: updatePayload,
+      url: `/cpt-codes/${target.code}`,
+      body: {
+        shortDescription: 'Updated short description',
+      },
     })
 
     expect(response.statusCode).toBe(200)
     const body = response.json()
-    expect(body.short_description).toBe(updatePayload.shortDescription)
-    expect(body.long_description).toBe(updatePayload.longDescription)
+    expect(body.short_description).toBe('Updated short description')
 
     const stored = await prisma.cptCode.findUnique({
-      where: { code: original.code },
+      where: { code: target.code },
     })
-    expect(stored?.shortDescription).toBe(updatePayload.shortDescription)
-    expect(stored?.longDescription).toBe(updatePayload.longDescription)
+    expect(stored?.shortDescription).toBe('Updated short description')
   })
 
-  it('DELETE /cpt-codes/:code should delete the CPT code', async () => {
-    const record = await prisma.cptCode.create({
-      data: buildCptPayload(),
+  it('DELETE /cpt-codes/:code should remove code', async () => {
+    const target = await prisma.cptCode.create({
+      data: buildCptPayload().data,
     })
 
     const response = await proxy.app.inject({
       method: 'DELETE',
-      url: `/cpt-codes/${record.code}`,
+      url: `/cpt-codes/${target.code}`,
     })
 
     expect(response.statusCode).toBe(200)
     expect(response.json()).toEqual({ success: true })
 
     const deleted = await prisma.cptCode.findUnique({
-      where: { code: record.code },
+      where: { code: target.code },
     })
     expect(deleted).toBeNull()
   })

@@ -1,5 +1,16 @@
-import { PrismaClient } from "@prisma/client";
-import { faker } from "@faker-js/faker";
+import { PrismaClient } from "@db/client";
+import { randomUUID } from "node:crypto";
+
+const makeUnique = () => randomUUID().replace(/-/g, "").slice(0, 10);
+const randomEmail = (prefix: string) => `${prefix}.${makeUnique()}@example.com`;
+const randomNumeric = (length: number) =>
+  Array.from({ length }, () => Math.floor(Math.random() * 10)).join("");
+const randomAlphaNumeric = (length: number) =>
+  Array.from({ length }, () =>
+    Math.random().toString(36).charAt(2 + Math.floor(Math.random() * 34)),
+  )
+    .join("")
+    .toUpperCase();
 
 const prisma = new PrismaClient();
 
@@ -56,10 +67,10 @@ async function main() {
   for (let i = 0; i < 10; i++) {
     const p = await prisma.patient.create({
       data: {
-        firstName: faker.person.firstName(),
-        lastName: faker.person.lastName(),
-        email: faker.internet.email(),
-        mobile: faker.string.numeric(10),
+        firstName: randomAlphaNumeric(5),
+        lastName: randomAlphaNumeric(5),
+        email: randomEmail("patient"),
+        mobile: randomNumeric(10),
       },
     });
     patients.push(p);
@@ -122,9 +133,9 @@ async function main() {
     // random 5 digit order number
     const orderNumber = Math.floor(10000 + Math.random() * 90000);
 
-    const patientMRN = faker.string.alphanumeric({ length: 8 }).toUpperCase();
-    const patientMobile = faker.string.numeric(10);
-    const patientEmail = faker.internet.email();
+    const patientMRN = randomAlphaNumeric(8);
+    const patientMobile = randomNumeric(10);
+    const patientEmail = randomEmail("patient");
 
     const labOrder = await prisma.labOrder.create({
       data: {
@@ -165,9 +176,7 @@ async function main() {
     const insurers = ["Aetna", "UniteHealthCare", "BCBS Texas"];
     const insuranceProvider =
       insurers[Math.floor(Math.random() * insurers.length)];
-    const policyNumber = faker.string
-      .alphanumeric({ length: 10 })
-      .toUpperCase();
+    const policyNumber = randomAlphaNumeric(10);
     await prisma.labOrderBilling.create({
       data: {
         labOrderId: labOrder.id,
