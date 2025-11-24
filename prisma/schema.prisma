@@ -288,7 +288,7 @@ model Biomarker {
   createdAt          DateTime @default(now()) @db.Timestamp(0)
   updatedAt          DateTime @updatedAt @db.Timestamp(0)
 
-  testBiomarkers TestCatalogVersionBiomarker[]
+  testBiomarkers  TestCatalogVersionBiomarker[]
   configOverrides TestConfigBiomarker[]
 }
 
@@ -358,22 +358,22 @@ model Loinc {
   createdAt                 DateTime @default(now()) @db.Timestamp(0)
   updatedAt                 DateTime @updatedAt @db.Timestamp(0)
 
-  testOrderLoincs  TestCatalogVersionOrderLoinc[]
-  testResultLoincs TestCatalogVersionResultLoinc[]
+  testOrderLoincs    TestCatalogVersionOrderLoinc[]
+  testResultLoincs   TestCatalogVersionResultLoinc[]
   configOrderLoincs  TestConfigOrderLoinc[]
   configResultLoincs TestConfigResultLoinc[]
 }
 
 // Review threads for version feedback
 model ReviewThread {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  versionId String   @db.Uuid
-  createdBy String   @db.Uuid
-  createdAt DateTime @default(now()) @db.Timestamp(0)
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionId  String    @db.Uuid
+  createdBy  String    @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamp(0)
   resolvedAt DateTime? @db.Timestamp(0)
-  title     String?  @db.VarChar(512)
+  title      String?   @db.VarChar(512)
 
-  version TestCatalogVersion @relation(fields: [versionId], references: [id])
+  version  TestCatalogVersion @relation(fields: [versionId], references: [id])
   comments ReviewComment[]
 
   @@index([versionId])
@@ -408,30 +408,30 @@ model Lab {
 }
 
 model LabOrder {
-  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderNumber         Int       @default(autoincrement())
-  accessionNumber     Int       @default(autoincrement())
-  testVersionId       String    @db.Uuid
-  testConfigurationId String    @db.Uuid
-  labId               String?   @db.Uuid
-  orderingProviderId  String?   @db.Uuid
-  treatingProviderId  String?   @db.Uuid
-  patientId           String?   @db.Uuid
-  patientMRN          String?   @db.VarChar(45)
-  patientMobile       String?   @db.Text
-  patientEmail        String?   @db.Text
-  organizationId      String?   @db.Uuid
-  clinicalNotes       String?   @db.Text
-  clinicalDetails     String?   @db.Text
-  clinicalPresentation String?  @db.Text
-  clinicalTesting     String?   @db.Text
-  riskFlags           Json?
-  riskFlagNotes       String?   @db.Text
-  clinicalAttachments Json?
-  orderDate           DateTime? @default(now()) @db.Timestamp(0)
-  orderNotes          String?   @db.Text
-  createdAt           DateTime  @default(now()) @db.Timestamp(0)
-  updatedAt           DateTime  @updatedAt @db.Timestamp(0)
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber          Int       @default(autoincrement())
+  accessionNumber      Int       @default(autoincrement())
+  testVersionId        String    @db.Uuid
+  testConfigurationId  String    @db.Uuid
+  labId                String?   @db.Uuid
+  orderingProviderId   String?   @db.Uuid
+  treatingProviderId   String?   @db.Uuid
+  patientId            String?   @db.Uuid
+  patientMRN           String?   @db.VarChar(45)
+  patientMobile        String?   @db.Text
+  patientEmail         String?   @db.Text
+  organizationId       String?   @db.Uuid
+  clinicalNotes        String?   @db.Text
+  clinicalDetails      String?   @db.Text
+  clinicalPresentation String?   @db.Text
+  clinicalTesting      String?   @db.Text
+  riskFlags            Json?
+  riskFlagNotes        String?   @db.Text
+  clinicalAttachments  Json?
+  orderDate            DateTime? @default(now()) @db.Timestamp(0)
+  orderNotes           String?   @db.Text
+  createdAt            DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt            DateTime  @updatedAt @db.Timestamp(0)
 
   orderingProvider              Provider?                      @relation("LabOrder_OrderingProviderIdToProvider", fields: [orderingProviderId], references: [id], onDelete: NoAction)
   treatingProvider              Provider?                      @relation("LabOrder_TreatingProviderIdToProvider", fields: [treatingProviderId], references: [id], onDelete: NoAction)
@@ -476,28 +476,28 @@ model LabOrderAttachment {
 }
 
 model LabOrderBilling {
-  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  labOrderId              String?  @db.Uuid
-  billToId                String?  @db.Uuid
-  healthPlanId            String?  @db.Uuid
-  patientStatus           String?  @db.VarChar(45)
-  sponsoredTestCouponCode String?  @db.VarChar(45)
-  billingType             String?  @db.VarChar(45)
-  insuranceProvider       String?  @db.VarChar(512)
-  policyNumber            String?  @db.VarChar(512)
-  planName                String?  @db.VarChar(512)
-  groupNumber             String?  @db.VarChar(512)
-  benefitsId              String?  @db.VarChar(512)
-  insuredName             String?  @db.VarChar(512)
-  relationToPatient       String?  @db.VarChar(256)
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId              String?   @db.Uuid
+  billToId                String?   @db.Uuid
+  healthPlanId            String?   @db.Uuid
+  patientStatus           String?   @db.VarChar(45)
+  sponsoredTestCouponCode String?   @db.VarChar(45)
+  billingType             String?   @db.VarChar(45)
+  insuranceProvider       String?   @db.VarChar(512)
+  policyNumber            String?   @db.VarChar(512)
+  planName                String?   @db.VarChar(512)
+  groupNumber             String?   @db.VarChar(512)
+  benefitsId              String?   @db.VarChar(512)
+  insuredName             String?   @db.VarChar(512)
+  relationToPatient       String?   @db.VarChar(256)
   insuredDob              DateTime? @db.Date
-  insuredPhone            String?  @db.VarChar(64)
-  insurerState            String?  @db.VarChar(64)
-  referralAuthNumber      String?  @db.VarChar(512)
-  copayAmount             Decimal? @db.Decimal(10, 2)
-  deductibleAmount        Decimal? @db.Decimal(10, 2)
-  createdAt               DateTime @default(now()) @db.Timestamp(0)
-  updatedAt               DateTime @updatedAt @db.Timestamp(0)
+  insuredPhone            String?   @db.VarChar(64)
+  insurerState            String?   @db.VarChar(64)
+  referralAuthNumber      String?   @db.VarChar(512)
+  copayAmount             Decimal?  @db.Decimal(10, 2)
+  deductibleAmount        Decimal?  @db.Decimal(10, 2)
+  createdAt               DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt               DateTime  @updatedAt @db.Timestamp(0)
 
   labOrder LabOrder? @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
 
@@ -655,21 +655,21 @@ model Organization {
 }
 
 model OrganizationEndpoint {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String?  @db.Uuid
-  orgName        String?  @db.VarChar(512)
-  ehrVendor      String?  @db.VarChar(45)
-  fhirVersion    String?  @db.VarChar(45)
-  endpoint       String?  @db.VarChar(512)
-  issuer         String?  @db.VarChar(512)
-  wellKnown      String?  @db.VarChar(512)
-  clientId       String?  @db.VarChar(255)
-  clientSecret   String?  @db.VarChar(512)
-  authorizationEndpoint String? @db.VarChar(512)
-  tokenEndpoint String? @db.VarChar(512)
-  isActive       Boolean? @default(true)
-  createdAt      DateTime @default(now()) @db.Timestamp(0)
-  updatedAt      DateTime @updatedAt @db.Timestamp(0)
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId        String?  @db.Uuid
+  orgName               String?  @db.VarChar(512)
+  ehrVendor             String?  @db.VarChar(45)
+  fhirVersion           String?  @db.VarChar(45)
+  endpoint              String?  @db.VarChar(512)
+  issuer                String?  @db.VarChar(512)
+  wellKnown             String?  @db.VarChar(512)
+  clientId              String?  @db.VarChar(255)
+  clientSecret          String?  @db.VarChar(512)
+  authorizationEndpoint String?  @db.VarChar(512)
+  tokenEndpoint         String?  @db.VarChar(512)
+  isActive              Boolean? @default(true)
+  createdAt             DateTime @default(now()) @db.Timestamp(0)
+  updatedAt             DateTime @updatedAt @db.Timestamp(0)
 
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 }
@@ -693,21 +693,21 @@ model OrganizationFavoriteTest {
 }
 
 model Patient {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  firstName   String?   @db.VarChar(45)
-  lastName    String?   @db.VarChar(512)
-  dateOfBirth DateTime? @db.Date
-  gender      String?   @db.VarChar(512)
-  email       String?   @db.VarChar(512)
-  mobile      String?   @db.Text
-  addressLine1 String?  @db.VarChar(512)
-  addressLine2 String?  @db.VarChar(512)
-  city        String?   @db.VarChar(255)
-  state       String?   @db.VarChar(255)
-  postalCode  String?   @db.VarChar(45)
-  country     String?   @db.VarChar(128)
-  createdAt   DateTime  @default(now()) @db.Timestamp(0)
-  updatedAt   DateTime  @updatedAt @db.Timestamp(0)
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName    String?   @db.VarChar(45)
+  lastName     String?   @db.VarChar(512)
+  dateOfBirth  DateTime? @db.Date
+  gender       String?   @db.VarChar(512)
+  email        String?   @db.VarChar(512)
+  mobile       String?   @db.Text
+  addressLine1 String?   @db.VarChar(512)
+  addressLine2 String?   @db.VarChar(512)
+  city         String?   @db.VarChar(255)
+  state        String?   @db.VarChar(255)
+  postalCode   String?   @db.VarChar(45)
+  country      String?   @db.VarChar(128)
+  createdAt    DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt    DateTime  @updatedAt @db.Timestamp(0)
 
   labOrders            LabOrder[]
   patientOrganizations PatientOrganization[]
@@ -976,15 +976,15 @@ model TestCatalogVersion {
   updatedAt DateTime @updatedAt @db.Timestamp(0)
 
   // Version-scoped artifacts
-  specimens    TestCatalogVersionSpecimen[]
-  biomarkers   TestCatalogVersionBiomarker[]
-  cptCodes     TestCatalogVersionCptCode[]
-  orderLoincs  TestCatalogVersionOrderLoinc[]
-  resultLoincs TestCatalogVersionResultLoinc[]
-  orderForms   TestCatalogVersionOrderForm[]
-  consents     TestCatalogVersionConsent[]
+  specimens        TestCatalogVersionSpecimen[]
+  biomarkers       TestCatalogVersionBiomarker[]
+  cptCodes         TestCatalogVersionCptCode[]
+  orderLoincs      TestCatalogVersionOrderLoinc[]
+  resultLoincs     TestCatalogVersionResultLoinc[]
+  orderForms       TestCatalogVersionOrderForm[]
+  consents         TestCatalogVersionConsent[]
   consentAuditLogs ConsentAuditLog[]
-  labOrders   LabOrder[]
+  labOrders        LabOrder[]
 
   // Relations
   test            TestCatalog                @relation(fields: [testId], references: [id], onDelete: Cascade)
@@ -1033,7 +1033,7 @@ model TestCatalogVersionSpecimen {
   createdAt DateTime @default(now()) @db.Timestamp(0)
   updatedAt DateTime @updatedAt @db.Timestamp(0)
 
-  version TestCatalogVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  version          TestCatalogVersion           @relation(fields: [versionId], references: [id], onDelete: Cascade)
   variantManifests TestConfigSpecimenManifest[]
 
   @@unique([versionId, displayName])
@@ -1133,7 +1133,7 @@ model TestConfigOrderLoinc {
   updatedAt       DateTime @updatedAt @db.Timestamp(0)
 
   configuration TestCatalogConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
-  loinc         Loinc                   @relation(fields: [loincCode], references: [loincNum], onDelete: NoAction)
+  loinc         Loinc                    @relation(fields: [loincCode], references: [loincNum], onDelete: NoAction)
 
   @@unique([configurationId, loincCode])
   @@index([configurationId])
@@ -1151,7 +1151,7 @@ model TestConfigResultLoinc {
   updatedAt       DateTime @updatedAt @db.Timestamp(0)
 
   configuration TestCatalogConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
-  loinc         Loinc                   @relation(fields: [loincCode], references: [loincNum], onDelete: NoAction)
+  loinc         Loinc                    @relation(fields: [loincCode], references: [loincNum], onDelete: NoAction)
 
   @@unique([configurationId, loincCode])
   @@index([configurationId])
@@ -1159,30 +1159,30 @@ model TestConfigResultLoinc {
 }
 
 model TestConfigSpecimenManifest {
-  id                           String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  configurationId              String                        @db.Uuid
-  versionSpecimenId            String                        @db.Uuid
-  participantRole              ParticipantRole
-  isRequired                   Boolean                       @default(true)
-  specimenTypeOverride         SpecimenType?
-  specimenDisplayNameOverride  String?                       @db.VarChar(256)
-  volumeOverride               String?                       @db.VarChar(512)
-  minimumVolumeOverride        String?                       @db.VarChar(256)
-  preferredVolumeOverride      String?                       @db.VarChar(64)
-  alternateContainersOverride  String?                       @db.Text
-  containerOverride            String?                       @db.Text
-  specialInstructionsOverride  String?                       @db.Text
-  collectionMethodOverride     TestCatalogCollectionMethod?
-  specimenRequirementsOverride String?                       @db.Text
-  collectionOverride           String?                       @db.Text
+  id                            String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configurationId               String                       @db.Uuid
+  versionSpecimenId             String                       @db.Uuid
+  participantRole               ParticipantRole
+  isRequired                    Boolean                      @default(true)
+  specimenTypeOverride          SpecimenType?
+  specimenDisplayNameOverride   String?                      @db.VarChar(256)
+  volumeOverride                String?                      @db.VarChar(512)
+  minimumVolumeOverride         String?                      @db.VarChar(256)
+  preferredVolumeOverride       String?                      @db.VarChar(64)
+  alternateContainersOverride   String?                      @db.Text
+  containerOverride             String?                      @db.Text
+  specialInstructionsOverride   String?                      @db.Text
+  collectionMethodOverride      TestCatalogCollectionMethod?
+  specimenRequirementsOverride  String?                      @db.Text
+  collectionOverride            String?                      @db.Text
   stabilityRequirementsOverride String?                      @db.Text
   storageTransportationOverride String?                      @db.Text
-  patientPreparationOverride   String?                       @db.Text
-  causesForRejectionOverride   String?                       @db.Text
-  processingNotesOverride      String?                       @db.Text
-  displayOrder                 Int?                          @default(0)
-  createdAt                    DateTime                      @default(now()) @db.Timestamp(0)
-  updatedAt                    DateTime                      @updatedAt @db.Timestamp(0)
+  patientPreparationOverride    String?                      @db.Text
+  causesForRejectionOverride    String?                      @db.Text
+  processingNotesOverride       String?                      @db.Text
+  displayOrder                  Int?                         @default(0)
+  createdAt                     DateTime                     @default(now()) @db.Timestamp(0)
+  updatedAt                     DateTime                     @updatedAt @db.Timestamp(0)
 
   configuration   TestCatalogConfiguration   @relation(fields: [configurationId], references: [id], onDelete: Cascade)
   versionSpecimen TestCatalogVersionSpecimen @relation(fields: [versionSpecimenId], references: [id], onDelete: Cascade)
@@ -1193,17 +1193,17 @@ model TestConfigSpecimenManifest {
 }
 
 model TestConfigBiomarker {
-  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  configurationId String                   @db.Uuid
-  hgncId          String                   @db.VarChar(20)
-  action          BiomarkerOverrideAction
-  transcriptReference String?              @db.Text
-  reportTier          String?              @db.VarChar(32)
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configurationId     String                  @db.Uuid
+  hgncId              String                  @db.VarChar(20)
+  action              BiomarkerOverrideAction
+  transcriptReference String?                 @db.Text
+  reportTier          String?                 @db.VarChar(32)
   isReportable        Boolean?
   displayOrder        Int?
-  notes               String?              @db.Text
-  createdAt           DateTime             @default(now()) @db.Timestamp(0)
-  updatedAt           DateTime             @updatedAt @db.Timestamp(0)
+  notes               String?                 @db.Text
+  createdAt           DateTime                @default(now()) @db.Timestamp(0)
+  updatedAt           DateTime                @updatedAt @db.Timestamp(0)
 
   configuration TestCatalogConfiguration @relation(fields: [configurationId], references: [id], onDelete: Cascade)
   biomarker     Biomarker                @relation(fields: [hgncId], references: [hgncId], onDelete: NoAction)
@@ -1228,7 +1228,7 @@ model OrderFormSection {
   createdAt      DateTime @default(now()) @db.Timestamp(0)
   updatedAt      DateTime @updatedAt @db.Timestamp(0)
 
-  organization Organization?      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  organization Organization?       @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   templates    OrderFormTemplate[]
 
   @@unique([name, organizationId])
@@ -1238,24 +1238,24 @@ model OrderFormSection {
 }
 
 model OrderFormTemplate {
-  id                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderFormSectionId String                   @db.Uuid
-  name               String                   @db.VarChar(255)
-  description        String?                  @db.Text
-  status             OrderFormTemplateStatus  @default(DRAFT)
-  version            Int                      @default(1)
-  effectiveDate      DateTime?                @db.Timestamp(0)
-  retiredDate        DateTime?                @db.Timestamp(0)
+  id                 String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderFormSectionId String                  @db.Uuid
+  name               String                  @db.VarChar(255)
+  description        String?                 @db.Text
+  status             OrderFormTemplateStatus @default(DRAFT)
+  version            Int                     @default(1)
+  effectiveDate      DateTime?               @db.Timestamp(0)
+  retiredDate        DateTime?               @db.Timestamp(0)
   formSchema         Json?
   layoutSchema       Json?
-  organizationId     String?                  @db.Uuid
-  isGlobal           Boolean                  @default(false)
-  createdBy          String?                  @db.Uuid
-  createdAt          DateTime                 @default(now()) @db.Timestamp(0)
-  updatedAt          DateTime                 @updatedAt @db.Timestamp(0)
+  organizationId     String?                 @db.Uuid
+  isGlobal           Boolean                 @default(false)
+  createdBy          String?                 @db.Uuid
+  createdAt          DateTime                @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime                @updatedAt @db.Timestamp(0)
 
-  section       OrderFormSection            @relation(fields: [orderFormSectionId], references: [id], onDelete: Cascade)
-  organization  Organization?               @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  section       OrderFormSection              @relation(fields: [orderFormSectionId], references: [id], onDelete: Cascade)
+  organization  Organization?                 @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   assignments   TestCatalogVersionOrderForm[]
   labOrderForms LabOrderForm[]
 
@@ -1291,24 +1291,24 @@ model TestCatalogVersionOrderForm {
 }
 
 model LabOrderForm {
-  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  labOrderId           String   @db.Uuid
-  versionOrderFormId   String?  @db.Uuid
-  orderFormTemplateId  String?  @db.Uuid
-  displayOrder         Int      @default(0)
-  sectionName          String   @db.VarChar(255)
-  templateName         String?  @db.VarChar(255)
-  formSchema           Json?
-  layoutSchema         Json?
-  responses            Json?
-  isCompleted          Boolean  @default(false)
-  completedAt          DateTime? @db.Timestamp(0)
-  createdAt            DateTime @default(now()) @db.Timestamp(0)
-  updatedAt            DateTime @updatedAt @db.Timestamp(0)
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId          String    @db.Uuid
+  versionOrderFormId  String?   @db.Uuid
+  orderFormTemplateId String?   @db.Uuid
+  displayOrder        Int       @default(0)
+  sectionName         String    @db.VarChar(255)
+  templateName        String?   @db.VarChar(255)
+  formSchema          Json?
+  layoutSchema        Json?
+  responses           Json?
+  isCompleted         Boolean   @default(false)
+  completedAt         DateTime? @db.Timestamp(0)
+  createdAt           DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt           DateTime  @updatedAt @db.Timestamp(0)
 
-  labOrder          LabOrder                     @relation(fields: [labOrderId], references: [id], onDelete: Cascade)
-  versionOrderForm  TestCatalogVersionOrderForm? @relation(fields: [versionOrderFormId], references: [id], onDelete: SetNull)
-  template          OrderFormTemplate?           @relation(fields: [orderFormTemplateId], references: [id], onDelete: SetNull)
+  labOrder         LabOrder                     @relation(fields: [labOrderId], references: [id], onDelete: Cascade)
+  versionOrderForm TestCatalogVersionOrderForm? @relation(fields: [versionOrderFormId], references: [id], onDelete: SetNull)
+  template         OrderFormTemplate?           @relation(fields: [orderFormTemplateId], references: [id], onDelete: SetNull)
 
   @@index([labOrderId])
   @@index([versionOrderFormId])
@@ -1321,13 +1321,13 @@ model LabOrderForm {
 /// =======================
 
 model TestCatalogConfiguration {
-  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  testId            String  @db.Uuid
-  versionId         String? @db.Uuid
-  configurationName String  @db.VarChar(255)
-  versionNumber     Int     @default(1)
-  customerId        String? @db.Uuid
-  organizationId    String? @db.Uuid
+  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  testId            String                       @db.Uuid
+  versionId         String?                      @db.Uuid
+  configurationName String                       @db.VarChar(255)
+  versionNumber     Int                          @default(1)
+  customerId        String?                      @db.Uuid
+  organizationId    String?                      @db.Uuid
   type              TestCatalogConfigurationType @default(CUSTOMER)
   dimension         VariantDimension
   dimensionValue    String                       @db.VarChar(64)
@@ -1367,11 +1367,11 @@ model TestCatalogConfiguration {
   updatedAt DateTime @updatedAt @db.Timestamp(0)
 
   // Relations
-  test      TestCatalog           @relation(fields: [testId], references: [id], onDelete: Cascade)
-  version   TestCatalogVersion?   @relation(fields: [versionId], references: [id], onDelete: SetNull)
-  consents  TestCatalogVersionConsent[]
-  approvals TestCatalogApproval[]
-  labOrders LabOrder[]
+  test                    TestCatalog                   @relation(fields: [testId], references: [id], onDelete: Cascade)
+  version                 TestCatalogVersion?           @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  consents                TestCatalogVersionConsent[]
+  approvals               TestCatalogApproval[]
+  labOrders               LabOrder[]
   cptOverrides            TestConfigCptCode[]
   orderLoincOverrides     TestConfigOrderLoinc[]
   resultLoincOverrides    TestConfigResultLoinc[]
@@ -1400,9 +1400,9 @@ model ConsentTemplate {
   consentType ConsentType
   isRequired  Boolean     @default(true)
 
-  title     String  @db.VarChar(255)
-  content   String  @db.Text
-  legalText String? @db.Text
+  title      String  @db.VarChar(255)
+  content    String  @db.Text
+  legalText  String? @db.Text
   formSchema Json?
 
   status        ConsentTemplateStatus @default(DRAFT)
@@ -1446,9 +1446,9 @@ model TestCatalogVersionConsent {
   createdAt DateTime @default(now()) @db.Timestamp(0)
   updatedAt DateTime @updatedAt @db.Timestamp(0)
 
-  version          TestCatalogVersion       @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  version          TestCatalogVersion        @relation(fields: [versionId], references: [id], onDelete: Cascade)
   configuration    TestCatalogConfiguration? @relation(fields: [configurationId], references: [id], onDelete: Cascade)
-  consentTemplate  ConsentTemplate          @relation(fields: [consentTemplateId], references: [id], onDelete: Cascade)
+  consentTemplate  ConsentTemplate           @relation(fields: [consentTemplateId], references: [id], onDelete: Cascade)
   labOrderConsents LabOrderConsent[]
   auditLogs        ConsentAuditLog[]
 
@@ -1607,10 +1607,10 @@ model ConsentAuditLog {
   createdAt   DateTime @default(now()) @db.Timestamp(0)
   updatedAt   DateTime @updatedAt @db.Timestamp(0)
 
-  consentTemplate ConsentTemplate?            @relation(fields: [consentTemplateId], references: [id], onDelete: Cascade)
-  test            TestCatalog?                @relation(fields: [testId], references: [id], onDelete: Cascade)
-  version         TestCatalogVersion?         @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  versionConsent  TestCatalogVersionConsent?  @relation(fields: [versionConsentId], references: [id], onDelete: Cascade)
+  consentTemplate ConsentTemplate?           @relation(fields: [consentTemplateId], references: [id], onDelete: Cascade)
+  test            TestCatalog?               @relation(fields: [testId], references: [id], onDelete: Cascade)
+  version         TestCatalogVersion?        @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  versionConsent  TestCatalogVersionConsent? @relation(fields: [versionConsentId], references: [id], onDelete: Cascade)
 
   @@index([consentTemplateId])
   @@index([testId])
@@ -1730,4 +1730,12 @@ model KeyPairRef {
   locator   String   @db.VarChar(500) // e.g., arn:aws:kms:... or projects/.../locations/.../keyRings/.../cryptoKeys/..
   createdAt DateTime @default(now()) @db.Timestamp(0)
   updatedAt DateTime @updatedAt @db.Timestamp(0)
+}
+
+model DocEmbedding {
+  id        String                @id @db.Text
+  embedding Unsupported("vector")
+  metadata  Json?
+
+  @@map("doc_embeddings")
 }

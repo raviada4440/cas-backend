@@ -35,6 +35,7 @@
     "migrate:reset": "pnpm -C prisma run migrate:reset",
     "migrate:dev": "pnpm -C prisma run migrate:dev",
     "migrate:deploy": "pnpm -C prisma run migrate:deploy",
+    "prisma:migrate:resolve": "pnpm -C prisma run prisma:migrate:resolve",
     "prisma:generate": "pnpm -C prisma run build"
   },
   "dependencies": {
