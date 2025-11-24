@@ -920,6 +920,7 @@ model TestCatalog {
   auditLogs                 TestCatalogAuditLog[]
   consentAuditLogs          ConsentAuditLog[]
   testGenes                 TestGene[]
+  embedding                 TestCatalogEmbedding?
 
   @@unique([labId, labTestId])
   @@index([labId])
@@ -1732,10 +1733,13 @@ model KeyPairRef {
   updatedAt DateTime @updatedAt @db.Timestamp(0)
 }
 
-model DocEmbedding {
-  id        String                @id @db.Text
+model TestCatalogEmbedding {
+  id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  testId    String                @unique @db.Uuid
   embedding Unsupported("vector")
   metadata  Json?
 
-  @@map("doc_embeddings")
+  test TestCatalog @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([testId])
 }
