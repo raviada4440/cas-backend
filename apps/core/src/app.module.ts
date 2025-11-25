@@ -18,6 +18,7 @@ import { ReferenceDataModule } from './modules/reference-data/reference-data.mod
 import { UserModule } from './modules/user/user.module'
 import { OrdersModule } from './modules/orders/orders.module'
 import { AdminModule } from './modules/admin/admin.module'
+import { SearchModule } from './modules/search/search.module'
 import { CacheModule } from './processors/cache/cache.module'
 import { DatabaseModule } from './processors/database/database.module'
 import { GatewayModule } from './processors/gateway/gateway.module'
@@ -50,6 +51,7 @@ const envFilePath = process.env['DOTENV_CONFIG_PATH'] || '.env'
     ReferenceDataModule,
     OrdersModule,
     AdminModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [
