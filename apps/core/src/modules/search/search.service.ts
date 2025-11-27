@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Prisma } from '@db/client'
 
@@ -44,6 +44,7 @@ interface SemanticInternalResult {
 const DEFAULT_KEYWORD_WEIGHT = 0.6
 const DEFAULT_SEMANTIC_WEIGHT = 0.4
 const ENV_PRESET_KEY = 'TYPESENSE_TESTS_PRESET'
+const DEFAULT_VECTOR_DIMENSION = 3072
 
 @Injectable()
 export class SearchService {
@@ -51,6 +52,7 @@ export class SearchService {
   private readonly semanticLimit: number
   private readonly defaultHybridWeights: HybridSearchWeightConfig
   private readonly defaultPreset?: string
+  private readonly embeddingDimension: number
 
   constructor(
     private readonly configService: ConfigService,
@@ -71,6 +73,9 @@ export class SearchService {
       semantic: semanticWeight,
     })
     this.defaultPreset = this.configService.get<string>(ENV_PRESET_KEY) ?? undefined
+    this.embeddingDimension =
+      Number(this.configService.get<string>('SEARCH_SEMANTIC_VECTOR_DIM')) ||
+      DEFAULT_VECTOR_DIMENSION
   }
 
   async keywordSearch(request: KeywordSearchRequest): Promise<SearchResponse> {
@@ -194,6 +199,12 @@ export class SearchService {
         ? request.embedding
         : await this.embeddingService.embedText(request.query)
 
+    if (embedding.length !== this.embeddingDimension) {
+      throw new BadRequestException(
+        `Query embedding dimension ${embedding.length} does not match expected ${this.embeddingDimension}`,
+      )
+    }
+
     const rows = await this.vectorSearch(embedding, request.filters, request.limit)
     const items = rows.map((row) => {
       const metadata = this.mergeMetadata(row)
@@ -272,8 +283,10 @@ export class SearchService {
     }
 
     const vectorLiteral = `[${embedding.map((value) => Number(value).toString()).join(',')}]`
+    const vectorCast = `vector(${this.embeddingDimension})`
     const params: unknown[] = [vectorLiteral]
     const conditions: string[] = []
+    conditions.push(`e."embeddingOpenai" IS NOT NULL`)
     let paramIndex = 2
 
     if (filters?.testIds?.length) {
@@ -288,7 +301,7 @@ export class SearchService {
     }
     if (filters?.statuses?.length) {
       params.push(filters.statuses)
-      conditions.push(`t."status" = ANY($${paramIndex}::text[])`)
+      conditions.push(`t."status" = ANY($${paramIndex}::"TestCatalogStatus"[])`)
       paramIndex++
     }
     if (filters?.categories?.length) {
@@ -304,8 +317,8 @@ export class SearchService {
       SELECT
         e."testId" AS "testId",
         e.metadata AS "metadata",
-        e.embedding <-> $1::vector AS "distance",
-        1.0 / (1.0 + (e.embedding <-> $1::vector)) AS "semanticScore",
+        e."embeddingOpenai" <-> $1::${vectorCast} AS "distance",
+        1.0 / (1.0 + (e."embeddingOpenai" <-> $1::${vectorCast})) AS "semanticScore",
         t."testName" AS "testName",
         t."status" AS "status",
         t."casandraTestId" AS "casandraTestId",
@@ -315,7 +328,7 @@ export class SearchService {
       FROM "TestCatalogEmbedding" e
       INNER JOIN "TestCatalog" t ON t."id" = e."testId"
       ${whereClause}
-      ORDER BY e.embedding <-> $1::vector ASC
+      ORDER BY e."embeddingOpenai" <-> $1::${vectorCast} ASC
       LIMIT $${paramIndex};
     `
 

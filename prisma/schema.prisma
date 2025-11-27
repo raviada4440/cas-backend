@@ -1734,10 +1734,11 @@ model KeyPairRef {
 }
 
 model TestCatalogEmbedding {
-  id        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  testId    String                @unique(map: "TestCatalogEmbedding_testId_key") @db.Uuid
-  embedding Unsupported("vector")
-  metadata  Json?
+  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  testId           String                 @unique(map: "TestCatalogEmbedding_testId_key") @db.Uuid
+  embeddingAlibaba Unsupported("vector")
+  embeddingOpenai  Unsupported("vector")?
+  metadata         Json?
 
   test TestCatalog @relation(fields: [testId], references: [id], onDelete: Cascade)
 

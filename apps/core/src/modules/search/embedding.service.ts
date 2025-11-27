@@ -14,7 +14,7 @@ export class EmbeddingService {
     this.provider = this.configService.get<string>('SEARCH_EMBEDDING_PROVIDER') ?? 'openai'
     this.openAiApiKey = this.configService.get<string>('OPENAI_API_KEY')
     this.openAiEmbeddingModel =
-      this.configService.get<string>('OPENAI_EMBEDDING_MODEL') ?? 'text-embedding-3-small'
+      this.configService.get<string>('OPENAI_EMBEDDING_MODEL') ?? 'text-embedding-3-large'
     this.openAiBaseUrl =
       this.configService.get<string>('OPENAI_BASE_URL') ?? 'https://api.openai.com/v1'
   }
