@@ -36,7 +36,8 @@
     "migrate:dev": "pnpm -C prisma run migrate:dev",
     "migrate:deploy": "pnpm -C prisma run migrate:deploy",
     "prisma:migrate:resolve": "pnpm -C prisma run prisma:migrate:resolve",
-    "prisma:generate": "pnpm -C prisma run build"
+    "prisma:generate": "pnpm -C prisma run build",
+    "start:prod": "pnpm run migrate:deploy && cross-env NODE_ENV=production node dist/main.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
