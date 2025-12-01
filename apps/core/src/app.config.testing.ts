@@ -24,17 +24,33 @@ export const CROSS_DOMAIN = {
 const DEFAULT_REDIS_HOST = 'localhost'
 const DEFAULT_REDIS_PORT = 6379
 
-const redisHost = argv.redis_host ?? process.env.REDIS_HOST ?? DEFAULT_REDIS_HOST
-const redisPort =
+const upstashRedisUrl = process.env.UPSTASH_REDIS_URL
+let redisHost = argv.redis_host ?? process.env.REDIS_HOST ?? DEFAULT_REDIS_HOST
+let redisPort =
   Number(argv.redis_port ?? process.env.REDIS_PORT ?? DEFAULT_REDIS_PORT) || DEFAULT_REDIS_PORT
-const redisPassword = argv.redis_password ?? process.env.REDIS_PASSWORD ?? null
-const redisUsername = argv.redis_username ?? process.env.REDIS_USERNAME ?? null
+let redisPassword = argv.redis_password ?? process.env.REDIS_PASSWORD ?? null
+let redisUsername = argv.redis_username ?? process.env.REDIS_USERNAME ?? null
+let redisTls = false
+
+if (upstashRedisUrl) {
+  try {
+    const parsed = new URL(upstashRedisUrl)
+    redisHost = parsed.hostname
+    redisPort = parsed.port ? Number(parsed.port) : DEFAULT_REDIS_PORT
+    redisPassword = parsed.password || null
+    redisUsername = parsed.username || null
+    redisTls = parsed.protocol === 'rediss:'
+  } catch (error) {
+    console.warn('Invalid UPSTASH_REDIS_URL provided, falling back to default Redis config.')
+  }
+}
 
 export const REDIS = {
   host: redisHost,
   port: redisPort,
   password: redisPassword,
   username: redisUsername,
+  tls: redisTls,
   ttl: null,
   httpCacheTTL: 5,
   max: 5,

@@ -19,6 +19,11 @@ export class CacheConfigService implements CacheOptionsFactory {
       host: REDIS.host as string,
       port: REDIS.port as number,
     }
+    if (REDIS.tls) {
+      redisOptions.tls = {
+        rejectUnauthorized: false,
+      }
+    }
     if (REDIS.password) {
       redisOptions.password = REDIS.password
     }
