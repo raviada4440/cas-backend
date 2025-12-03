@@ -1,5 +1,7 @@
 import { z } from 'zod/v4'
 
+export const UserAttributeUserTypeEnum = z.enum(['Admin', 'Provider', 'Organization'])
+
 export const UserSummary = z.object({
   id: z.string().uuid(),
   name: z.string().nullable(),

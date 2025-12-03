@@ -83,3 +83,34 @@ export type HybridSearchWeightConfig = z.infer<typeof HybridSearchWeights>
 export type SearchResultItem = z.infer<typeof SearchResultItemSchema>
 export type SearchResponse = z.infer<typeof SearchResponseSchema>
 
+export const TypesenseSyncActionEnum = z.enum(['sync-all', 'sync-single', 'remove', 'reindex'])
+
+export const TypesenseSyncRequestSchema = z
+  .object({
+    action: TypesenseSyncActionEnum,
+    testId: z.string().uuid().optional(),
+  })
+  .strict()
+
+export const TypesenseSyncResponseSchema = z
+  .object({
+    success: z.boolean(),
+    message: z.string(),
+    result: z.unknown().optional(),
+  })
+  .strict()
+
+export const TypesenseHealthResponseSchema = z
+  .object({
+    status: z.enum(['healthy', 'unhealthy']),
+    collections: z.number().int().nonnegative().optional(),
+    collectionNames: z.array(z.string()).optional(),
+    error: z.string().optional(),
+  })
+  .strict()
+
+export type TypesenseSyncAction = z.infer<typeof TypesenseSyncActionEnum>
+export type TypesenseSyncRequest = z.infer<typeof TypesenseSyncRequestSchema>
+export type TypesenseSyncResponse = z.infer<typeof TypesenseSyncResponseSchema>
+export type TypesenseHealthResponse = z.infer<typeof TypesenseHealthResponseSchema>
+

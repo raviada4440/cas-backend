@@ -251,6 +251,50 @@ model Account {
   @@unique([userId, provider])
 }
 
+enum ChatContactStatus {
+  online
+  offline
+  busy
+  away
+}
+
+enum ChatMessageSenderType {
+  USER
+  ASSISTANT
+}
+
+model ChatContact {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  displayName        String
+  title              String?          @db.VarChar(256)
+  avatarUrl          String?          @db.VarChar(512)
+  status             ChatContactStatus @default(offline)
+  about              String?          @db.Text
+  lastMessagePreview String?          @db.Text
+  lastMessageAt      DateTime?        @db.Timestamp(0)
+  unreadCount        Int              @default(0)
+  createdAt          DateTime         @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime         @updatedAt @db.Timestamp(0)
+
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contactId      String                @db.Uuid
+  senderId       String                @db.VarChar(128)
+  senderType     ChatMessageSenderType
+  content        String                @db.Text
+  replayMetadata Boolean               @default(false)
+  sentAt         DateTime              @default(now()) @db.Timestamp(0)
+  createdAt      DateTime              @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime              @updatedAt @db.Timestamp(0)
+
+  contact ChatContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId, sentAt])
+}
+
 model Admin {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String?

@@ -6,6 +6,7 @@
 /dist
 /node_modules
 **/node_modules
+apps/**/dist
 
 # Logs
 logs
@@ -58,3 +59,8 @@ consolidate/
 .corepack/
 
 prisma/generated/
+
+# Package build artifacts
+packages/**/dist
+packages/**/tsconfig.tsbuildinfo
+**/*.tsbuildinfo

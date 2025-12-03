@@ -22,18 +22,25 @@ export class OrganizationEndpointsService {
   ): Promise<OrganizationEndpointListResponse> {
     const where: Prisma.OrganizationEndpointWhereInput = {}
 
+    where.isActive = true
+    where.fhirVersion = 'R4'
+
     if (query.search) {
-      where.orgName = { contains: query.search, mode: Prisma.QueryMode.insensitive }
+      where.OR = [
+        { orgName: { contains: query.search, mode: Prisma.QueryMode.insensitive } },
+        { endpoint: { contains: query.search, mode: Prisma.QueryMode.insensitive } },
+        { issuer: { contains: query.search, mode: Prisma.QueryMode.insensitive } },
+      ]
     }
 
     if (query.vendor) {
-      where.ehrVendor = { contains: query.vendor, mode: Prisma.QueryMode.insensitive }
+      where.ehrVendor = { equals: query.vendor, mode: Prisma.QueryMode.insensitive }
     }
 
     const items = await this.db.prisma.organizationEndpoint.findMany({
       where,
-      orderBy: [{ orgName: 'asc' }],
-      take: query.limit ?? 20,
+      orderBy: [{ orgName: 'asc' }, { endpoint: 'asc' }],
+      take: query.limit ?? 50,
     })
 
     return {
@@ -43,7 +50,7 @@ export class OrganizationEndpointsService {
 
   async detail(endpointId: string): Promise<OrganizationEndpointRecord> {
     const endpoint = await this.db.prisma.organizationEndpoint.findUnique({
-      where: { id: endpointId },
+      where: { id: endpointId, isActive: true },
     })
 
     if (!endpoint) {

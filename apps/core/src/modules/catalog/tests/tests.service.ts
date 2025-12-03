@@ -11,7 +11,6 @@ import {
   CreateDraftVersionInput,
   CreateTestInput,
   AuditLog,
-  AuditLogList,
   ListTestsQuery,
   LabTestLookupResponse,
   PublishVersionInput,
@@ -26,7 +25,6 @@ import {
   UpdateVersionCptCodesDto,
   UpdateVersionLoincCodesDto,
   UpdateVersionSpecimensDto,
-  TestAuditQuery,
   VersionUpdateInput,
 } from './tests.dto'
 
@@ -842,57 +840,6 @@ export class TestsService {
     })
 
     return this.mapAuditLogs(logs)
-  }
-
-  async getAuditLogs(testId: string, query: TestAuditQuery): Promise<AuditLogList> {
-    await this.ensureTestExists(testId)
-
-    const take = Math.min(query.limit ?? 100, 200)
-    const where: Prisma.TestCatalogAuditLogWhereInput = {
-      testId,
-    }
-
-    if (typeof query.versionNumber === 'number') {
-      where.versionNumber = query.versionNumber
-    }
-
-    if (query.configurationId) {
-      where.configurationId = query.configurationId
-    }
-
-    if (query.action) {
-      where.action = query.action
-    }
-
-    if (query.performedBy) {
-      where.performedBy = query.performedBy
-    }
-
-    if (query.from || query.to) {
-      const performedAt: Prisma.DateTimeFilter = {}
-      if (query.from) {
-        performedAt.gte = new Date(query.from)
-      }
-      if (query.to) {
-        performedAt.lte = new Date(query.to)
-      }
-      where.performedAt = performedAt
-    }
-
-    const auditLogs = await this.db.prisma.testCatalogAuditLog.findMany({
-      where,
-      orderBy: [{ performedAt: 'desc' }, { id: 'desc' }],
-      take: take + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    })
-
-    const items = await this.mapAuditLogs(auditLogs.slice(0, take))
-    const nextCursor = auditLogs.length > take ? auditLogs[take].id : null
-
-    return {
-      items,
-      nextCursor,
-    }
   }
 
   private async resolveVersionTestId(versionId: string): Promise<string> {

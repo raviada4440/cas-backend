@@ -20,7 +20,6 @@ import {
   VersionIdParamDto,
   VersionUpdateDto,
   VersionTypeQueryDto,
-  TestAuditQueryDto,
   UpdateVersionCptCodesDto,
   UpdateVersionLoincCodesDto,
   UpdateVersionBiomarkersDto,
@@ -126,12 +125,6 @@ export class TestsController {
   @ApiOperation({ summary: 'Get test activity' })
   activity(@Param() params: TestIdParamDto) {
     return this.testsService.getActivity(params.testId)
-  }
-
-  @Get('/:testId/audit')
-  @ApiOperation({ summary: 'Get audit logs' })
-  audit(@Param() params: TestIdParamDto, @Query() query: TestAuditQueryDto) {
-    return this.testsService.getAuditLogs(params.testId, query)
   }
 
   @Get('/:testId/versions/:versionId/cpt-codes')
