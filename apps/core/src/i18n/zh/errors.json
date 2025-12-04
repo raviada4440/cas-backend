@@ -1,0 +1,28 @@
+{
+  "no_content_can_be_modified": "没有内容可以被修改",
+  "post_not_found": "文章不存在",
+  "post_exist": "文章已存在",
+  "category_not_found": "分类不存在",
+  "category_cannot_deleted": "该分类中有其他文章，无法被删除",
+  "category_already_exists": "分类已存在",
+  "user_not_found": "用户不存在",
+  "user_exist": "用户已存在",
+  "lab_not_found": "实验室不存在",
+  "biomarker_not_found": "生物标记物不存在",
+  "icd_not_found": "ICD 不存在",
+  "cpt_not_found": "CPT 不存在",
+  "loinc_not_found": "LOINC 不存在",
+  "test_not_found": "检测不存在",
+  "test_version_not_found": "检测版本不存在",
+  "test_configuration_not_found": "配置不存在",
+  "order_form_section_not_found": "表单分区不存在",
+  "order_form_template_not_found": "表单模板不存在",
+  "lab_order_not_found": "检测订单不存在",
+  "patient_not_found": "患者不存在",
+  "provider_not_found": "医生不存在",
+  "organization_not_found": "机构不存在",
+  "organization_endpoint_not_found": "机构接口不存在",
+  "unknown": "未知错误",
+  "biz_exception": "业务异常"
+}
+

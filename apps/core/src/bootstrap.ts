@@ -20,7 +20,7 @@ declare const module: any
 
 export async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, fastifyApp, {
-    logger: ['error', 'debug'],
+    logger: ['error', 'warn', 'log'],
   })
 
   const hosts = Origin.map((host) => new RegExp(host, 'i'))
@@ -41,8 +41,8 @@ export async function bootstrap() {
 
   if (enableSwagger) {
     const swaggerConfig = new DocumentBuilder()
-      .setTitle('Nest HTTP Prisma Zod API')
-      .setDescription('API documentation for the Nest HTTP template')
+      .setTitle('Casandra Backend API')
+      .setDescription('API documentation for the Casandra Backend')
       .setVersion(API_VERSION.toString())
       .addBearerAuth({
         type: 'http',

@@ -27,40 +27,48 @@ export enum ErrorCodeEnum {
   OrganizationEndpointNotFound = 42040,
 }
 
-export const ErrorCode = Object.freeze<Record<ErrorCodeEnum, [string, string, number]>>({
-  [ErrorCodeEnum.NoContentCanBeModified]: ['no content can be modified', '没有内容可以被修改', 400],
-  [ErrorCodeEnum.PostNotFound]: ['post not found', '文章不存在', 404],
-  [ErrorCodeEnum.PostExist]: ['post already exist', '文章已存在', 400],
-  [ErrorCodeEnum.CategoryNotFound]: ['category not found', '分类不存在', 404],
-  [ErrorCodeEnum.CategoryCannotDeleted]: [
-    'there are other posts in this category, cannot be deleted',
-    '该分类中有其他文章，无法被删除',
-    400,
-  ],
-  [ErrorCodeEnum.CategoryAlreadyExists]: ['category already exists', '分类已存在', 400],
-  [ErrorCodeEnum.UserNotFound]: ['user not found', '用户不存在', 404],
-  [ErrorCodeEnum.UserExist]: ['user already exist', '用户已存在', 400],
-  [ErrorCodeEnum.LabNotFound]: ['lab not found', '实验室不存在', 404],
-  [ErrorCodeEnum.BiomarkerNotFound]: ['biomarker not found', '生物标记物不存在', 404],
-  [ErrorCodeEnum.IcdNotFound]: ['icd not found', 'ICD 不存在', 404],
-  [ErrorCodeEnum.CptNotFound]: ['cpt not found', 'CPT 不存在', 404],
-  [ErrorCodeEnum.LoincNotFound]: ['loinc not found', 'LOINC 不存在', 404],
-  [ErrorCodeEnum.TestNotFound]: ['test not found', '检测不存在', 404],
-  [ErrorCodeEnum.TestVersionNotFound]: ['test version not found', '检测版本不存在', 404],
-  [ErrorCodeEnum.TestConfigurationNotFound]: ['test configuration not found', '配置不存在', 404],
-  [ErrorCodeEnum.OrderFormSectionNotFound]: ['order form section not found', '表单分区不存在', 404],
-  [ErrorCodeEnum.OrderFormTemplateNotFound]: [
-    'order form template not found',
-    '表单模板不存在',
-    404,
-  ],
-  [ErrorCodeEnum.LabOrderNotFound]: ['lab order not found', '检测订单不存在', 404],
-  [ErrorCodeEnum.PatientNotFound]: ['patient not found', '患者不存在', 404],
-  [ErrorCodeEnum.ProviderNotFound]: ['provider not found', '医生不存在', 404],
-  [ErrorCodeEnum.OrganizationNotFound]: ['organization not found', '机构不存在', 404],
-  [ErrorCodeEnum.OrganizationEndpointNotFound]: [
-    'organization endpoint not found',
-    '机构接口不存在',
-    404,
-  ],
+type ErrorDescriptor = {
+  key: string
+  status: number
+}
+
+export const ErrorCode = Object.freeze<Record<ErrorCodeEnum, ErrorDescriptor>>({
+  [ErrorCodeEnum.NoContentCanBeModified]: { key: 'errors.no_content_can_be_modified', status: 400 },
+  [ErrorCodeEnum.PostNotFound]: { key: 'errors.post_not_found', status: 404 },
+  [ErrorCodeEnum.PostExist]: { key: 'errors.post_exist', status: 400 },
+  [ErrorCodeEnum.CategoryNotFound]: { key: 'errors.category_not_found', status: 404 },
+  [ErrorCodeEnum.CategoryCannotDeleted]: {
+    key: 'errors.category_cannot_deleted',
+    status: 400,
+  },
+  [ErrorCodeEnum.CategoryAlreadyExists]: { key: 'errors.category_already_exists', status: 400 },
+  [ErrorCodeEnum.UserNotFound]: { key: 'errors.user_not_found', status: 404 },
+  [ErrorCodeEnum.UserExist]: { key: 'errors.user_exist', status: 400 },
+  [ErrorCodeEnum.LabNotFound]: { key: 'errors.lab_not_found', status: 404 },
+  [ErrorCodeEnum.BiomarkerNotFound]: { key: 'errors.biomarker_not_found', status: 404 },
+  [ErrorCodeEnum.IcdNotFound]: { key: 'errors.icd_not_found', status: 404 },
+  [ErrorCodeEnum.CptNotFound]: { key: 'errors.cpt_not_found', status: 404 },
+  [ErrorCodeEnum.LoincNotFound]: { key: 'errors.loinc_not_found', status: 404 },
+  [ErrorCodeEnum.TestNotFound]: { key: 'errors.test_not_found', status: 404 },
+  [ErrorCodeEnum.TestVersionNotFound]: { key: 'errors.test_version_not_found', status: 404 },
+  [ErrorCodeEnum.TestConfigurationNotFound]: {
+    key: 'errors.test_configuration_not_found',
+    status: 404,
+  },
+  [ErrorCodeEnum.OrderFormSectionNotFound]: {
+    key: 'errors.order_form_section_not_found',
+    status: 404,
+  },
+  [ErrorCodeEnum.OrderFormTemplateNotFound]: {
+    key: 'errors.order_form_template_not_found',
+    status: 404,
+  },
+  [ErrorCodeEnum.LabOrderNotFound]: { key: 'errors.lab_order_not_found', status: 404 },
+  [ErrorCodeEnum.PatientNotFound]: { key: 'errors.patient_not_found', status: 404 },
+  [ErrorCodeEnum.ProviderNotFound]: { key: 'errors.provider_not_found', status: 404 },
+  [ErrorCodeEnum.OrganizationNotFound]: { key: 'errors.organization_not_found', status: 404 },
+  [ErrorCodeEnum.OrganizationEndpointNotFound]: {
+    key: 'errors.organization_endpoint_not_found',
+    status: 404,
+  },
 })

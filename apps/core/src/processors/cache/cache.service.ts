@@ -1,8 +1,10 @@
 import { Cache } from 'cache-manager'
-import { Redis } from 'ioredis'
+import Redis from 'ioredis'
 
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Inject, Injectable, Logger } from '@nestjs/common'
+
+import { REDIS } from '@core/app.config'
 
 export type TCacheKey = string
 
@@ -10,6 +12,7 @@ export type TCacheKey = string
 export class CacheService {
   private cache: Cache
   private logger = new Logger(CacheService.name)
+  private fallbackClient?: Redis
 
   constructor(@Inject(CACHE_MANAGER) cache: Cache) {
     this.cache = cache
@@ -24,22 +27,55 @@ export class CacheService {
     }
   }
 
+  private ensureFallbackClient(): Redis {
+    if (!this.fallbackClient) {
+      this.logger.warn('Falling back to direct Redis client initialization.')
+      this.fallbackClient = new Redis({
+        host: REDIS.host as string,
+        port: REDIS.port as number,
+        username: REDIS.username ?? undefined,
+        password: REDIS.password ?? undefined,
+        tls: REDIS.tls
+          ? {
+              rejectUnauthorized: false,
+            }
+          : undefined,
+      })
+
+      this.fallbackClient.on('error', (error) => {
+        this.logger.error('Fallback Redis client error', error as Error)
+      })
+    }
+
+    return this.fallbackClient
+  }
+
   private safeGetClient(): Redis | undefined {
     const maybeStore = (this.cache as Cache & { store?: unknown }).store ?? this.cache
     if (!maybeStore || typeof maybeStore !== 'object') {
-      return undefined
-    }
-
-    const getClient = (maybeStore as { getClient?: () => Redis }).getClient
-    if (typeof getClient !== 'function') {
-      return undefined
+      return this.ensureFallbackClient()
     }
 
     try {
-      return getClient()
+      const storeWithGetClient = maybeStore as { getClient?: () => Redis }
+      if (typeof storeWithGetClient.getClient === 'function') {
+        return storeWithGetClient.getClient()
+      }
+
+      const storeWithClient = maybeStore as { client?: Redis }
+      if (storeWithClient.client) {
+        return storeWithClient.client
+      }
+
+      const storeDirect = maybeStore as Redis
+      if (storeDirect && typeof storeDirect.status === 'string') {
+        return storeDirect
+      }
+
+      return this.ensureFallbackClient()
     } catch (error) {
       this.logger.error('Failed to acquire Redis client from cache store', error as Error)
-      return undefined
+      return this.ensureFallbackClient()
     }
   }
 

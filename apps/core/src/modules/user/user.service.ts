@@ -8,15 +8,14 @@ import { DatabaseService } from '@core/processors/database/database.service'
 import { resourceNotFoundWrapper } from '@core/shared/utils/prisma.util'
 import { Injectable, UnprocessableEntityException } from '@nestjs/common'
 
-import { UserRegisterDto, UserRegisterInput } from './dtos/register.dto'
+import { UserRegisterInput } from './dtos/register.dto'
 import { USER_IMMUTABLE_KEYS } from './user.protect'
 
 @Injectable()
 export class UserService {
   constructor(private readonly db: DatabaseService) {}
 
-  async register(userDto: UserRegisterDto) {
-    const userInput = userDto as UserRegisterInput
+  async register(userInput: UserRegisterInput) {
     const isExist = await this.db.prisma.user.findUnique({
       where: {
         email: userInput.email,

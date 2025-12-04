@@ -52,11 +52,11 @@ const assignRoleSchema = z.object({
   userId: uuidSchema,
   assignedBy: uuidSchema.optional(),
   expiresAt: z
-    .union([z.string(), z.date()])
+    .string()
     .optional()
     .transform((value) => {
       if (!value) return undefined
-      const date = value instanceof Date ? value : new Date(value)
+      const date = new Date(value)
       return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
     }),
 })
@@ -67,11 +67,11 @@ const removeRoleSchema = z.object({
 
 const updateUserRoleSchema = z.object({
   expiresAt: z
-    .union([z.string(), z.date()])
+    .string()
     .optional()
     .transform((value) => {
       if (!value) return undefined
-      const date = value instanceof Date ? value : new Date(value)
+      const date = new Date(value)
       return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
     }),
 })
@@ -80,11 +80,11 @@ const bulkAssignSchema = z.object({
   roleIds: z.array(uuidSchema).nonempty(),
   assignedBy: uuidSchema.optional(),
   expiresAt: z
-    .union([z.string(), z.date()])
+    .string()
     .optional()
     .transform((value) => {
       if (!value) return undefined
-      const date = value instanceof Date ? value : new Date(value)
+      const date = new Date(value)
       return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
     }),
 })

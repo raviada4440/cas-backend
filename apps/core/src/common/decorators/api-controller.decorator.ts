@@ -1,8 +1,7 @@
 import { API_VERSION } from '@core/app.config'
-import { isDev, isTest } from '@core/global/env.global'
 import { Controller, ControllerOptions } from '@nestjs/common'
 
-export const apiRoutePrefix = isDev || isTest ? '' : `/api/v${API_VERSION}`
+export const apiRoutePrefix = `/api/v${API_VERSION}`
 
 type ControllerFactory = typeof Controller
 type ControllerDecorator = ReturnType<ControllerFactory>

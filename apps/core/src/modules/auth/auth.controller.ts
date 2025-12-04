@@ -1,5 +1,5 @@
 import { Body, Get, HttpCode, HttpStatus, Post, Query, Req } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { FastifyRequest } from 'fastify'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
@@ -7,17 +7,21 @@ import { Auth } from '@core/common/decorators/auth.decorator'
 import { ZodValidationPipe } from '@core/common/pipes/zod-validation.pipe'
 
 import {
+  LoginRequestDto,
   InviteUserRequestDto,
   InviteUserResponseDto,
   LoginResponseDto,
   ResendVerificationRequestDto,
+  SetPasswordRequestDto,
   SetPasswordResponseDto,
   SystemTokenConfigResponseDto,
   SystemTokenQuery,
+  SystemTokenQuerySchema,
+  SystemTokenRequestDto,
   SystemTokenResponseDto,
   VerificationStatusDto,
   VerifyEmailRequestDto,
- SystemTokenQuerySchema } from './auth.dto'
+} from './auth.dto'
 import { AuthService } from './auth.service'
 import { SystemTokenService } from './system-token.service'
 import { UserOnboardingService } from './user-onboarding.service'
@@ -52,19 +56,24 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate using email and password' })
   @ApiOkResponse({ type: LoginResponseDto })
+  @ApiBody({ type: LoginRequestDto })
   async login(@Body(new ZodValidationPipe(LoginRequestSchema)) body: LoginRequest) {
     const user = await this.authService.validateEmailAndPassword(body.email, body.password)
     const token = await this.authService.signToken(user.id)
 
     const { password: _password, ...sanitized } = user
 
+    const normalizedUser = {
+      ...sanitized,
+      createdAt: sanitized.createdAt.toISOString(),
+      updatedAt: sanitized.updatedAt.toISOString(),
+    }
+
     return {
+      ...normalizedUser,
       token,
-      user: {
-        ...sanitized,
-        createdAt: sanitized.createdAt.toISOString(),
-        updatedAt: sanitized.updatedAt.toISOString(),
-      },
+      accessToken: token,
+      user: normalizedUser,
     }
   }
 
@@ -72,6 +81,7 @@ export class AuthController {
   @Auth()
   @ApiOperation({ summary: 'Generate a system token for backend FHIR operations' })
   @ApiOkResponse({ type: SystemTokenResponseDto })
+  @ApiBody({ type: SystemTokenRequestDto })
   async createSystemToken(
     @Req() request: RequestWithOwner,
     @Body(new ZodValidationPipe(SystemTokenRequestSchema)) body: SystemTokenRequest,
@@ -96,6 +106,7 @@ export class AuthController {
   @Auth()
   @ApiOperation({ summary: 'Invite a new user and issue a verification token' })
   @ApiOkResponse({ type: InviteUserResponseDto })
+  @ApiBody({ type: InviteUserRequestDto })
   async inviteUser(
     @Body(new ZodValidationPipe(InviteUserRequestDto.schema)) body: InviteUserRequest,
   ) {
@@ -106,6 +117,7 @@ export class AuthController {
   @Auth()
   @ApiOperation({ summary: 'Resend a verification email to a user' })
   @ApiOkResponse({ type: VerificationStatusDto })
+  @ApiBody({ type: ResendVerificationRequestDto })
   async resendVerification(
     @Body(new ZodValidationPipe(ResendVerificationRequestDto.schema))
     body: ResendVerificationRequest,
@@ -116,6 +128,7 @@ export class AuthController {
   @Post('users/verify-email')
   @ApiOperation({ summary: 'Verify a user email via verification token' })
   @ApiOkResponse({ type: VerificationStatusDto })
+  @ApiBody({ type: VerifyEmailRequestDto })
   async verifyEmail(
     @Body(new ZodValidationPipe(VerifyEmailRequestDto.schema)) body: VerifyEmailRequest,
   ) {
@@ -125,6 +138,7 @@ export class AuthController {
   @Post('users/set-password')
   @ApiOperation({ summary: 'Complete onboarding by setting the account password' })
   @ApiOkResponse({ type: SetPasswordResponseDto })
+  @ApiBody({ type: SetPasswordRequestDto })
   async setPassword(
     @Body(new ZodValidationPipe(SetPasswordRequestSchema)) body: SetPasswordRequest,
   ) {

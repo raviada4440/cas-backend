@@ -1,5 +1,12 @@
 import { Body, Get, Param, Post, Query, Req } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import {
+  ApiBody,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger'
 import { FastifyRequest } from 'fastify'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
@@ -10,10 +17,13 @@ import {
   ChatContactDto,
   ChatContactIdParamsDto,
   ChatConversationDto,
+  ChatHybridSearchRequestDto,
+  ChatKeywordSearchRequestDto,
   ChatProfileDto,
   ChatSchemaQueryDto,
   ChatSchemaResponseDto,
   ChatSearchResponseDto,
+  ChatSemanticSearchRequestDto,
   SendChatMessageDto,
 } from './chat.dto'
 import { ChatService } from './chat.service'
@@ -36,11 +46,33 @@ interface RequestWithOwner extends FastifyRequest {
 @ApiTags('Chat')
 @ApiController('chat')
 @Auth()
+@ApiExtraModels(
+  ChatKeywordSearchRequestDto,
+  ChatSemanticSearchRequestDto,
+  ChatHybridSearchRequestDto,
+)
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Post()
   @ApiOperation({ summary: 'Execute a chat query using keyword, semantic, or hybrid search' })
+  @ApiBody({
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(ChatKeywordSearchRequestDto) },
+        { $ref: getSchemaPath(ChatSemanticSearchRequestDto) },
+        { $ref: getSchemaPath(ChatHybridSearchRequestDto) },
+      ],
+      discriminator: {
+        propertyName: 'mode',
+        mapping: {
+          keyword: getSchemaPath(ChatKeywordSearchRequestDto),
+          semantic: getSchemaPath(ChatSemanticSearchRequestDto),
+          hybrid: getSchemaPath(ChatHybridSearchRequestDto),
+        },
+      },
+    },
+  })
   @ApiOkResponse({ type: ChatSearchResponseDto })
   public async search(
     @Req() req: RequestWithOwner,

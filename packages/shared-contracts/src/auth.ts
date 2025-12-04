@@ -17,14 +17,13 @@ export const LoginUserSchema = z
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
   })
-  .strict()
+  .passthrough()
 
-export const LoginResponseSchema = z
-  .object({
-    token: z.string().min(1),
-    user: LoginUserSchema,
-  })
-  .strict()
+export const LoginResponseSchema = LoginUserSchema.extend({
+  token: z.string().min(1),
+  accessToken: z.string().min(1),
+  user: LoginUserSchema,
+}).passthrough()
 
 export const SystemTokenRequestSchema = z
   .object({

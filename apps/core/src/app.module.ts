@@ -4,6 +4,8 @@ import { Module, Type } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE, HttpAdapterHost } from '@nestjs/core'
 import { ThrottlerGuard } from '@nestjs/throttler'
+import { AcceptLanguageResolver, I18nJsonLoader, I18nModule, QueryResolver } from 'nestjs-i18n'
+import { join } from 'path'
 
 import { AppController } from './app.controller'
 import { AllExceptionsFilter } from './common/filters/all-exception.filter'
@@ -41,6 +43,21 @@ const envFilePath = process.env['DOTENV_CONFIG_PATH'] || '.env'
       envFilePath,
       expandVariables: true,
       ignoreEnvFile: false,
+    }),
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loader: I18nJsonLoader,
+      loaderOptions: {
+        path: join(__dirname, 'i18n'),
+        includeSubfolders: true,
+        filePattern: '*.json',
+        watch: process.env.NODE_ENV !== 'production',
+      },
+      fallbacks: {
+        'en-*': 'en',
+        'zh-*': 'zh',
+      },
+      resolvers: [{ use: QueryResolver, options: ['lang', 'locale'] }, AcceptLanguageResolver],
     }),
     // processors
     CacheModule,

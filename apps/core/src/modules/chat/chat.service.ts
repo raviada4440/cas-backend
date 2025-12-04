@@ -46,7 +46,12 @@ export class ChatService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.seedDefaultsIfNecessary()
+    try {
+      await this.seedDefaultsIfNecessary()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      this.logger.warn(`Skipping chat seed due to error: ${message}`)
+    }
   }
 
   async executeSearch(

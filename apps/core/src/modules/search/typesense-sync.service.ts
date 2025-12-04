@@ -86,7 +86,10 @@ export class TypesenseSyncService {
     }
   }
 
-  async sync(request: TypesenseSyncRequest, _actorId: string | null): Promise<TypesenseSyncResponse> {
+  async sync(
+    request: TypesenseSyncRequest,
+    _actorId: string | null,
+  ): Promise<TypesenseSyncResponse> {
     switch (request.action) {
       case 'sync-all':
         return this.syncAll()

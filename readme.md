@@ -41,6 +41,11 @@ npm run dev
 
 **Before you start dev, do not forget copy `.env.template` to `.env`**
 
+## Error Handling
+
+- Business errors return `{ ok, code, message }` where `message` is resolved by `nestjs-i18n`.
+- Add or update locale strings under `apps/core/src/i18n/<lang>/errors.json` when introducing new error codes.
+
 ## Using this template for your own project
 
 Just tap the `Fork` button.

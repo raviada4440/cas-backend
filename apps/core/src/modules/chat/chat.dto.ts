@@ -4,11 +4,20 @@ import { z } from 'zod'
 import {
   ChatConversationSchema,
   ChatContactSchema,
+  ChatHybridSearchRequestSchema,
+  ChatKeywordSearchRequestSchema,
   ChatSearchResponseSchema,
   ChatSchemaResponseSchema,
   ChatProfileSchema,
+  ChatSemanticSearchRequestSchema,
   SendChatMessageInput,
 } from '@shared/contracts/chat'
+
+export class ChatKeywordSearchRequestDto extends createZodDto(ChatKeywordSearchRequestSchema) {}
+
+export class ChatSemanticSearchRequestDto extends createZodDto(ChatSemanticSearchRequestSchema) {}
+
+export class ChatHybridSearchRequestDto extends createZodDto(ChatHybridSearchRequestSchema) {}
 
 export class ChatSearchResponseDto extends createZodDto(ChatSearchResponseSchema) {}
 

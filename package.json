@@ -37,7 +37,7 @@
     "migrate:deploy": "pnpm -C prisma run migrate:deploy",
     "prisma:migrate:resolve": "pnpm -C prisma run prisma:migrate:resolve",
     "prisma:generate": "pnpm -C prisma run build",
-    "start:prod": "cross-env NODE_ENV=production node apps/core/dist/main.js"
+    "start:prod": "cross-env NODE_ENV=production ENABLE_SWAGGER=true node apps/core/dist/main.js"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.3",
@@ -46,12 +46,15 @@
     "cross-env": "7.0.3",
     "lodash": "4.17.21",
     "pg": "^8.16.3",
-    "prisma": "^7.0.0"
+    "prisma": "^7.0.0",
+    "nestjs-i18n": "^10.6.0",
+    "hbs": "^4.2.0"
   },
   "devDependencies": {
     "@innei/bump-version": "^1.5.10",
     "@innei/eslint-config-ts": "^0.12.0",
     "@innei/prettier": "^0.12.0",
+    "copy-webpack-plugin": "^11.0.0",
     "@nestjs/cli": "11.0.12",
     "@nestjs/schematics": "11.0.9",
     "@nestjs/testing": "11.1.9",
