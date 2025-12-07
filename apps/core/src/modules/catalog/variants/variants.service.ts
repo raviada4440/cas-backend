@@ -6,6 +6,16 @@ import { DatabaseService } from '@core/processors/database/database.service'
 import { resourceNotFoundWrapper } from '@core/shared/utils/prisma.util'
 import { Prisma, $Enums } from '@db/client'
 
+import { FileUploadRequirement, ResolvedOrderFormSection } from '@shared/contracts/order-forms'
+import {
+  OperationalVariantBiomarkerOverride,
+  OperationalVariantFinalBiomarker,
+} from '@shared/contracts/catalog-variants'
+import { ResolveVariantInput as ResolveVariantInputType } from '@shared/contracts/catalog'
+
+import { OrderFormsService } from '../order-forms/order-forms.service'
+import { TestsService } from '../tests/tests.service'
+
 import {
   CreateOperationalVariantInput,
   UpsertCustomerVariantInput,
@@ -38,7 +48,11 @@ const operationalVariantInclude = {
 
 @Injectable()
 export class VariantsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly testsService: TestsService,
+    private readonly orderFormsService: OrderFormsService,
+  ) {}
 
   async listOperationalVariants(testId: string, versionId?: string) {
     await this.ensureTestExists(testId)
@@ -208,6 +222,371 @@ export class VariantsService {
       },
     })
     return this.getBiomarkerOverrides(configurationId)
+  }
+
+  async getMasterDefaults(versionId: string) {
+    const version = await this.db.prisma.testCatalogVersion
+      .findUnique({
+        where: { id: versionId },
+        select: {
+          id: true,
+          testId: true,
+          turnAroundTime: true,
+          specialNotes: true,
+          patientResources: true,
+          providerResources: true,
+        },
+      })
+      .catch(() => null)
+
+    if (!version) {
+      throw new BizException(ErrorCodeEnum.TestVersionNotFound)
+    }
+
+    const [specimens, cptCodes, orderLoincs, resultLoincs, biomarkersRaw] = await Promise.all([
+      this.testsService.getVersionSpecimensByVersion(versionId),
+      this.testsService.getVersionCptCodesByVersion(versionId),
+      this.testsService.getVersionLoincCodesByVersion(versionId, 'ORDER'),
+      this.testsService.getVersionLoincCodesByVersion(versionId, 'RESULT'),
+      this.testsService.getVersionBiomarkersByVersion(versionId),
+    ])
+
+    const biomarkers = biomarkersRaw.map((biomarker) => ({
+      ...biomarker,
+      biomarker: {
+        hgncApprovedSymbol: (biomarker as any).symbol ?? null,
+        hgncApprovedName: (biomarker as any).name ?? null,
+      },
+    }))
+
+    const hasLogistics =
+      version.specialNotes || version.patientResources || version.providerResources
+
+    const logistics = hasLogistics
+      ? {
+          specialHandling: version.specialNotes ?? null,
+          patientInstructions: version.patientResources ?? null,
+          providerInstructions: version.providerResources ?? null,
+        }
+      : null
+
+    return {
+      specimens,
+      cptCodes,
+      orderLoincs,
+      resultLoincs,
+      biomarkers,
+      turnaround: version.turnAroundTime ?? null,
+      logistics,
+    }
+  }
+
+  async getVariantDiff(versionId: string, configurationId?: string) {
+    const version = await this.db.prisma.testCatalogVersion.findUnique({
+      where: { id: versionId },
+      select: { id: true, testId: true },
+    })
+
+    if (!version) {
+      throw new BizException(ErrorCodeEnum.TestVersionNotFound)
+    }
+
+    const master = await this.getMasterDefaults(versionId)
+
+    let configuration: OperationalConfigurationPayload | null = null
+    if (configurationId) {
+      configuration = await this.db.prisma.testCatalogConfiguration.findUnique({
+        where: { id: configurationId },
+        include: this.operationalInclude,
+      })
+
+      if (!configuration || configuration.testId !== version.testId) {
+        throw new BizException(ErrorCodeEnum.TestConfigurationNotFound)
+      }
+    }
+
+    const variant = configuration ? this.mapOperationalVariant(configuration) : null
+
+    const sectionsOverridden: string[] = []
+    if (variant) {
+      if (variant.specimenManifest.length > 0) {
+        sectionsOverridden.push('specimenManifest')
+      }
+      if (variant.cptOverrides.length > 0) {
+        sectionsOverridden.push('cpt')
+      }
+      if (variant.orderLoincOverrides.length > 0) {
+        sectionsOverridden.push('orderLoinc')
+      }
+      if (variant.resultLoincOverrides.length > 0) {
+        sectionsOverridden.push('resultLoinc')
+      }
+      if (variant.biomarkerOverrides.length > 0) {
+        sectionsOverridden.push('biomarkers')
+      }
+    }
+
+    const masterBiomarkers: MasterBiomarkerSnapshot[] = (master.biomarkers ?? []).map(
+      (item: any) => ({
+        hgncId: item.hgncId,
+        symbol: item.symbol ?? item.biomarker?.hgncApprovedSymbol ?? item.biomarker?.symbol ?? null,
+        name: item.name ?? item.biomarker?.hgncApprovedName ?? item.biomarker?.name ?? null,
+        transcriptReference: item.transcriptReference ?? null,
+      }),
+    )
+
+    const finalBiomarkers = this.buildFinalBiomarkers(
+      masterBiomarkers,
+      variant?.biomarkerOverrides ?? [],
+    )
+
+    return {
+      variant,
+      diff: {
+        sectionsOverridden,
+        finalBiomarkers,
+      },
+    }
+  }
+
+  async resolveVariant(input: ResolveVariantInputType) {
+    const { testId, dimension, dimensionValue, orderDate, versionId } = input
+
+    const version = await this.resolveVersionForTest(testId, versionId)
+    const normalizedValue = dimensionValue.trim()
+    const orderDateValue = this.parseOrderDate(orderDate)
+
+    const where: Prisma.TestCatalogConfigurationWhereInput = {
+      testId,
+      type: $Enums.TestCatalogConfigurationType.OPERATIONAL,
+      dimension,
+      isActive: true,
+      AND: [
+        {
+          OR: [{ effectiveDate: null }, { effectiveDate: { lte: orderDateValue } }],
+        },
+        {
+          OR: [{ expirationDate: null }, { expirationDate: { gte: orderDateValue } }],
+        },
+      ],
+    }
+
+    if (normalizedValue) {
+      ;(where.dimensionValue as Prisma.StringFilter) = {
+        equals: normalizedValue,
+        mode: Prisma.QueryMode.insensitive,
+      }
+    }
+
+    if (version.id) {
+      where.OR = [{ versionId: version.id }, { versionId: null }]
+    }
+
+    const configurations = await this.db.prisma.testCatalogConfiguration.findMany({
+      where,
+      include: this.operationalInclude,
+      orderBy: [{ versionNumber: 'desc' }, { effectiveDate: 'desc' }, { createdAt: 'desc' }],
+    })
+
+    const selectedConfiguration = this.pickBestConfiguration(configurations, version.id)
+    const resolvedVariant = selectedConfiguration
+      ? this.mapOperationalVariant(selectedConfiguration)
+      : null
+
+    const orderForm = await this.resolveOrderFormSections(
+      testId,
+      version.id,
+      resolvedVariant?.id ?? null,
+    )
+
+    const fileUploads: FileUploadRequirement[] = []
+
+    return {
+      versionId: version.id,
+      configurationId: resolvedVariant?.id ?? null,
+      orderForm,
+      fileUploads,
+    }
+  }
+
+  private buildFinalBiomarkers(
+    master: MasterBiomarkerSnapshot[],
+    overrides: OperationalVariantBiomarkerOverride[],
+  ): OperationalVariantFinalBiomarker[] {
+    const finalMap = new Map<string, OperationalVariantFinalBiomarker>()
+
+    for (const biomarker of master) {
+      finalMap.set(biomarker.hgncId, {
+        hgncId: biomarker.hgncId,
+        symbol: biomarker.symbol,
+        name: biomarker.name,
+        transcriptReference: biomarker.transcriptReference,
+        reportTier: null,
+        isReportable: null,
+        displayOrder: null,
+        notes: null,
+        source: 'MASTER',
+      })
+    }
+
+    const sortedOverrides = overrides.slice().sort((a, b) => {
+      const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER
+      const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER
+      if (orderA !== orderB) {
+        return orderA - orderB
+      }
+      return a.hgncId.localeCompare(b.hgncId)
+    })
+
+    for (const override of sortedOverrides) {
+      if (override.action === 'EXCLUDE') {
+        finalMap.delete(override.hgncId)
+        continue
+      }
+
+      const existing = finalMap.get(override.hgncId) ?? {
+        hgncId: override.hgncId,
+        symbol: null,
+        name: null,
+        transcriptReference: null,
+        reportTier: null,
+        isReportable: null,
+        displayOrder: null,
+        notes: null,
+        source: 'MASTER' as const,
+      }
+
+      const symbol = override.symbol ?? existing.symbol
+      const name = override.name ?? existing.name
+      const transcriptReference = override.transcriptReference ?? existing.transcriptReference
+      const reportTier = override.reportTier ?? existing.reportTier
+      const isReportable =
+        typeof override.isReportable === 'boolean' ? override.isReportable : existing.isReportable
+      const displayOrder = override.displayOrder ?? existing.displayOrder
+      const notes = override.notes ?? existing.notes
+
+      if (override.action === 'INCLUDE') {
+        finalMap.set(override.hgncId, {
+          hgncId: override.hgncId,
+          symbol,
+          name,
+          transcriptReference,
+          reportTier,
+          isReportable,
+          displayOrder,
+          notes,
+          source: 'INCLUDE',
+        })
+        continue
+      }
+
+      finalMap.set(override.hgncId, {
+        hgncId: override.hgncId,
+        symbol,
+        name,
+        transcriptReference,
+        reportTier,
+        isReportable,
+        displayOrder,
+        notes,
+        source: 'OVERRIDE',
+      })
+    }
+
+    return Array.from(finalMap.values()).sort((a, b) => {
+      const orderA = a.displayOrder ?? Number.MAX_SAFE_INTEGER
+      const orderB = b.displayOrder ?? Number.MAX_SAFE_INTEGER
+      if (orderA !== orderB) {
+        return orderA - orderB
+      }
+      return a.hgncId.localeCompare(b.hgncId)
+    })
+  }
+
+  private async resolveOrderFormSections(
+    testId: string,
+    versionId: string,
+    configurationId: string | null,
+  ): Promise<ResolvedOrderFormSection[]> {
+    const baseAssignments = await this.orderFormsService.getAssignments(testId, versionId)
+    const variantAssignments = configurationId
+      ? await this.orderFormsService.getAssignments(testId, versionId, configurationId)
+      : { items: [] }
+
+    const merged = [...baseAssignments.items, ...variantAssignments.items]
+
+    return merged.map((assignment) => {
+      const template = assignment.template
+      const section = template?.section
+
+      return {
+        assignmentId: assignment.id,
+        sectionId: section?.id ?? template?.orderFormSectionId ?? assignment.orderFormTemplateId,
+        sectionName: section?.name ?? template?.name ?? 'General',
+        templateId: assignment.orderFormTemplateId,
+        templateName: template?.name ?? 'Untitled',
+        displayOrder: assignment.displayOrder,
+        isRequired: assignment.isRequired,
+        isVisible: assignment.isVisible,
+        customTitle: assignment.customTitle ?? null,
+        formSchema: template?.formSchema ?? null,
+        layoutSchema: template?.layoutSchema ?? null,
+      }
+    })
+  }
+
+  private async resolveVersionForTest(testId: string, versionId?: string) {
+    if (versionId) {
+      const version = await this.db.prisma.testCatalogVersion.findUnique({
+        where: { id: versionId },
+        select: { id: true, testId: true, versionNumber: true },
+      })
+
+      if (!version || version.testId !== testId) {
+        throw new BizException(ErrorCodeEnum.TestVersionNotFound)
+      }
+
+      return version
+    }
+
+    let version = await this.db.prisma.testCatalogVersion.findFirst({
+      where: { testId, status: 'PUBLISHED' },
+      orderBy: { versionNumber: 'desc' },
+    })
+
+    if (!version) {
+      version = await this.db.prisma.testCatalogVersion.findFirst({
+        where: { testId },
+        orderBy: { versionNumber: 'desc' },
+      })
+    }
+
+    if (!version) {
+      throw new BizException(ErrorCodeEnum.TestVersionNotFound)
+    }
+
+    return version
+  }
+
+  private pickBestConfiguration(
+    configurations: OperationalConfigurationPayload[],
+    versionId: string,
+  ): OperationalConfigurationPayload | null {
+    if (configurations.length === 0) {
+      return null
+    }
+
+    const exactMatch = configurations.find((configuration) => configuration.versionId === versionId)
+    return exactMatch ?? configurations[0]
+  }
+
+  private parseOrderDate(value?: string | null) {
+    if (!value) {
+      return new Date()
+    }
+
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.valueOf()) ? new Date() : parsed
   }
 
   private async getBiomarkerOverrides(configurationId: string) {
@@ -546,3 +925,10 @@ type OperationalConfigurationPayload = Prisma.TestCatalogConfigurationGetPayload
 type CustomerConfigurationPayload = Prisma.TestCatalogConfigurationGetPayload<{
   include: { version: { select: { versionNumber: true } } }
 }>
+
+type MasterBiomarkerSnapshot = {
+  hgncId: string
+  symbol: string | null
+  name: string | null
+  transcriptReference: string | null
+}

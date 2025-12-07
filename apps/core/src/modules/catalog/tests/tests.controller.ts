@@ -112,6 +112,15 @@ export class TestsController {
     return this.testsService.updateVersion(params.versionId, body)
   }
 
+  @Put('/:testId/versions/:versionId')
+  @ApiOperation({ summary: 'Update version attributes for a test' })
+  updateVersionForTest(
+    @Param() params: TestIdParamDto & VersionIdParamDto,
+    @Body() body: VersionUpdateDto,
+  ) {
+    return this.testsService.updateVersionForTest(params.testId, params.versionId, body)
+  }
+
   @Get('/:testId/versions/:versionId/diff')
   @ApiOperation({ summary: 'Diff versions' })
   getVersionDiff(

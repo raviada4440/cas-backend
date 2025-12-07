@@ -1,9 +1,9 @@
 {
-  "name": "@nest-http/prisma",
+  "name": "casandra-backend-prisma",
   "description": "",
-  "author": "Innei <https://innei.in>",
+  "author": "Casandra <https://casandra.ai>",
   "private": true,
-  "license": "MIT",
+  "license": "Commercial",
   "main": "./client/index.js",
   "exports": {
     ".": "./client/index.js",

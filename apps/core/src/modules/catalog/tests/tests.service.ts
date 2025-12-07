@@ -502,6 +502,11 @@ export class TestsService {
       })
   }
 
+  async updateVersionForTest(testId: string, versionId: string, input: VersionUpdateInput) {
+    await this.ensureVersionMatchesTest(testId, versionId)
+    return this.updateVersion(versionId, input)
+  }
+
   async getVersionCptCodesByVersion(versionId: string) {
     const testId = await this.resolveVersionTestId(versionId)
     return this.getVersionCptCodes(testId, versionId)

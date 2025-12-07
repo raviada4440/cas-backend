@@ -12,13 +12,14 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@
 @Injectable()
 export class SpiderGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    if (isDev) {
-      return true
-    }
-
     const request = this.getRequest(context)
     const headers = request.headers
     const ua: string = headers['user-agent'] || ''
+    console.log('[SpiderGuard] UA:', ua)
+
+    if (isDev) {
+      return true
+    }
     const isSpiderUA =
       !!ua.match(/(Scrapy|HttpClient|axios|python|requests)/i) &&
       !ua.match(/(mx-space|rss|google|baidu|bing)/gi)

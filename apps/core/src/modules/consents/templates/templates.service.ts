@@ -10,10 +10,10 @@ import {
   ConsentTemplateStatsQueryDto,
   CreateConsentTemplateDto,
   UpdateConsentTemplateDto,
-} from './consent-templates.dto'
+} from './templates.dto'
 
 @Injectable()
-export class ConsentTemplatesService {
+export class TemplatesService {
   constructor(private readonly db: DatabaseService) {}
 
   async create(dto: CreateConsentTemplateDto) {

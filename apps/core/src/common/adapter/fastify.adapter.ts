@@ -6,6 +6,7 @@ const app: FastifyAdapter = new FastifyAdapter({
 export { app as fastifyApp }
 
 app.getInstance().addHook('onRequest', (request, reply, done) => {
+  console.log('[Fastify onRequest]', request.method, request.url, 'origin:', request.headers.origin)
   // set undefined origin
   const origin = request.headers.origin
   if (!origin) {
@@ -31,5 +32,18 @@ app.getInstance().addHook('onRequest', (request, reply, done) => {
     return reply.code(204).send()
   }
 
+  done()
+})
+
+app.getInstance().addHook('onResponse', (request, reply, done) => {
+  console.log(
+    '[Fastify onResponse]',
+    request.method,
+    request.url,
+    'status:',
+    reply.statusCode,
+    'headers:',
+    reply.getHeaders(),
+  )
   done()
 })

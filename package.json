@@ -1,9 +1,9 @@
 {
-  "name": "@nest-http/private",
-  "description": "",
-  "author": "Innei <https://innei.in>",
+  "name": "casandra-backend",
+  "description": "Cassandra backend service stack",
+  "author": "Casandra <https://casandra.ai>",
   "private": true,
-  "license": "MIT",
+  "license": "Commercial",
   "packageManager": "pnpm@10.20.0",
   "husky": {
     "hooks": {

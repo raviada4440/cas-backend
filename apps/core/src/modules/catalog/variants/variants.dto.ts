@@ -69,3 +69,16 @@ export class DeleteBiomarkersDto extends createZodDto(
 
 export class ResolveVariantDto extends createZodDto(ResolveVariantInputSchema) {}
 export type ResolveVariantInput = ResolveVariantInputType
+
+export class MasterDefaultsQueryDto extends createZodDto(
+  z.object({
+    versionId: uuid(),
+  }),
+) {}
+
+export class VariantDiffDto extends createZodDto(
+  z.object({
+    versionId: uuid(),
+    configurationId: uuid().optional(),
+  }),
+) {}

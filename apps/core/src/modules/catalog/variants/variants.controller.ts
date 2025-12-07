@@ -9,8 +9,11 @@ import {
   CreateOperationalVariantDto,
   DeleteBiomarkersDto,
   ListOperationalVariantsQueryDto,
+  MasterDefaultsQueryDto,
+  ResolveVariantDto,
   UpsertCustomerVariantDto,
   UpdateOperationalVariantDto,
+  VariantDiffDto,
 } from './variants.dto'
 import { VariantsService } from './variants.service'
 
@@ -82,5 +85,29 @@ export class VariantBiomarkerController {
   @ApiOperation({ summary: 'Delete biomarker overrides' })
   delete(@Param() params: ConfigurationIdParamDto, @Body() body: DeleteBiomarkersDto) {
     return this.variantsService.deleteBiomarkerOverrides(params.configurationId, body.hgncIds)
+  }
+}
+
+@ApiTags('Catalog - Variant Utilities')
+@ApiController('catalog')
+export class VariantUtilityController {
+  constructor(private readonly variantsService: VariantsService) {}
+
+  @Get('master-defaults')
+  @ApiOperation({ summary: 'Fetch master version defaults' })
+  getMasterDefaults(@Query() query: MasterDefaultsQueryDto) {
+    return this.variantsService.getMasterDefaults(query.versionId)
+  }
+
+  @Post('variant-diff')
+  @ApiOperation({ summary: 'Compute variant overrides diff' })
+  getVariantDiff(@Body() body: VariantDiffDto) {
+    return this.variantsService.getVariantDiff(body.versionId, body.configurationId)
+  }
+
+  @Post('resolve')
+  @ApiOperation({ summary: 'Resolve variant for ordering' })
+  resolveVariant(@Body() body: ResolveVariantDto) {
+    return this.variantsService.resolveVariant(body)
   }
 }

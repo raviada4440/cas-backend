@@ -1,9 +1,11 @@
+import fastifyCors from '@fastify/cors'
 import { Logger } from 'nestjs-pretty-logger'
 import { chalk } from 'zx-cjs'
 
 import { NestFactory } from '@nestjs/core'
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import { Logger as NestLogger } from '@nestjs/common'
 
 import { API_VERSION, CROSS_DOMAIN, PORT } from './app.config'
 import { AppModule } from './app.module'
@@ -14,24 +16,76 @@ import { consola } from './global/consola.global'
 import { isDev } from './shared/utils/environment.util'
 
 // const APIVersion = 1
-const Origin = CROSS_DOMAIN.allowedOrigins
+const ALLOWED_ORIGIN_PATTERNS = CROSS_DOMAIN.allowedOrigins.map((host) => new RegExp(host, 'i'))
+const ALLOW_METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+const ALLOW_HEADERS = [
+  'Authorization',
+  'Content-Type',
+  'Accept',
+  'Origin',
+  'X-Requested-With',
+  'Accept-Language',
+]
+
+function isOriginAllowed(origin: string): boolean {
+  const candidates: string[] = []
+  candidates.push(origin)
+
+  try {
+    const url = new URL(origin)
+    if (url.host) candidates.push(url.host)
+    if (url.hostname) candidates.push(url.hostname)
+  } catch {
+    // Origin might already be a host or hostname without protocol (e.g. set by proxy hook)
+  }
+
+  return candidates.some((candidate) =>
+    ALLOWED_ORIGIN_PATTERNS.some((pattern) => pattern.test(candidate)),
+  )
+}
 
 declare const module: any
 
 export async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, fastifyApp, {
-    logger: ['error', 'warn', 'log'],
+    logger: ['error', 'warn', 'log', 'debug'],
   })
+  const bootstrapLogger = new NestLogger(bootstrap.name)
+  bootstrapLogger.log('Bootstrap: Nest application created', bootstrap.name)
+  consola.info('Bootstrap: Nest application created')
+  process.stdout.write('Bootstrap: Nest application created (stdout)\n')
 
-  const hosts = Origin.map((host) => new RegExp(host, 'i'))
+  const fastifyInstance = app.getHttpAdapter().getInstance()
 
-  app.enableCors({
-    origin: (origin, callback) => {
-      const allow = !origin || hosts.some((host) => host.test(origin))
-
-      callback(null, allow)
-    },
+  await fastifyInstance.register(fastifyCors as any, {
+    hook: 'preHandler',
     credentials: true,
+    methods: ALLOW_METHODS,
+    allowedHeaders: ALLOW_HEADERS,
+    exposedHeaders: ['Content-Disposition'],
+    maxAge: 3600,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, value: boolean | string) => void,
+    ) => {
+      if (!origin) {
+        callback(null, true)
+        return
+      }
+
+      if (isDev) {
+        callback(null, origin)
+        return
+      }
+
+      if (isOriginAllowed(origin)) {
+        callback(null, origin)
+        return
+      }
+
+      consola.warn(`[CORS] Blocked origin: ${origin}`)
+      callback(null, false)
+    },
   })
 
   isDev && app.useGlobalInterceptors(new LoggingInterceptor())

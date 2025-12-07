@@ -1,10 +1,10 @@
 {
-  "name": "@nest-http/core",
+  "name": "casandra-backend-core",
   "version": "0.0.1",
   "description": "",
-  "author": "Innei <https://innei.in>",
+  "author": "Casandra <https://casandra.ai>",
   "private": true,
-  "license": "MIT",
+  "license": "Commercial",
   "packageManager": "pnpm@8.7.6",
   "husky": {
     "hooks": {
@@ -33,7 +33,8 @@
   "dependencies": {
     "@fastify/swagger": "9.6.1",
     "@fastify/swagger-ui": "5.2.3",
-    "@db/client": "workspace:@nest-http/prisma@*",
+    "@fastify/cors": "11.1.0",
+    "@db/client": "workspace:casandra-backend-prisma@*",
     "@nestjs/cache-manager": "3.0.1",
     "@nestjs/common": "11.1.9",
     "@nestjs/config": "4.0.2",

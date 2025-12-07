@@ -16,7 +16,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe'
 import { AuthModule } from './modules/auth/auth.module'
 import { CatalogModule } from './modules/catalog/catalog.module'
-import { ConsentTemplatesModule } from './modules/consent-templates/consent-templates.module'
+import { ConsentsModule } from './modules/consents/consents.module'
 import { ReferenceDataModule } from './modules/reference-data/reference-data.module'
 import { UserModule } from './modules/user/user.module'
 import { OrdersModule } from './modules/orders/orders.module'
@@ -75,7 +75,7 @@ const envFilePath = process.env['DOTENV_CONFIG_PATH'] || '.env'
     AdminModule,
     SearchModule,
     AuditModule,
-    ConsentTemplatesModule,
+    ConsentsModule,
     FilesModule,
     ChatModule,
     EmailModule,

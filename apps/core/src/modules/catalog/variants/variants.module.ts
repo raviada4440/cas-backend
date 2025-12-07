@@ -1,10 +1,18 @@
 import { Module } from '@nestjs/common'
 
-import { VariantsController, VariantBiomarkerController } from './variants.controller'
+import { OrderFormsModule } from '../order-forms/order-forms.module'
+import { TestsModule } from '../tests/tests.module'
+
+import {
+  VariantBiomarkerController,
+  VariantUtilityController,
+  VariantsController,
+} from './variants.controller'
 import { VariantsService } from './variants.service'
 
 @Module({
-  controllers: [VariantsController, VariantBiomarkerController],
+  imports: [TestsModule, OrderFormsModule],
+  controllers: [VariantsController, VariantBiomarkerController, VariantUtilityController],
   providers: [VariantsService],
   exports: [VariantsService],
 })

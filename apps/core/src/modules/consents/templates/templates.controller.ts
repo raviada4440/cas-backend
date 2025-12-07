@@ -12,13 +12,13 @@ import {
   ConsentTemplateStatsQueryDto,
   CreateConsentTemplateDto,
   UpdateConsentTemplateDto,
-} from './consent-templates.dto'
-import { ConsentTemplatesService } from './consent-templates.service'
+} from './templates.dto'
+import { TemplatesService } from './templates.service'
 
 @ApiTags('Consents - Templates')
-@ApiController('consent-templates')
-export class ConsentTemplatesController {
-  constructor(private readonly service: ConsentTemplatesService) {}
+@ApiController('consents/templates')
+export class TemplatesController {
+  constructor(private readonly service: TemplatesService) {}
 
   @Post()
   create(@Body() dto: CreateConsentTemplateDto) {
