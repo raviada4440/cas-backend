@@ -246,6 +246,9 @@ export const CustomerVariantListResponse = z.object({
 })
 export type CustomerVariantListResponse = z.infer<typeof CustomerVariantListResponse>
 
+export const VariantConfiguration = z.union([OperationalVariantDetail, CustomerVariantDetail])
+export type VariantConfiguration = z.infer<typeof VariantConfiguration>
+
 export const UpsertCustomerVariantInput = z.object({
   configurationId: Uuid.optional(),
   testId: Uuid,
@@ -264,4 +267,34 @@ export const UpsertCustomerVariantInput = z.object({
   customInstructions: z.string().nullable().optional(),
 })
 export type UpsertCustomerVariantInput = z.infer<typeof UpsertCustomerVariantInput>
+
+export const VariantMasterDefaults = z.object({
+  reference: VariantConfiguration.optional(),
+  master: VariantConfiguration.optional(),
+})
+export type VariantMasterDefaults = z.infer<typeof VariantMasterDefaults>
+
+export const VariantDiffRequest = z.object({
+  versionId: Uuid,
+  configurationId: Uuid.optional(),
+})
+export type VariantDiffRequest = z.infer<typeof VariantDiffRequest>
+
+export const VariantDiffResponse = z.object({
+  versionId: Uuid,
+  configurationId: Uuid.optional(),
+  biomarkerOverrides: z.array(OperationalVariantBiomarkerOverride).default([]),
+  finalBiomarkers: z.array(OperationalVariantFinalBiomarker).optional(),
+  specimenManifest: z.array(OperationalVariantSpecimenManifestEntry).optional(),
+})
+export type VariantDiffResponse = z.infer<typeof VariantDiffResponse>
+
+export const ResolveVariantInputSchema = z.object({
+  testId: Uuid,
+  versionId: Uuid,
+  configurationId: Uuid.optional(),
+  customerId: Uuid.optional(),
+  organizationId: Uuid.optional(),
+})
+export type ResolveVariantInputType = z.infer<typeof ResolveVariantInputSchema>
 

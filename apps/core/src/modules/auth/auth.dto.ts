@@ -16,6 +16,15 @@ import {
   VerifyEmailRequestSchema,
 } from '@shared/contracts/auth'
 
+export const AccessTokenResponseSchema = z
+  .object({
+    token: z.string().min(1),
+    expiresAt: z.string().datetime(),
+  })
+  .strict()
+
+export class AccessTokenResponseDto extends createZodDto(AccessTokenResponseSchema) {}
+
 export class LoginRequestDto extends createZodDto(LoginRequestSchema) {}
 
 export class LoginResponseDto extends createZodDto(LoginResponseSchema) {}

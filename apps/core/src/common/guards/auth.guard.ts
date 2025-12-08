@@ -1,5 +1,6 @@
 import { AuthService } from '@core/modules/auth/auth.service'
 import { UserService } from '@core/modules/user/user.service'
+import { extractAuthSessionCookie } from '@core/common/utils/cookie.util'
 import { getNestExecutionContextRequest } from '@core/transformers/get-req.transformer'
 import {
   CanActivate,
@@ -36,6 +37,17 @@ export class AuthGuard implements CanActivate {
 
     const query = request.query as any
     const headers = request.headers
+
+    const cookieSessionToken = extractAuthSessionCookie(headers?.cookie)
+    if (cookieSessionToken) {
+      const sessionResult = await this.authService.validateSessionToken(cookieSessionToken)
+      if (sessionResult) {
+        request.owner = sessionResult.user
+        request.token = cookieSessionToken
+        return true
+      }
+    }
+
     const Authorization: string = headers.authorization || headers.Authorization || query.token
 
     if (!Authorization) {
@@ -43,11 +55,11 @@ export class AuthGuard implements CanActivate {
     }
 
     if (this.authService.isCustomToken(Authorization)) {
-      const isValid = await this.authService.verifyCustomToken(Authorization)
-      if (!isValid) {
+      const customTokenUserId = await this.authService.verifyCustomToken(Authorization)
+      if (!customTokenUserId) {
         throw new UnauthorizedException('令牌无效')
       }
-      const owner = await this.userService.getOwner()
+      const owner = await this.userService.getOwner(customTokenUserId)
       request.owner = owner
       request.token = Authorization
       return true
@@ -58,12 +70,12 @@ export class AuthGuard implements CanActivate {
     if (!isJWT(jwt)) {
       throw new UnauthorizedException('令牌无效')
     }
-    const ok = await this.authService.jwtServicePublic.verify(jwt)
-    if (!ok) {
+    const payload = await this.authService.jwtServicePublic.verify(jwt)
+    if (!payload || typeof payload.id !== 'string') {
       throw new UnauthorizedException('身份过期')
     }
 
-    const owner = await this.userService.getOwner()
+    const owner = await this.userService.getOwner(payload.id as string)
     request.owner = owner
     request.token = jwt
     return true

@@ -1,12 +1,26 @@
-import { Body, Get, HttpCode, HttpStatus, Post, Query, Req } from '@nestjs/common'
+import {
+  Body,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common'
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { FastifyRequest } from 'fastify'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { HTTPDecorators } from '@core/common/decorators/http.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
 import { ZodValidationPipe } from '@core/common/pipes/zod-validation.pipe'
+import { JWTService } from '@core/processors/helper/helper.jwt.service'
+import { extractAuthSessionCookie } from '@core/common/utils/cookie.util'
 
 import {
+  AccessTokenResponseDto,
   LoginRequestDto,
   InviteUserRequestDto,
   InviteUserResponseDto,
@@ -41,6 +55,7 @@ type RequestWithOwner = FastifyRequest & {
   owner?: {
     id?: string
   }
+  token?: string
 }
 
 @ApiTags('Auth')
@@ -54,6 +69,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @HTTPDecorators.Bypass
   @ApiOperation({ summary: 'Authenticate using email and password' })
   @ApiOkResponse({ type: LoginResponseDto })
   @ApiBody({ type: LoginRequestDto })
@@ -70,7 +86,6 @@ export class AuthController {
     }
 
     return {
-      ...normalizedUser,
       token,
       accessToken: token,
       user: normalizedUser,
@@ -89,6 +104,25 @@ export class AuthController {
     const userId = request.owner?.id ?? 'unknown'
     const token = await this.systemTokenService.generateSystemToken(body, userId)
     return token
+  }
+
+  @Post('access-token')
+  @Auth()
+  @ApiOperation({ summary: 'Issue a bearer token for API integrations' })
+  @ApiOkResponse({ type: AccessTokenResponseDto })
+  async issueAccessToken(@Req() request: RequestWithOwner) {
+    const userId = request.owner?.id
+    if (!userId) {
+      throw new UnauthorizedException('未登录')
+    }
+    const token = await this.authService.signToken(userId)
+    const expiresAt = new Date(
+      Date.now() + JWTService.expiresDay * 24 * 60 * 60 * 1000,
+    ).toISOString()
+    return {
+      token,
+      expiresAt,
+    }
   }
 
   @Get('system-token')
@@ -143,5 +177,24 @@ export class AuthController {
     @Body(new ZodValidationPipe(SetPasswordRequestSchema)) body: SetPasswordRequest,
   ) {
     return this.onboardingService.setPassword(body)
+  }
+
+  @Delete('session')
+  @Auth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Invalidate the active session or bearer token' })
+  async deleteSession(@Req() request: RequestWithOwner) {
+    const cookieHeader = request.headers['cookie'] as string | undefined
+    const sessionToken = extractAuthSessionCookie(cookieHeader)
+    if (sessionToken) {
+      await this.authService.removeSessionToken(sessionToken)
+    }
+
+    const requestToken = request.token
+    if (requestToken && requestToken !== sessionToken) {
+      await this.authService.jwtServicePublic.revokeToken(requestToken)
+    }
+
+    // No body or additional handling needed; returning 204 is sufficient.
   }
 }

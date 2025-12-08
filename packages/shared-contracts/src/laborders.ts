@@ -27,7 +27,7 @@ export type SampleSource =
 
 export type CollectionMethod = 'LAB' | 'KIT' | 'PSC' | 'MOBILE' | 'OTHER'
 
-export interface Address {
+export interface LabOrderAddress {
   line1: string
   line2?: string
   city: string
@@ -46,7 +46,7 @@ export interface PhoneNumber {
 }
 
 export interface ContactInfo {
-  address: Address
+  address: LabOrderAddress
   email?: string
   phones: PhoneNumber[]
   fax?: string
@@ -75,7 +75,7 @@ export interface PatientDemographics {
 }
 
 export interface PatientContact {
-  address: Address
+  address: LabOrderAddress
   email: string
   phones: PhoneNumber[]
 }

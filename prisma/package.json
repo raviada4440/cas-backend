@@ -1,5 +1,5 @@
 {
-  "name": "casandra-backend-prisma",
+  "name": "@casandra/prisma",
   "description": "",
   "author": "Casandra <https://casandra.ai>",
   "private": true,

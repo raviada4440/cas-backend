@@ -32,13 +32,25 @@ type myError = {
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name)
-  private errorLogPipe: WriteStream
+  private errorLogPipe?: WriteStream
   constructor(
     @Inject(REFLECTOR) private reflector: Reflector,
     private readonly i18n: I18nService,
   ) {}
 
-  async catch(exception: unknown, host: ArgumentsHost) {
+  async catch(exception: unknown, host: ArgumentsHost): Promise<void> {
+    try {
+      await this.handleException(exception, host)
+    } catch (error) {
+      Logger.error(
+        `Unhandled error while processing exception: ${(error as Error).message}`,
+        (error as Error).stack,
+        AllExceptionsFilter.name,
+      )
+    }
+  }
+
+  private async handleException(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<FastifyReply>()
     const request = ctx.getRequest<FastifyRequest>()

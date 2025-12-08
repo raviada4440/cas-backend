@@ -1,5 +1,5 @@
 import cluster from 'cluster'
-import { sign, verify } from 'jsonwebtoken'
+import { JwtPayload, sign, verify } from 'jsonwebtoken'
 
 import { CLUSTER, ENCRYPT, SECURITY } from '@core/app.config'
 import { RedisKeys } from '@core/constants/cache.constant'
@@ -40,14 +40,21 @@ export class JWTService {
     this.secret = secret
   }
 
-  async verify(token: string) {
+  async verify(token: string): Promise<JwtPayload | null> {
     try {
-      verify(token, this.secret)
-      return await this.isTokenInRedis(token)
+      const payload = verify(token, this.secret)
+      const isStored = await this.isTokenInRedis(token)
+      if (!isStored) {
+        return null
+      }
+      if (typeof payload === 'object' && payload !== null) {
+        return payload as JwtPayload
+      }
+      return null
     } catch (er) {
       console.debug(er, token)
 
-      return false
+      return null
     }
   }
 

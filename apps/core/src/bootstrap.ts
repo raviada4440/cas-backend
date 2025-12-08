@@ -52,8 +52,6 @@ export async function bootstrap() {
   })
   const bootstrapLogger = new NestLogger(bootstrap.name)
   bootstrapLogger.log('Bootstrap: Nest application created', bootstrap.name)
-  consola.info('Bootstrap: Nest application created')
-  process.stdout.write('Bootstrap: Nest application created (stdout)\n')
 
   const fastifyInstance = app.getHttpAdapter().getInstance()
 
@@ -83,9 +81,38 @@ export async function bootstrap() {
         return
       }
 
-      consola.warn(`[CORS] Blocked origin: ${origin}`)
       callback(null, false)
     },
+  })
+
+  fastifyInstance.addHook('onRequest', (request, _reply, done) => {
+    if (isDev) {
+      done()
+      return
+    }
+
+    const origin = request.headers['origin']
+    if (!origin || isOriginAllowed(origin)) {
+      done()
+      return
+    }
+
+    const accessControlMethod = request.headers['access-control-request-method']
+    const accessControlHeaderPart = accessControlMethod
+      ? ` (access-control-request-method=${String(accessControlMethod)})`
+      : ''
+
+    const referer = request.headers['referer']
+    const userAgent = request.headers['user-agent']
+
+    consola.warn(
+      `[CORS] Blocked origin: ${origin} → ${request.method} ${
+        request.url
+      }${accessControlHeaderPart}${referer ? ` referer=${referer}` : ''}${
+        userAgent ? ` ua=${userAgent}` : ''
+      }`,
+    )
+    done()
   })
 
   isDev && app.useGlobalInterceptors(new LoggingInterceptor())

@@ -64,3 +64,8 @@ prisma/generated/
 packages/**/dist
 packages/**/tsconfig.tsbuildinfo
 **/*.tsbuildinfo
+
+# Legacy client contract bundles (to be removed after migration)
+packages/shared-contracts/cas-admin-contracts/
+packages/shared-contracts/cas-catalog-contracts/
+packages/shared-contracts/cas-orders-contracts/

@@ -14,8 +14,11 @@ export const authProvider = defineProvider({
     isCustomToken() {
       return false
     },
-    async verifyCustomToken() {
-      return true
+    async verifyCustomToken(_token: string): Promise<string | null> {
+      return null
+    },
+    async removeSessionToken() {
+      return
     },
   },
   provide: AuthService,

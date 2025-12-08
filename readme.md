@@ -41,6 +41,46 @@ npm run dev
 
 **Before you start dev, do not forget copy `.env.template` to `.env`**
 
+## Authentication
+
+- Browser-based clients authenticate via the `authjs.session-token` cookie. The API now recognizes that cookie on both CSR and SSR calls.
+- Programmatic callers can use the same session cookie or send an `Authorization: Bearer <token>` header. Bearer tokens are issued by `POST /auth/login` or, for existing sessions, `POST /auth/access-token`.
+- To revoke credentials, call `DELETE /auth/session`; it removes the stored session (if any) and revokes bearer tokens. Clients should still clear their cookies/tokens locally.
+- Both credential types are accepted transparently by the global `Auth` guard.
+- See `apps/core/src/modules/auth/auth.controller.ts` for the access-token endpoint and `apps/core/src/common/guards/auth.guard.ts` for the combined guard logic.
+
+## Shared Contracts Package
+
+`packages/shared-contracts` is the canonical source of all REST contracts shared across backend and Next.js apps.
+
+- Package name: `@casandra-ai/shared-contracts`
+- Registry: `https://npm.pkg.github.com`
+
+### Publishing
+
+```bash
+export GITHUB_TOKEN=ghp_your_pat_with_write_packages
+pnpm --filter @casandra-ai/shared-contracts build
+pnpm --filter @casandra-ai/shared-contracts publish --access public
+```
+
+### Consuming
+
+Add the scope to `.npmrc` (already present in repo root):
+
+```
+@casandra-ai:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+Then install in your app:
+
+```bash
+pnpm add @casandra-ai/shared-contracts
+```
+
+Update imports from local contract files to the package (e.g. `import { Address } from '@casandra-ai/shared-contracts/address'`).
+
 ## Error Handling
 
 - Business errors return `{ ok, code, message }` where `message` is resolved by `nestjs-i18n`.

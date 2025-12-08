@@ -90,10 +90,19 @@ export class UserService {
     })
   }
 
-  getOwner() {
-    // TODO omit keys
+  getOwner(userId: string) {
     return this.db.prisma.user
-      .findFirstOrThrow()
+      .findUniqueOrThrow({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          image: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      })
       .catch(resourceNotFoundWrapper(new BizException(ErrorCodeEnum.UserNotFound)))
   }
 }

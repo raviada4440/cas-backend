@@ -1,5 +1,5 @@
 {
-  "name": "casandra-backend",
+  "name": "@casandra/backend",
   "description": "Cassandra backend service stack",
   "author": "Casandra <https://casandra.ai>",
   "private": true,

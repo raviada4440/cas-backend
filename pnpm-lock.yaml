@@ -140,7 +140,7 @@ importers:
   apps/core:
     dependencies:
       '@db/client':
-        specifier: workspace:casandra-backend-prisma@*
+        specifier: workspace:@casandra/prisma@*
         version: link:../../prisma
       '@fastify/cors':
         specifier: 11.1.0
