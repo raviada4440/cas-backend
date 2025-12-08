@@ -53,15 +53,15 @@ npm run dev
 
 `packages/shared-contracts` is the canonical source of all REST contracts shared across backend and Next.js apps.
 
-- Package name: `@casandra-ai/shared-contracts`
+- Package name: `@raviada4440/shared-contracts`
 - Registry: `https://npm.pkg.github.com`
 
 ### Publishing
 
 ```bash
-export GITHUB_TOKEN=ghp_your_pat_with_write_packages
-pnpm --filter @casandra-ai/shared-contracts build
-pnpm --filter @casandra-ai/shared-contracts publish --access public
+export GITHUB_PAT=ghp_your_pat_with_write_packages
+pnpm --filter @raviada4440/shared-contracts build
+pnpm --filter @raviada4440/shared-contracts publish --access public
 ```
 
 ### Consuming
@@ -69,17 +69,16 @@ pnpm --filter @casandra-ai/shared-contracts publish --access public
 Add the scope to `.npmrc` (already present in repo root):
 
 ```
-@casandra-ai:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+@raviada4440:registry=https://npm.pkg.github.com
 ```
 
 Then install in your app:
 
 ```bash
-pnpm add @casandra-ai/shared-contracts
+pnpm add @raviada4440/shared-contracts
 ```
 
-Update imports from local contract files to the package (e.g. `import { Address } from '@casandra-ai/shared-contracts/address'`).
+Update imports from local contract files to the package (e.g. `import { Address } from '@raviada4440/shared-contracts/address'`).
 
 ## Error Handling
 

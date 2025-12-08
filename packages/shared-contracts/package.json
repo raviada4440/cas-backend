@@ -1,5 +1,5 @@
 {
-  "name": "@casandra/shared-contracts",
+  "name": "@raviada4440/shared-contracts",
   "version": "0.2.0",
   "private": false,
   "main": "./dist/index.cjs",
