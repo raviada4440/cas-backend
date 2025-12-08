@@ -1,6 +1,6 @@
 {
   "name": "@raviada4440/shared-contracts",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
