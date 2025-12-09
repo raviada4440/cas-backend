@@ -30,6 +30,7 @@ import { EmailModule } from './modules/notifications/email/email.module'
 import { ChatModule } from './modules/chat/chat.module'
 import { FilesModule } from './modules/files/files.module'
 import { AuditModule } from './modules/audit/audit.module'
+import { TasksModule } from './modules/tasks/tasks.module'
 
 // Request ----->
 // Response <-----
@@ -77,6 +78,7 @@ const envFilePath = process.env['DOTENV_CONFIG_PATH'] || '.env'
     AuditModule,
     ConsentsModule,
     FilesModule,
+    TasksModule,
     ChatModule,
     EmailModule,
   ],
