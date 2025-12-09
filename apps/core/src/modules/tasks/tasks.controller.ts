@@ -32,4 +32,3 @@ export class TasksController {
     return this.tasksService.listMyTasks(userId, query)
   }
 }
-
