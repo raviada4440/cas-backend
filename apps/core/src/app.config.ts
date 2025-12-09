@@ -27,6 +27,7 @@ export const CROSS_DOMAIN = {
     'mbp.cc',
     'local.innei.test',
     '22333322.xyz',
+    'cas-catalog-bsvj8l4yd-casandra-projects.vercel.app',
   ],
   allowedReferer: 'innei.in',
 }
