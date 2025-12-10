@@ -2,6 +2,7 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Body, Get, Param, Patch, Post, Query } from '@nestjs/common'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import {
   FacilityDirectoryQueryDto,
@@ -21,6 +22,7 @@ import {
 } from './organizations.dto'
 import { OrganizationsService } from './organizations.service'
 
+@Auth()
 @ApiTags('Orders - Organizations')
 @ApiController('organizations')
 export class OrganizationsController {

@@ -2,10 +2,12 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Get, Param, Query } from '@nestjs/common'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import { AdminUsersService } from './users.service'
 import { UserIdParamDto, UserSearchQueryDto } from './users.dto'
 
+@Auth()
 @ApiTags('Admin - Users')
 @ApiController('users')
 export class AdminUsersController {

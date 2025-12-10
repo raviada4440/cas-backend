@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { I18nContext, I18nService } from 'nestjs-i18n'
 
 import { DatabaseService } from '@core/processors/database/database.service'
 
@@ -10,7 +11,10 @@ import {
 
 @Injectable()
 export class ConsentsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async listVersionConsents(versionId: string) {
     await this.ensureVersionExists(versionId)
@@ -37,7 +41,9 @@ export class ConsentsService {
     })
 
     if (!template) {
-      throw new NotFoundException(`Consent template ${dto.consentTemplateId} not found`)
+      throw new NotFoundException(
+        await this.translate('consent_template_not_found', { id: dto.consentTemplateId }),
+      )
     }
 
     const version = await this.db.prisma.testCatalogVersion.findUnique({
@@ -46,7 +52,7 @@ export class ConsentsService {
     })
 
     if (!version) {
-      throw new NotFoundException(`Version ${versionId} not found`)
+      throw new NotFoundException(await this.translate('version_not_found', { id: versionId }))
     }
 
     const existingCount = await this.db.prisma.testCatalogVersionConsent.count({
@@ -86,7 +92,9 @@ export class ConsentsService {
     })
 
     if (!existing) {
-      throw new NotFoundException(`Version consent ${versionConsentId} not found`)
+      throw new NotFoundException(
+        await this.translate('version_consent_not_found', { id: versionConsentId }),
+      )
     }
 
     const consent = await this.db.prisma.testCatalogVersionConsent.update({
@@ -119,7 +127,9 @@ export class ConsentsService {
     })
 
     if (!existing) {
-      throw new NotFoundException(`Version consent ${versionConsentId} not found`)
+      throw new NotFoundException(
+        await this.translate('version_consent_not_found', { id: versionConsentId }),
+      )
     }
 
     await this.db.prisma.testCatalogVersionConsent.delete({
@@ -140,14 +150,14 @@ export class ConsentsService {
     const providedIds = dto.consentIdsInOrder
 
     if (currentIds.length !== providedIds.length) {
-      throw new BadRequestException('consentIdsInOrder must include every assignment exactly once')
+      throw new BadRequestException(await this.translate('consent_order_missing_assignments'))
     }
 
     const unmatched = new Set(currentIds)
     providedIds.forEach((id) => unmatched.delete(id))
 
     if (unmatched.size !== 0) {
-      throw new BadRequestException('consentIdsInOrder contains invalid assignments')
+      throw new BadRequestException(await this.translate('consent_order_invalid_assignments'))
     }
 
     await this.db.prisma.$transaction(
@@ -169,7 +179,12 @@ export class ConsentsService {
     })
 
     if (!version) {
-      throw new NotFoundException(`Version ${versionId} not found`)
+      throw new NotFoundException(await this.translate('version_not_found', { id: versionId }))
     }
+  }
+
+  private translate(key: string, args?: Record<string, unknown>) {
+    const lang = I18nContext.current()?.lang
+    return this.i18n.translate<string>(`errors.${key}`, { lang, args })
   }
 }

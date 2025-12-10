@@ -111,11 +111,15 @@ export class JWTService {
 
   public static readonly expiresDay = SECURITY.jwtExpire
 
-  async sign(id: string, info?: { ip: string; ua: string }) {
-    const token = sign({ id }, this.secret, {
+  async sign(id: string, info?: { ip: string; ua: string }, claims: Record<string, unknown> = {}) {
+    const tokenPayload = {
+      id,
+      ...claims,
+    }
+    const token = sign(tokenPayload, this.secret, {
       expiresIn: `${JWTService.expiresDay}d`,
     })
-    await this.storeTokenInRedis(token, info || {})
+    await this.storeTokenInRedis(token, { ...(info || {}), ...claims })
     return token
   }
 }

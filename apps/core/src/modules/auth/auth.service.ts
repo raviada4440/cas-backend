@@ -9,6 +9,29 @@ import { JWTService } from '@core/processors/helper/helper.jwt.service'
 import { sleep } from '@core/shared/utils/tool.utils'
 import { Injectable } from '@nestjs/common'
 
+export interface TenantMembership {
+  id: string
+  name: string | null
+  slug?: string | null
+}
+
+export interface SanitizedUser {
+  id: string
+  email: string | null
+  name: string | null
+  image: string | null
+  createdAt: Date
+  updatedAt: Date
+  emailVerified: Date | null
+}
+
+export interface SessionValidationResult {
+  session: Session
+  user: SanitizedUser
+  tenants: TenantMembership[]
+  isSuperAdmin: boolean
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -41,11 +64,25 @@ export class AuthService {
     return user
   }
 
-  async signToken(id: string) {
-    return this.jwtService.sign(id)
+  async signToken(
+    id: string,
+    options?: {
+      tenantIds?: string[]
+      isSuperAdmin?: boolean
+    },
+  ) {
+    const tenantIds = options?.tenantIds ?? []
+    const claims: Record<string, unknown> = {}
+    if (tenantIds.length > 0) {
+      claims.tenantIds = tenantIds
+    }
+    if (options?.isSuperAdmin) {
+      claims.isSuperAdmin = true
+    }
+    return this.jwtService.sign(id, undefined, claims)
   }
 
-  async validateSessionToken(rawToken: string) {
+  async validateSessionToken(rawToken: string): Promise<SessionValidationResult | null> {
     const session = await this.findSession(rawToken)
     if (!session) {
       return null
@@ -54,10 +91,68 @@ export class AuthService {
       return null
     }
 
-    const user = await this.db.prisma.user.findUnique({
+    const context = await this.getUserContext(session.userId)
+    if (!context) {
+      return null
+    }
+
+    return { session, ...context }
+  }
+
+  async getUserTenants(userId: string): Promise<TenantMembership[]> {
+    const identities = await this.db.prisma.userIdentity.findMany({
       where: {
-        id: session.userId,
+        userId,
+        orgId: {
+          not: null,
+        },
       },
+      select: {
+        orgId: true,
+        organization: {
+          select: {
+            id: true,
+            orgName: true,
+          },
+        },
+      },
+    })
+
+    const byId = new Map<string, TenantMembership>()
+
+    for (const identity of identities) {
+      if (!identity.orgId) {
+        continue
+      }
+      if (!byId.has(identity.orgId)) {
+        const name = identity.organization?.orgName ?? null
+        let slug: string | null = null
+        if (name) {
+          const normalized = name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+          slug = normalized.length > 0 ? normalized : null
+        }
+        byId.set(identity.orgId, {
+          id: identity.orgId,
+          name,
+          slug,
+        })
+      }
+    }
+
+    // If no org identities, check for user attributes with admin/provider roles referencing organizations in future
+    // Placeholder for extensibility
+
+    return Array.from(byId.values())
+  }
+
+  async getUserContext(
+    userId: string,
+  ): Promise<{ user: SanitizedUser; tenants: TenantMembership[]; isSuperAdmin: boolean } | null> {
+    const record = await this.db.prisma.user.findUnique({
+      where: { id: userId },
       select: {
         id: true,
         email: true,
@@ -65,13 +160,44 @@ export class AuthService {
         image: true,
         createdAt: true,
         updatedAt: true,
+        emailVerified: true,
+        userAttribute: {
+          select: {
+            userType: true,
+          },
+        },
+        userRoles: {
+          select: {
+            role: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
     })
-    if (!user) {
+
+    if (!record) {
       return null
     }
 
-    return { session, user }
+    const tenants = await this.getUserTenants(userId)
+    const isSuperAdmin =
+      record.userAttribute?.userType === 'Admin' ||
+      record.userRoles.some((link) => link.role.name === 'Super Admin')
+
+    const sanitizedUser: SanitizedUser = {
+      id: record.id,
+      email: record.email,
+      name: record.name,
+      image: record.image,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      emailVerified: record.emailVerified ?? null,
+    }
+
+    return { user: sanitizedUser, tenants, isSuperAdmin }
   }
 
   isCustomToken(token: string) {

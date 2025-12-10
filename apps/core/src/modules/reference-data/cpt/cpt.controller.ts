@@ -2,10 +2,12 @@ import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import { CptCodeParamDto, CptSearchQueryDto, CreateCptDto, UpdateCptDto } from './cpt.dto'
 import { CptService } from './cpt.service'
 
+@Auth()
 @ApiTags('CPT Codes')
 @ApiController('cpt-codes')
 export class CptController {

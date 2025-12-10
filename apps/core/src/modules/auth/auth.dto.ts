@@ -12,6 +12,7 @@ import {
   SystemTokenConfigResponseSchema,
   SystemTokenRequestSchema,
   SystemTokenResponseSchema,
+  TenantMembershipSchema,
   VerificationStatusSchema,
   VerifyEmailRequestSchema,
 } from '@shared/contracts/auth'
@@ -20,6 +21,8 @@ export const AccessTokenResponseSchema = z
   .object({
     token: z.string().min(1),
     expiresAt: z.string().datetime(),
+    tenants: z.array(TenantMembershipSchema).default([]),
+    isSuperAdmin: z.boolean().default(false),
   })
   .strict()
 

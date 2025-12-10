@@ -2,6 +2,7 @@ import { Body, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import {
   AssignOrderFormsDto,
@@ -12,6 +13,7 @@ import {
 } from './order-forms.dto'
 import { OrderFormsService } from './order-forms.service'
 
+@Auth()
 @ApiTags('Catalog - Order Forms')
 @ApiController()
 export class OrderFormsController {

@@ -7,13 +7,17 @@ import { ErrorCodeEnum } from '@core/constants/error-code.constant'
 import { DatabaseService } from '@core/processors/database/database.service'
 import { resourceNotFoundWrapper } from '@core/shared/utils/prisma.util'
 import { Injectable, UnprocessableEntityException } from '@nestjs/common'
+import { I18nContext, I18nService } from 'nestjs-i18n'
 
 import { UserRegisterInput } from './dtos/register.dto'
 import { USER_IMMUTABLE_KEYS } from './user.protect'
 
 @Injectable()
 export class UserService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async register(userInput: UserRegisterInput) {
     const isExist = await this.db.prisma.user.findUnique({
@@ -77,7 +81,7 @@ export class UserService {
       }
       // 1. 验证新旧密码是否一致
       if (currentUser.password && compareSync(password, currentUser.password)) {
-        throw new UnprocessableEntityException('密码可不能和原来的一样哦')
+        throw new UnprocessableEntityException(await this.translate('password_same'))
       }
       doc.password = hashSync(password, 10)
     }
@@ -104,5 +108,10 @@ export class UserService {
         },
       })
       .catch(resourceNotFoundWrapper(new BizException(ErrorCodeEnum.UserNotFound)))
+  }
+
+  private translate(key: string, args?: Record<string, unknown>) {
+    const lang = I18nContext.current()?.lang
+    return this.i18n.translate<string>(`errors.${key}`, { lang, args })
   }
 }

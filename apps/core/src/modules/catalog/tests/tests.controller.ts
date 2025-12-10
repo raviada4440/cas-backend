@@ -26,7 +26,9 @@ import {
   UpdateVersionSpecimensDto,
 } from './tests.dto'
 import { TestsService } from './tests.service'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
+@Auth()
 @ApiTags('Catalog - Tests')
 @ApiController('tests')
 export class TestsController {

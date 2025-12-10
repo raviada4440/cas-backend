@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { I18nContext, I18nService } from 'nestjs-i18n'
 import { Prisma, $Enums } from '@db/client'
 
 import { DatabaseService } from '@core/processors/database/database.service'
@@ -14,7 +15,10 @@ import {
 
 @Injectable()
 export class TemplatesService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async create(dto: CreateConsentTemplateDto) {
     const { effectiveDate, ...data } = dto
@@ -29,7 +33,7 @@ export class TemplatesService {
   async update(id: string, dto: UpdateConsentTemplateDto) {
     const existing = await this.db.prisma.consentTemplate.findUnique({ where: { id } })
     if (!existing) {
-      throw new NotFoundException(`Consent template ${id} not found`)
+      throw new NotFoundException(await this.translate('consent_template_not_found', { id }))
     }
 
     const { effectiveDate, retiredDate, ...rest } = dto
@@ -78,7 +82,7 @@ export class TemplatesService {
     })
 
     if (!template) {
-      throw new NotFoundException(`Consent template ${id} not found`)
+      throw new NotFoundException(await this.translate('consent_template_not_found', { id }))
     }
 
     return template
@@ -203,7 +207,7 @@ export class TemplatesService {
   async updateStatus(id: string, status: $Enums.ConsentTemplateStatus) {
     const template = await this.db.prisma.consentTemplate.findUnique({ where: { id } })
     if (!template) {
-      throw new NotFoundException(`Consent template ${id} not found`)
+      throw new NotFoundException(await this.translate('consent_template_not_found', { id }))
     }
 
     return this.db.prisma.consentTemplate.update({
@@ -218,7 +222,7 @@ export class TemplatesService {
   async retire(id: string) {
     const template = await this.db.prisma.consentTemplate.findUnique({ where: { id } })
     if (!template) {
-      throw new NotFoundException(`Consent template ${id} not found`)
+      throw new NotFoundException(await this.translate('consent_template_not_found', { id }))
     }
 
     return this.db.prisma.consentTemplate.update({
@@ -268,7 +272,7 @@ export class TemplatesService {
   async remove(id: string) {
     const template = await this.db.prisma.consentTemplate.findUnique({ where: { id } })
     if (!template) {
-      throw new NotFoundException(`Consent template ${id} not found`)
+      throw new NotFoundException(await this.translate('consent_template_not_found', { id }))
     }
 
     const usageCount = await this.db.prisma.testCatalogVersionConsent.count({
@@ -276,7 +280,7 @@ export class TemplatesService {
     })
 
     if (usageCount > 0) {
-      throw new ConflictException('Cannot delete consent template that is currently in use')
+      throw new ConflictException(await this.translate('consent_template_in_use'))
     }
 
     await this.db.prisma.consentTemplate.delete({ where: { id } })
@@ -287,7 +291,7 @@ export class TemplatesService {
     const originalTemplate = await this.db.prisma.consentTemplate.findUnique({ where: { id } })
 
     if (!originalTemplate) {
-      throw new NotFoundException(`Consent template ${id} not found`)
+      throw new NotFoundException(await this.translate('consent_template_not_found', { id }))
     }
 
     return this.db.prisma.consentTemplate.create({
@@ -305,5 +309,10 @@ export class TemplatesService {
         version: 1,
       },
     })
+  }
+
+  private translate(key: string, args?: Record<string, unknown>) {
+    const lang = I18nContext.current()?.lang
+    return this.i18n.translate<string>(`errors.${key}`, { lang, args })
   }
 }

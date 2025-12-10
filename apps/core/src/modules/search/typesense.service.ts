@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common'
+import { I18nContext, I18nService } from 'nestjs-i18n'
 import { ConfigService } from '@nestjs/config'
 
 interface TypesenseHighlight {
@@ -47,7 +48,10 @@ export class TypesenseService {
   private readonly defaultHighlightFields?: string[]
   private readonly defaultPerPage: number
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly i18n: I18nService,
+  ) {
     const host = this.configService.get<string>('TYPESENSE_HOST')
     const port = this.configService.get<string>('TYPESENSE_PORT')
     const protocol = this.configService.get<string>('TYPESENSE_PROTOCOL') ?? 'https'
@@ -144,7 +148,7 @@ export class TypesenseService {
 
         if (status >= 400 && status < 500) {
           throw new BadRequestException({
-            message: 'Typesense request was rejected',
+            message: await this.translate('typesense_request_rejected'),
             status,
             request: {
               url,
@@ -154,7 +158,7 @@ export class TypesenseService {
           })
         }
 
-        throw new InternalServerErrorException('Typesense search failed')
+        throw new InternalServerErrorException(await this.translate('typesense_search_failed'))
       }
 
       this.logger.error(
@@ -162,7 +166,12 @@ export class TypesenseService {
           paramsRecord,
         )}`,
       )
-      throw new InternalServerErrorException('Typesense search failed')
+      throw new InternalServerErrorException(await this.translate('typesense_search_failed'))
     }
+  }
+
+  private translate(key: string, args?: Record<string, unknown>) {
+    const lang = I18nContext.current()?.lang
+    return this.i18n.translate<string>(`errors.${key}`, { lang, args })
   }
 }

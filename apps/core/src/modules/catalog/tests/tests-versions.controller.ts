@@ -2,6 +2,7 @@ import { Body, Get, Param, Put, Query } from '@nestjs/common'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import {
   UpdateVersionBiomarkersDto,
@@ -12,6 +13,7 @@ import {
 } from './tests.dto'
 import { TestsService } from './tests.service'
 
+@Auth()
 @ApiTags('Catalog - Test Versions')
 @ApiController('versions')
 export class TestVersionsController {

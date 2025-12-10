@@ -2,6 +2,7 @@ import { Body, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import {
   AssignRoleDto,
@@ -19,6 +20,7 @@ import {
 } from './roles.dto'
 import { RolesService } from './roles.service'
 
+@Auth()
 @ApiTags('Admin - Roles')
 @ApiController('admin/roles')
 export class RolesController {

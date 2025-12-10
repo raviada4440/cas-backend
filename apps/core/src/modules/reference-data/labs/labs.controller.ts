@@ -1,10 +1,12 @@
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { CreateLabDto, LabIdParamDto, LabSearchQueryDto, UpdateLabDto } from './labs.dto'
 import { LabsService } from './labs.service'
 
+@Auth()
 @ApiTags('Labs')
 @ApiController('labs')
 export class LabsController {

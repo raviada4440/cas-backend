@@ -10,7 +10,6 @@ import { machineIdSync } from './shared/utils/machine.util'
 export const API_VERSION = 1
 
 console.log(argv)
-console.log('Runtime PORT env:', process.env.PORT)
 
 const { PORT: ENV_PORT, MX_ENCRYPT_KEY } = process.env
 

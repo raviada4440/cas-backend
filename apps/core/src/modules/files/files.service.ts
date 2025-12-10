@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { I18nContext, I18nService } from 'nestjs-i18n'
 
 import { Attachment } from '@db/client'
 
@@ -13,7 +14,10 @@ import {
 
 @Injectable()
 export class FilesService {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   public async createAttachment(input: AttachmentCreateRequest): Promise<AttachmentResponse> {
     const payload = AttachmentCreateInput.parse(input)
@@ -30,7 +34,7 @@ export class FilesService {
     })
 
     if (!record) {
-      throw new NotFoundException('Attachment not found')
+      throw new NotFoundException(await this.translate('attachment_not_found'))
     }
 
     return this.mapAttachment(record)
@@ -52,5 +56,10 @@ export class FilesService {
       createdAt: entity.createdAt.toISOString(),
       updatedAt: entity.updatedAt.toISOString(),
     })
+  }
+
+  private translate(key: string, args?: Record<string, unknown>) {
+    const lang = I18nContext.current()?.lang
+    return this.i18n.translate<string>(`errors.${key}`, { lang, args })
   }
 }

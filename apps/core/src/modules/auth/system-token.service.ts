@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { I18nContext, I18nService } from 'nestjs-i18n'
 
 import { DatabaseService } from '@core/processors/database/database.service'
 
@@ -23,7 +24,10 @@ interface OrgConfig {
 export class SystemTokenService {
   private readonly logger = new Logger(SystemTokenService.name)
 
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   public async findOrgBySlug(slug: string): Promise<OrgConfig | null> {
     const endpoint = await this.database.prisma.organizationEndpoint.findFirst({
@@ -104,8 +108,13 @@ export class SystemTokenService {
   private async findOrgOrThrow(slug: string): Promise<OrgConfig> {
     const org = await this.findOrgBySlug(slug)
     if (!org) {
-      throw new NotFoundException(`Organization '${slug}' not found`)
+      throw new NotFoundException(await this.translate('organization_not_found', { id: slug }))
     }
     return org
+  }
+
+  private translate(key: string, args?: Record<string, unknown>) {
+    const lang = I18nContext.current()?.lang
+    return this.i18n.translate<string>(`errors.${key}`, { lang, args })
   }
 }

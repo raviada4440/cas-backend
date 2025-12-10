@@ -2,6 +2,7 @@ import { Body, Delete, Get, Param, Post, Put } from '@nestjs/common'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import {
   AssignVersionConsentDto,
@@ -12,6 +13,7 @@ import {
 } from './consents.dto'
 import { ConsentsService } from './consents.service'
 
+@Auth()
 @ApiTags('Consents')
 @ApiController('consents')
 export class ConsentsController {

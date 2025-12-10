@@ -2,10 +2,12 @@ import { Body, Get, HttpCode, HttpStatus, Post } from '@nestjs/common'
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import { EmailService } from './email.service'
 import { SendEmailDto } from './email.dto'
 
+@Auth()
 @ApiTags('Email')
 @ApiController('email')
 export class EmailController {

@@ -85,7 +85,7 @@ export async function bootstrap() {
     },
   })
 
-  fastifyInstance.addHook('onRequest', (request, _reply, done) => {
+  fastifyInstance.addHook('onRequest', (request, reply, done) => {
     if (isDev) {
       done()
       return
@@ -112,7 +112,11 @@ export async function bootstrap() {
         userAgent ? ` ua=${userAgent}` : ''
       }`,
     )
-    done()
+    reply.status(403).send({
+      error: 'CORS origin not allowed',
+      origin,
+      path: request.url,
+    })
   })
 
   isDev && app.useGlobalInterceptors(new LoggingInterceptor())

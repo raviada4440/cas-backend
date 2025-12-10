@@ -2,10 +2,12 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Get, Query } from '@nestjs/common'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import { OrderableQueryDto } from './orderable-tests.dto'
 import { LabOrdersService } from './lab-orders.service'
 
+@Auth()
 @ApiTags('Orders - Orderable Tests')
 @ApiController('orderable-tests')
 export class OrderableTestsController {

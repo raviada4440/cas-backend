@@ -19,10 +19,22 @@ export const LoginUserSchema = z
   })
   .passthrough()
 
+export const TenantMembershipSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string().nullable(),
+    slug: z.string().nullable().optional(),
+  })
+  .strict()
+
+export type TenantMembership = z.infer<typeof TenantMembershipSchema>
+
 export const LoginResponseSchema = LoginUserSchema.extend({
   token: z.string().min(1),
   accessToken: z.string().min(1),
   user: LoginUserSchema,
+  tenants: z.array(TenantMembershipSchema).default([]),
+  isSuperAdmin: z.boolean().default(false),
 }).passthrough()
 
 export const SystemTokenRequestSchema = z

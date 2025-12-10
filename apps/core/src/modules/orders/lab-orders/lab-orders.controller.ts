@@ -2,6 +2,7 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Body, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import {
   CreateLabOrderDto,
@@ -12,6 +13,7 @@ import {
 } from './lab-orders.dto'
 import { LabOrdersService } from './lab-orders.service'
 
+@Auth()
 @ApiTags('Orders - Lab Orders')
 @ApiController('laborders')
 export class LabOrdersController {

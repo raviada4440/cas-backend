@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger'
 import { $Enums } from '@db/client'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import {
   CloneConsentTemplateDto,
@@ -15,6 +16,7 @@ import {
 } from './templates.dto'
 import { TemplatesService } from './templates.service'
 
+@Auth()
 @ApiTags('Consents - Templates')
 @ApiController('consents/templates')
 export class TemplatesController {

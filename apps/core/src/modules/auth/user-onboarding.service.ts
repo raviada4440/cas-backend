@@ -6,6 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
+import { I18nContext, I18nService } from 'nestjs-i18n'
 import { hash } from 'bcrypt'
 
 import { DatabaseService } from '@core/processors/database/database.service'
@@ -23,7 +24,10 @@ const TOKEN_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 @Injectable()
 export class UserOnboardingService {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   public async inviteUser(input: InviteUserRequest): Promise<InviteUserResponse> {
     const existing = await this.database.prisma.user.findUnique({
@@ -32,7 +36,7 @@ export class UserOnboardingService {
     })
 
     if (existing) {
-      throw new ConflictException('User already exists')
+      throw new ConflictException(await this.translate('user_already_exists'))
     }
 
     const user = await this.database.prisma.user.create({
@@ -82,13 +86,13 @@ export class UserOnboardingService {
     })
 
     if (!user) {
-      throw new NotFoundException('User not found')
+      throw new NotFoundException(await this.translate('user_not_found'))
     }
 
     if (user.emailVerified && user.password) {
       return {
         success: false,
-        reason: 'User already verified and password set',
+        reason: await this.translate('verification_user_verified_with_password'),
       }
     }
 
@@ -109,7 +113,7 @@ export class UserOnboardingService {
     if (!verificationToken) {
       return {
         success: false,
-        reason: 'Verification token not found',
+        reason: await this.translate('verification_token_not_found'),
       }
     }
 
@@ -119,7 +123,7 @@ export class UserOnboardingService {
       })
       return {
         success: false,
-        reason: 'Verification token expired',
+        reason: await this.translate('verification_token_expired'),
       }
     }
 
@@ -130,14 +134,14 @@ export class UserOnboardingService {
     if (!user) {
       return {
         success: false,
-        reason: 'User not found',
+        reason: await this.translate('user_not_found'),
       }
     }
 
     if (user.emailVerified && user.password) {
       return {
         success: false,
-        reason: 'User already verified',
+        reason: await this.translate('verification_user_already_verified'),
       }
     }
 
@@ -152,14 +156,14 @@ export class UserOnboardingService {
     })
 
     if (!verificationToken) {
-      throw new NotFoundException('Invalid or expired setup link')
+      throw new NotFoundException(await this.translate('verification_setup_link_invalid'))
     }
 
     if (verificationToken.expires < new Date()) {
       await this.database.prisma.verificationToken.delete({
         where: { token: input.token },
       })
-      throw new BadRequestException('Setup link has expired. Please request a new email.')
+      throw new BadRequestException(await this.translate('verification_setup_link_expired'))
     }
 
     const hashedPassword = await hash(input.password, 10)
@@ -202,5 +206,11 @@ export class UserOnboardingService {
     })
 
     return { token, expires }
+  }
+
+  private async translate(key: string, args?: Record<string, unknown>): Promise<string> {
+    const lang = I18nContext.current()?.lang
+    const result = await this.i18n.translate<string>(`errors.${key}`, { lang, args })
+    return typeof result === 'string' ? result : ''
   }
 }

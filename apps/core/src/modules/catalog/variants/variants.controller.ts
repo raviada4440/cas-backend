@@ -2,6 +2,7 @@ import { Body, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import {
   BulkUpsertBiomarkersDto,
@@ -17,6 +18,7 @@ import {
 } from './variants.dto'
 import { VariantsService } from './variants.service'
 
+@Auth()
 @ApiTags('Catalog - Variants')
 @ApiController('catalog/tests/:testId/variants')
 export class VariantsController {
@@ -70,6 +72,7 @@ export class VariantsController {
   }
 }
 
+@Auth()
 @ApiTags('Catalog - Variant Biomarkers')
 @ApiController('catalog/variants/:configurationId/biomarkers')
 export class VariantBiomarkerController {
@@ -88,6 +91,7 @@ export class VariantBiomarkerController {
   }
 }
 
+@Auth()
 @ApiTags('Catalog - Variant Utilities')
 @ApiController('catalog')
 export class VariantUtilityController {

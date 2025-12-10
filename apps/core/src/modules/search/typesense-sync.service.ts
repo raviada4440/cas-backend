@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, isAxiosError } from 'axios'
 import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common'
+import { I18nContext, I18nService } from 'nestjs-i18n'
 import { ConfigService } from '@nestjs/config'
 import { Prisma } from '@db/client'
 
@@ -44,6 +45,7 @@ export class TypesenseSyncService {
   constructor(
     private readonly configService: ConfigService,
     private readonly database: DatabaseService,
+    private readonly i18n: I18nService,
   ) {
     const host = this.configService.get<string>('TYPESENSE_HOST')
     const port = this.configService.get<string>('TYPESENSE_PORT')
@@ -95,19 +97,19 @@ export class TypesenseSyncService {
         return this.syncAll()
       case 'sync-single':
         if (!request.testId) {
-          throw new NotFoundException('testId is required for sync-single action')
+          throw new NotFoundException(await this.translate('typesense_test_id_required_sync'))
         }
         return this.syncSingle(request.testId)
       case 'remove':
         if (!request.testId) {
-          throw new NotFoundException('testId is required for remove action')
+          throw new NotFoundException(await this.translate('typesense_test_id_required_remove'))
         }
         return this.remove(request.testId)
       case 'reindex':
         return this.reindex()
       default:
         throw new InternalServerErrorException(
-          `Unsupported Typesense sync action: ${request.action}`,
+          await this.translate('typesense_action_unsupported', { action: request.action }),
         )
     }
   }
@@ -170,7 +172,7 @@ export class TypesenseSyncService {
     })
 
     if (!test) {
-      throw new NotFoundException(`Test with ID ${testId} not found`)
+      throw new NotFoundException(await this.translate('test_not_found_with_id', { id: testId }))
     }
 
     const document = this.buildDocument(test)
@@ -213,7 +215,7 @@ export class TypesenseSyncService {
       }
 
       this.logger.error(`Failed to ensure Typesense collection: ${(error as Error).message}`)
-      throw new InternalServerErrorException('Failed to ensure Typesense collection')
+      throw new InternalServerErrorException(await this.translate('typesense_collection_failed'))
     }
   }
 
@@ -296,5 +298,10 @@ export class TypesenseSyncService {
       updatedAt: test.updatedAt ? Math.floor(new Date(test.updatedAt).getTime() / 1000) : 0,
       labId: test.labId ?? '',
     }
+  }
+
+  private translate(key: string, args?: Record<string, unknown>) {
+    const lang = I18nContext.current()?.lang
+    return this.i18n.translate<string>(`errors.${key}`, { lang, args })
   }
 }

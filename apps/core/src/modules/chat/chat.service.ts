@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
+import { I18nContext, I18nService } from 'nestjs-i18n'
 import {
   Prisma,
   ChatContact as PrismaChatContact,
@@ -43,6 +44,7 @@ export class ChatService implements OnModuleInit {
   constructor(
     private readonly database: DatabaseService,
     private readonly searchService: SearchService,
+    private readonly i18n: I18nService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -109,7 +111,7 @@ export class ChatService implements OnModuleInit {
       },
     })
     if (!contact) {
-      throw new NotFoundException('Contact not found')
+      throw new NotFoundException(await this.translate('contact_not_found'))
     }
 
     await this.database.prisma.chatContact.update({
@@ -194,7 +196,7 @@ export class ChatService implements OnModuleInit {
         return this.searchService.hybridSearch(rest)
       }
       default:
-        throw new NotFoundException('Unsupported search mode')
+        throw new NotFoundException(await this.translate('chat_unsupported_search_mode'))
     }
   }
 
@@ -260,7 +262,7 @@ export class ChatService implements OnModuleInit {
         where: { id: contactId },
       })
       if (!existing) {
-        throw new NotFoundException('Contact not found')
+        throw new NotFoundException(await this.translate('contact_not_found'))
       }
       return existing
     }
@@ -406,5 +408,9 @@ export class ChatService implements OnModuleInit {
         return `Table ${table}: ${columns.slice(0, 12).join(', ')}`
       })
       .join('\n')
+  }
+  private translate(key: string, args?: Record<string, unknown>) {
+    const lang = I18nContext.current()?.lang
+    return this.i18n.translate<string>(`errors.${key}`, { lang, args })
   }
 }

@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { I18nContext, I18nService } from 'nestjs-i18n'
 
 import { DatabaseService } from '@core/processors/database/database.service'
 
@@ -14,7 +15,10 @@ import {
 
 @Injectable()
 export class RolesService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly i18n: I18nService,
+  ) {}
 
   async create(dto: CreateRoleDto) {
     return this.db.prisma.role.create({
@@ -48,7 +52,7 @@ export class RolesService {
       },
     })
     if (!role) {
-      throw new NotFoundException(`Role ${id} not found`)
+      throw new NotFoundException(await this.translate('role_not_found', { id }))
     }
     return role
   }
@@ -71,7 +75,7 @@ export class RolesService {
       },
     })
     if (!role) {
-      throw new NotFoundException(`Role ${name} not found`)
+      throw new NotFoundException(await this.translate('role_not_found', { id: name }))
     }
     return role
   }
@@ -108,7 +112,7 @@ export class RolesService {
       where: { roleId: id },
     })
     if (usageCount > 0) {
-      throw new ConflictException('Cannot delete role that is assigned to users')
+      throw new ConflictException(await this.translate('role_in_use'))
     }
 
     await this.db.prisma.role.delete({ where: { id } })
@@ -128,7 +132,7 @@ export class RolesService {
       },
     })
     if (existing) {
-      throw new ConflictException('User already has this role')
+      throw new ConflictException(await this.translate('role_user_exists'))
     }
 
     return this.db.prisma.userRole.create({
@@ -204,7 +208,9 @@ export class RolesService {
         },
       })
     } catch (error) {
-      throw new NotFoundException(`User ${userId} does not have role ${roleId}`)
+      throw new NotFoundException(
+        await this.translate('user_role_not_assigned', { userId, roleId }),
+      )
     }
   }
 
@@ -385,14 +391,19 @@ export class RolesService {
   private async ensureRoleExists(id: string) {
     const exists = await this.db.prisma.role.findUnique({ where: { id } })
     if (!exists) {
-      throw new NotFoundException(`Role ${id} not found`)
+      throw new NotFoundException(await this.translate('role_not_found', { id }))
     }
   }
 
   private async ensureUserExists(id: string) {
     const exists = await this.db.prisma.user.findUnique({ where: { id } })
     if (!exists) {
-      throw new NotFoundException(`User ${id} not found`)
+      throw new NotFoundException(await this.translate('user_not_found', { id }))
     }
+  }
+
+  private translate(key: string, args?: Record<string, unknown>) {
+    const lang = I18nContext.current()?.lang
+    return this.i18n.translate<string>(`errors.${key}`, { lang, args })
   }
 }

@@ -2,6 +2,7 @@ import { Body, Post } from '@nestjs/common'
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { Auth } from '@core/common/decorators/auth.decorator'
 
 import {
   HybridSearchDto,
@@ -11,6 +12,7 @@ import {
 } from './search.dto'
 import { SearchService } from './search.service'
 
+@Auth()
 @ApiTags('Search')
 @ApiController('search')
 export class SearchController {

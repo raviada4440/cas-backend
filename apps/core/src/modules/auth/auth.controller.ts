@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common'
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { FastifyRequest } from 'fastify'
+import { I18nService } from 'nestjs-i18n'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { HTTPDecorators } from '@core/common/decorators/http.decorator'
@@ -36,7 +37,7 @@ import {
   VerificationStatusDto,
   VerifyEmailRequestDto,
 } from './auth.dto'
-import { AuthService } from './auth.service'
+import { AuthService, TenantMembership } from './auth.service'
 import { SystemTokenService } from './system-token.service'
 import { UserOnboardingService } from './user-onboarding.service'
 import {
@@ -56,6 +57,11 @@ type RequestWithOwner = FastifyRequest & {
     id?: string
   }
   token?: string
+  i18nLang?: string
+  tenants?: TenantMembership[]
+  tenant?: TenantMembership | null
+  tenantIds?: string[]
+  isSuperAdmin?: boolean
 }
 
 @ApiTags('Auth')
@@ -65,6 +71,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly systemTokenService: SystemTokenService,
     private readonly onboardingService: UserOnboardingService,
+    private readonly i18n: I18nService,
   ) {}
 
   @Post('login')
@@ -75,20 +82,32 @@ export class AuthController {
   @ApiBody({ type: LoginRequestDto })
   async login(@Body(new ZodValidationPipe(LoginRequestSchema)) body: LoginRequest) {
     const user = await this.authService.validateEmailAndPassword(body.email, body.password)
-    const token = await this.authService.signToken(user.id)
+    const context = await this.authService.getUserContext(user.id)
+    if (!context) {
+      throw new UnauthorizedException(await this.i18n.translate('errors.not_authenticated'))
+    }
 
-    const { password: _password, ...sanitized } = user
+    const tenantIds = context.tenants.map((tenant) => tenant.id)
+    const token = await this.authService.signToken(user.id, {
+      tenantIds,
+      isSuperAdmin: context.isSuperAdmin,
+    })
 
     const normalizedUser = {
-      ...sanitized,
-      createdAt: sanitized.createdAt.toISOString(),
-      updatedAt: sanitized.updatedAt.toISOString(),
+      id: context.user.id,
+      email: context.user.email,
+      name: context.user.name,
+      image: context.user.image,
+      createdAt: context.user.createdAt.toISOString(),
+      updatedAt: context.user.updatedAt.toISOString(),
     }
 
     return {
       token,
       accessToken: token,
       user: normalizedUser,
+      tenants: context.tenants,
+      isSuperAdmin: context.isSuperAdmin,
     }
   }
 
@@ -113,15 +132,32 @@ export class AuthController {
   async issueAccessToken(@Req() request: RequestWithOwner) {
     const userId = request.owner?.id
     if (!userId) {
-      throw new UnauthorizedException('未登录')
+      throw new UnauthorizedException(
+        await this.i18n.translate('errors.not_authenticated', {
+          lang: request.i18nLang,
+        }),
+      )
     }
-    const token = await this.authService.signToken(userId)
+    const context = request.tenants ? null : await this.authService.getUserContext(userId)
+    const tenants = request.tenants ?? context?.tenants ?? []
+    const isSuperAdmin = request.isSuperAdmin ?? context?.isSuperAdmin ?? false
+    const tenantIds = tenants.map((tenant) => tenant.id)
+    const token = await this.authService.signToken(userId, {
+      tenantIds,
+      isSuperAdmin,
+    })
     const expiresAt = new Date(
       Date.now() + JWTService.expiresDay * 24 * 60 * 60 * 1000,
     ).toISOString()
+    request.tenants = tenants
+    request.tenant = tenants[0] ?? null
+    request.tenantIds = tenantIds
+    request.isSuperAdmin = isSuperAdmin
     return {
       token,
       expiresAt,
+      tenants,
+      isSuperAdmin,
     }
   }
 
