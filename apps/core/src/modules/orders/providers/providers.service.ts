@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { Prisma, Organization } from '@db/client'
+import { Prisma, ProviderEducation } from '@db/client'
 
 import { BizException } from '@core/common/exceptions/biz.exception'
 import { ErrorCodeEnum } from '@core/constants/error-code.constant'
@@ -9,27 +9,40 @@ import { randomUUID } from 'node:crypto'
 
 import {
   CreateProviderInput,
+  ProviderBulkUpdateResult,
   ProviderDetail,
   ProviderEducationListResponse,
+  ProviderEducationRecord,
   ProviderFavoriteTestListResponse,
+  ProviderOrganizationListResponse,
+  ProviderOrganizationRecord,
   ProviderOrderListResponse,
   ProviderSearchResponse,
+  ProviderStatsResponse,
   ProviderSummary,
   ProviderUserAccountResponse,
   UpdateProviderInput,
 } from '@shared/contracts/providers'
-import { OrganizationListResponse, OrganizationRecord } from '@shared/contracts/organization'
 
 import {
   CreateProviderDtoInput,
+  ProviderBulkUpdateInputType,
+  ProviderEducationCreateInputType,
   ProviderFavoriteCreateInputDto,
+  ProviderOrganizationLinkInputType,
   ProviderOrganizationQuery,
   ProviderSearchQuery,
+  ProviderUpsertDtoInput,
   ProviderUserAccountInput,
   UpdateProviderDtoInput,
 } from './providers.dto'
 
 type PrismaClientOrTx = Prisma.TransactionClient | DatabaseService['prisma']
+
+type TenantScope = {
+  tenantIds: string[]
+  isSuperAdmin: boolean
+}
 
 type ProviderEntity = Prisma.ProviderGetPayload<{
   include: {
@@ -96,6 +109,12 @@ type OrderInclude = {
 }
 type OrderEntity = Prisma.LabOrderGetPayload<{ include: OrderInclude }>
 
+type ProviderOrganizationEntity = Prisma.ProviderOrganizationGetPayload<{
+  include: {
+    organization: true
+  }
+}>
+
 @Injectable()
 export class ProvidersService {
   constructor(private readonly db: DatabaseService) {}
@@ -153,28 +172,119 @@ export class ProvidersService {
     },
   } satisfies Prisma.LabOrderInclude
 
-  async search(query: ProviderSearchQuery): Promise<ProviderSearchResponse> {
+  private normalizeScope(scope?: TenantScope): TenantScope {
+    const tenantIds = Array.from(new Set(scope?.tenantIds ?? [])).filter(
+      (id): id is string => typeof id === 'string' && id.length > 0,
+    )
+
+    return {
+      tenantIds,
+      isSuperAdmin: Boolean(scope?.isSuperAdmin),
+    }
+  }
+
+  private combineWhere(
+    base: Prisma.ProviderWhereInput,
+    addition: Prisma.ProviderWhereInput,
+  ): Prisma.ProviderWhereInput {
+    if (!addition || Object.keys(addition).length === 0) {
+      return base
+    }
+
+    const baseCopy = { ...base }
+    const andConditions: Prisma.ProviderWhereInput[] = []
+
+    if (baseCopy.AND) {
+      const existing = baseCopy.AND
+      delete baseCopy.AND
+      andConditions.push(...(Array.isArray(existing) ? existing : [existing]))
+    }
+
+    if (Object.keys(baseCopy).length > 0) {
+      andConditions.unshift(baseCopy)
+    }
+
+    andConditions.push(addition)
+
+    if (andConditions.length === 1) {
+      return andConditions[0]
+    }
+
+    return {
+      AND: andConditions,
+    }
+  }
+
+  private applyScopeToProviderWhere(
+    where: Prisma.ProviderWhereInput,
+    scope: TenantScope,
+  ): Prisma.ProviderWhereInput {
+    const normalized = this.normalizeScope(scope)
+    if (normalized.isSuperAdmin || normalized.tenantIds.length === 0) {
+      return where
+    }
+
+    const scopeFilter: Prisma.ProviderWhereInput = {
+      providerOrganizations: {
+        some: {
+          organizationId: { in: normalized.tenantIds },
+        },
+      },
+    }
+
+    return this.combineWhere(where, scopeFilter)
+  }
+
+  private async ensureOrganizationAccess(organizationId: string, scope: TenantScope) {
+    const normalized = this.normalizeScope(scope)
+    if (normalized.isSuperAdmin) {
+      return
+    }
+
+    if (!normalized.tenantIds.includes(organizationId)) {
+      throw new BizException(ErrorCodeEnum.OrganizationNotFound)
+    }
+  }
+
+  async search(query: ProviderSearchQuery, scope: TenantScope): Promise<ProviderSearchResponse> {
+    const normalizedScope = this.normalizeScope(scope)
     const take = Math.min(query.limit ?? 20, 50)
-    const where: Prisma.ProviderWhereInput = {}
+    let where: Prisma.ProviderWhereInput = {}
 
     if (query.search) {
       const searchTerm = query.search.trim()
       if (searchTerm.length) {
-        where.OR = [
-          { firstName: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
-          { lastName: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
-          { name: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
-          { email: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
-          { npi: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
-        ]
+        where = {
+          ...where,
+          OR: [
+            { firstName: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+            { lastName: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+            { name: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+            { email: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+            { npi: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+          ],
+        }
       }
     }
 
     if (query.organizationId) {
-      where.providerOrganizations = {
-        some: { organizationId: query.organizationId },
+      where = this.combineWhere(where, {
+        providerOrganizations: {
+          some: { organizationId: query.organizationId },
+        },
+      })
+    }
+
+    if (query.specialty) {
+      const specialty = query.specialty.trim()
+      if (specialty.length) {
+        where = this.combineWhere(where, {
+          specialty: { contains: specialty, mode: Prisma.QueryMode.insensitive },
+        })
       }
     }
+
+    where = this.applyScopeToProviderWhere(where, normalizedScope)
 
     const [providers, totalCount] = await this.db.prisma.$transaction([
       this.db.prisma.provider.findMany({
@@ -197,12 +307,51 @@ export class ProvidersService {
     }
   }
 
-  async detail(providerId: string): Promise<ProviderDetail> {
-    const provider = await this.findProviderOrThrow(providerId)
+  async stats(scope: TenantScope): Promise<ProviderStatsResponse> {
+    const normalizedScope = this.normalizeScope(scope)
+    const baseWhere = this.applyScopeToProviderWhere({}, normalizedScope)
+
+    const [totalProviders, providersWithOrganizations] = await this.db.prisma.$transaction([
+      this.db.prisma.provider.count({ where: baseWhere }),
+      this.db.prisma.provider.count({
+        where: this.combineWhere(baseWhere, {
+          providerOrganizations: {
+            some: {},
+          },
+        }),
+      }),
+    ])
+
+    return {
+      totalProviders,
+      providersWithOrganizations,
+      providersWithoutOrganizations: Math.max(totalProviders - providersWithOrganizations, 0),
+    }
+  }
+
+  async detail(providerId: string, scope: TenantScope): Promise<ProviderDetail> {
+    const provider = await this.findProviderOrThrow(providerId, this.db.prisma, scope)
     return this.mapDetail(provider)
   }
 
-  async create(input: CreateProviderDtoInput): Promise<ProviderDetail> {
+  async detailByNpi(npi: string, scope: TenantScope): Promise<ProviderDetail> {
+    const normalizedScope = this.normalizeScope(scope)
+    const normalizedNpi = npi.trim()
+    if (!normalizedNpi.length) {
+      throw new BizException(ErrorCodeEnum.ProviderNotFound)
+    }
+    const where = this.applyScopeToProviderWhere({ npi: normalizedNpi }, normalizedScope)
+    const provider = await this.db.prisma.provider.findFirst({
+      where,
+      include: this.providerInclude,
+    })
+    if (!provider) {
+      throw new BizException(ErrorCodeEnum.ProviderNotFound)
+    }
+    return this.mapDetail(provider as ProviderEntity)
+  }
+
+  async create(input: CreateProviderDtoInput, _scope: TenantScope): Promise<ProviderDetail> {
     const created = await this.db.prisma.provider.create({
       data: this.buildCreateData(input),
       include: this.providerInclude,
@@ -210,7 +359,59 @@ export class ProvidersService {
     return this.mapDetail(created)
   }
 
-  async update(providerId: string, input: UpdateProviderDtoInput): Promise<ProviderDetail> {
+  async upsert(input: ProviderUpsertDtoInput, scope: TenantScope): Promise<ProviderDetail> {
+    if (input.id) {
+      return this.update(input.id, input, scope)
+    }
+    const { id: _ignoredId, ...createPayload } = input
+    return this.create(createPayload as CreateProviderDtoInput, scope)
+  }
+
+  async bulkUpdate(
+    input: ProviderBulkUpdateInputType,
+    scope: TenantScope,
+  ): Promise<ProviderBulkUpdateResult> {
+    if (!input.providerIds.length) {
+      return { updated: 0 }
+    }
+
+    const normalizedScope = this.normalizeScope(scope)
+    const scopedWhere = this.applyScopeToProviderWhere(
+      { id: { in: input.providerIds } },
+      normalizedScope,
+    )
+
+    const accessibleProviders = await this.db.prisma.provider.findMany({
+      where: scopedWhere,
+      select: { id: true },
+    })
+
+    if (!accessibleProviders.length) {
+      return { updated: 0 }
+    }
+
+    const updateData = this.buildUpdateData((input.updateData ?? {}) as UpdateProviderInput)
+
+    if (Object.keys(updateData).length === 0) {
+      return { updated: 0 }
+    }
+
+    const result = await this.db.prisma.provider.updateMany({
+      where: {
+        id: { in: accessibleProviders.map((provider) => provider.id) },
+      },
+      data: updateData,
+    })
+
+    return { updated: result.count }
+  }
+
+  async update(
+    providerId: string,
+    input: UpdateProviderDtoInput,
+    scope: TenantScope,
+  ): Promise<ProviderDetail> {
+    await this.findProviderOrThrow(providerId, this.db.prisma, scope)
     const updated = await this.db.prisma.provider
       .update({
         where: { id: providerId },
@@ -224,7 +425,9 @@ export class ProvidersService {
     return this.mapDetail(updated)
   }
 
-  async delete(providerId: string) {
+  async delete(providerId: string, scope: TenantScope) {
+    await this.findProviderOrThrow(providerId, this.db.prisma, scope)
+
     await this.db.prisma.$transaction(async (tx) => {
       await tx.providerFavoriteTest.deleteMany({ where: { providerId } })
       await tx.providerEducation.deleteMany({ where: { providerId } })
@@ -241,8 +444,9 @@ export class ProvidersService {
   async listOrganizations(
     providerId: string,
     query: ProviderOrganizationQuery,
-  ): Promise<OrganizationListResponse> {
-    await this.findProviderOrThrow(providerId)
+    scope: TenantScope,
+  ): Promise<ProviderOrganizationListResponse> {
+    await this.findProviderOrThrow(providerId, this.db.prisma, scope)
 
     const take = Math.min(query.limit ?? 20, 100)
     const organizations = await this.db.prisma.providerOrganization.findMany({
@@ -255,15 +459,61 @@ export class ProvidersService {
     })
 
     return {
-      items: organizations
-        .map((item) => item.organization)
-        .filter((org): org is NonNullable<typeof org> => Boolean(org))
-        .map((org) => this.mapOrganization(org)),
+      items: organizations.map((item) => this.mapProviderOrganization(item)),
     }
   }
 
-  async listEducation(providerId: string): Promise<ProviderEducationListResponse> {
-    await this.findProviderOrThrow(providerId)
+  async linkOrganization(
+    providerId: string,
+    input: ProviderOrganizationLinkInputType,
+    scope: TenantScope,
+  ): Promise<ProviderOrganizationRecord> {
+    await this.findProviderOrThrow(providerId, this.db.prisma, scope)
+    await this.ensureOrganizationAccess(input.organizationId, scope)
+
+    const existing = await this.db.prisma.providerOrganization.findFirst({
+      where: { providerId, organizationId: input.organizationId },
+      include: { organization: true },
+    })
+
+    if (existing) {
+      const updateData = this.buildOrganizationUpdateData(input)
+      if (Object.keys(updateData).length === 0) {
+        return this.mapProviderOrganization(existing as ProviderOrganizationEntity)
+      }
+
+      const updated = await this.db.prisma.providerOrganization.update({
+        where: { id: existing.id },
+        data: updateData,
+        include: { organization: true },
+      })
+      return this.mapProviderOrganization(updated as ProviderOrganizationEntity)
+    }
+
+    const created = await this.db.prisma.providerOrganization.create({
+      data: this.buildOrganizationCreateData(providerId, input),
+      include: { organization: true },
+    })
+
+    return this.mapProviderOrganization(created as ProviderOrganizationEntity)
+  }
+
+  async unlinkOrganization(providerId: string, organizationId: string, scope: TenantScope) {
+    await this.findProviderOrThrow(providerId, this.db.prisma, scope)
+    await this.ensureOrganizationAccess(organizationId, scope)
+
+    const result = await this.db.prisma.providerOrganization.deleteMany({
+      where: { providerId, organizationId },
+    })
+
+    return { success: result.count > 0, removed: result.count }
+  }
+
+  async listEducation(
+    providerId: string,
+    scope: TenantScope,
+  ): Promise<ProviderEducationListResponse> {
+    await this.findProviderOrThrow(providerId, this.db.prisma, scope)
 
     const education = await this.db.prisma.providerEducation.findMany({
       where: { providerId },
@@ -271,21 +521,36 @@ export class ProvidersService {
     })
 
     return {
-      items: education.map((record) => ({
-        id: record.id,
-        providerId: record.providerId,
-        providerNpi: record.providerNpi ?? null,
-        name: record.name ?? null,
-        educationType: record.educationType ?? null,
-        schoolName: record.schoolName ?? null,
-        areaOfEducation: record.areaOfEducation ?? null,
-        createdAt: record.createdAt.toISOString(),
-      })),
+      items: education.map((record) => this.mapEducation(record)),
     }
   }
 
-  async listFavoriteTests(providerId: string): Promise<ProviderFavoriteTestListResponse> {
-    await this.findProviderOrThrow(providerId)
+  async addEducation(
+    providerId: string,
+    input: ProviderEducationCreateInputType,
+    scope: TenantScope,
+  ): Promise<ProviderEducationRecord> {
+    await this.findProviderOrThrow(providerId, this.db.prisma, scope)
+
+    const created = await this.db.prisma.providerEducation.create({
+      data: {
+        providerId,
+        providerNpi: input.providerNpi ?? null,
+        name: input.name ?? null,
+        educationType: input.educationType ?? null,
+        schoolName: input.schoolName ?? null,
+        areaOfEducation: input.areaOfEducation ?? null,
+      },
+    })
+
+    return this.mapEducation(created)
+  }
+
+  async listFavoriteTests(
+    providerId: string,
+    scope: TenantScope,
+  ): Promise<ProviderFavoriteTestListResponse> {
+    await this.findProviderOrThrow(providerId, this.db.prisma, scope)
 
     const favorites = await this.db.prisma.providerFavoriteTest.findMany({
       where: { providerId },
@@ -301,8 +566,9 @@ export class ProvidersService {
   async addFavoriteTest(
     providerId: string,
     input: ProviderFavoriteCreateInputDto,
+    scope: TenantScope,
   ): Promise<ProviderFavoriteTestListResponse['items'][number]> {
-    await this.findProviderOrThrow(providerId)
+    await this.findProviderOrThrow(providerId, this.db.prisma, scope)
 
     const existing = await this.db.prisma.providerFavoriteTest.findFirst({
       where: { providerId, testId: input.testId },
@@ -324,8 +590,8 @@ export class ProvidersService {
     return this.mapFavorite(created as FavoriteEntity)
   }
 
-  async listOrders(providerId: string): Promise<ProviderOrderListResponse> {
-    await this.findProviderOrThrow(providerId)
+  async listOrders(providerId: string, scope: TenantScope): Promise<ProviderOrderListResponse> {
+    await this.findProviderOrThrow(providerId, this.db.prisma, scope)
 
     const orders = await this.db.prisma.labOrder.findMany({
       where: {
@@ -344,9 +610,10 @@ export class ProvidersService {
   async createUserAccount(
     providerId: string,
     input: ProviderUserAccountInput,
+    scope: TenantScope,
   ): Promise<ProviderUserAccountResponse> {
     return this.db.prisma.$transaction(async (tx) => {
-      const provider = await this.findProviderOrThrow(providerId, tx)
+      const provider = await this.findProviderOrThrow(providerId, tx, scope)
 
       const autoVerify = input.autoVerify ?? false
       const email = input.email ?? provider.email ?? null
@@ -519,12 +786,48 @@ export class ProvidersService {
     }
   }
 
+  private buildOrganizationCreateData(
+    providerId: string,
+    input: ProviderOrganizationLinkInputType,
+  ): Prisma.ProviderOrganizationUncheckedCreateInput {
+    return {
+      providerId,
+      organizationId: input.organizationId,
+      providerNpi: input.providerNpi ?? null,
+      name: input.name ?? null,
+      parentOrgName: input.parentOrgName ?? null,
+      orgName: input.orgName ?? null,
+      orgAddress: input.orgAddress ?? null,
+      orgCity: input.orgCity ?? null,
+      orgState: input.orgState ?? null,
+      orgZip: input.orgZip ?? null,
+    }
+  }
+
+  private buildOrganizationUpdateData(
+    input: ProviderOrganizationLinkInputType,
+  ): Prisma.ProviderOrganizationUncheckedUpdateInput {
+    return {
+      ...(input.providerNpi !== undefined ? { providerNpi: input.providerNpi ?? null } : {}),
+      ...(input.name !== undefined ? { name: input.name ?? null } : {}),
+      ...(input.parentOrgName !== undefined ? { parentOrgName: input.parentOrgName ?? null } : {}),
+      ...(input.orgName !== undefined ? { orgName: input.orgName ?? null } : {}),
+      ...(input.orgAddress !== undefined ? { orgAddress: input.orgAddress ?? null } : {}),
+      ...(input.orgCity !== undefined ? { orgCity: input.orgCity ?? null } : {}),
+      ...(input.orgState !== undefined ? { orgState: input.orgState ?? null } : {}),
+      ...(input.orgZip !== undefined ? { orgZip: input.orgZip ?? null } : {}),
+    }
+  }
+
   private async findProviderOrThrow(
     providerId: string,
     prisma: PrismaClientOrTx = this.db.prisma,
+    scope?: TenantScope,
   ): Promise<ProviderEntity> {
-    const provider = await prisma.provider.findUnique({
-      where: { id: providerId },
+    const normalizedScope = this.normalizeScope(scope)
+    const where = this.applyScopeToProviderWhere({ id: providerId }, normalizedScope)
+    const provider = await prisma.provider.findFirst({
+      where,
       include: this.providerInclude,
     })
 
@@ -564,22 +867,36 @@ export class ProvidersService {
     }
   }
 
-  private mapOrganization(org: Organization): OrganizationRecord {
+  private mapProviderOrganization(record: ProviderOrganizationEntity): ProviderOrganizationRecord {
+    const organization = record.organization
     return {
-      id: org.id,
-      parentId: org.parentId ?? null,
-      level: org.level ?? null,
-      parentOrgName: org.parentOrgName ?? null,
-      orgName: org.orgName ?? null,
-      orgType: org.orgType ?? null,
-      orgSpecialty: org.orgSpecialty ?? null,
-      orgAddress: org.orgAddress ?? null,
-      orgCity: org.orgCity ?? null,
-      orgState: org.orgState ?? null,
-      orgZip: org.orgZip ?? null,
-      formattedAddress: this.formatAddress(org),
-      contactEmail: null,
-      contactPhone: null,
+      id: record.id,
+      providerId: record.providerId,
+      organizationId: record.organizationId,
+      providerNpi: record.providerNpi ?? null,
+      name: record.name ?? organization?.orgName ?? null,
+      parentOrgName: record.parentOrgName ?? organization?.parentOrgName ?? null,
+      orgName: record.orgName ?? organization?.orgName ?? null,
+      orgAddress: record.orgAddress ?? organization?.orgAddress ?? null,
+      orgCity: record.orgCity ?? organization?.orgCity ?? null,
+      orgState: record.orgState ?? organization?.orgState ?? null,
+      orgZip: record.orgZip ?? organization?.orgZip ?? null,
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
+    }
+  }
+
+  private mapEducation(record: ProviderEducation): ProviderEducationRecord {
+    return {
+      id: record.id,
+      providerId: record.providerId,
+      providerNpi: record.providerNpi ?? null,
+      name: record.name ?? null,
+      educationType: record.educationType ?? null,
+      schoolName: record.schoolName ?? null,
+      areaOfEducation: record.areaOfEducation ?? null,
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
     }
   }
 
@@ -618,14 +935,6 @@ export class ProvidersService {
       organizationName: order.organization?.orgName ?? null,
       role,
     }
-  }
-
-  private formatAddress(org: Organization): string | null {
-    const parts = [org.orgAddress, org.orgCity, org.orgState, org.orgZip]
-      .map((part) => part?.trim())
-      .filter((part): part is string => Boolean(part && part.length))
-
-    return parts.length ? parts.join(', ') : null
   }
 
   private formatName(

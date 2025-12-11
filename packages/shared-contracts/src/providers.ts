@@ -33,6 +33,7 @@ export const ProviderSearchParams = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: z.string().optional(),
   organizationId: z.string().uuid().optional(),
+  specialty: z.string().optional(),
 })
 export type ProviderSearchParams = z.infer<typeof ProviderSearchParams>
 
@@ -47,11 +48,13 @@ export const CreateProviderInput = ProviderDetail.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).extend({
-  firstName: z.string().nullable().optional(),
-  lastName: z.string().nullable().optional(),
-  name: z.string().nullable().optional(),
 })
+  .extend({
+    firstName: z.string().nullable().optional(),
+    lastName: z.string().nullable().optional(),
+    name: z.string().nullable().optional(),
+  })
+  .partial()
 export type CreateProviderInput = z.infer<typeof CreateProviderInput>
 
 export const UpdateProviderInput = ProviderDetail.omit({
@@ -76,6 +79,7 @@ export const ProviderEducationRecord = z
     schoolName: z.string().nullable(),
     areaOfEducation: z.string().nullable(),
     createdAt: UtcDateTime,
+    updatedAt: UtcDateTime.optional(),
   })
   .strict()
 export type ProviderEducationRecord = z.infer<typeof ProviderEducationRecord>
@@ -146,4 +150,96 @@ export const ProviderUserAccountResponse = z
   })
   .strict()
 export type ProviderUserAccountResponse = z.infer<typeof ProviderUserAccountResponse>
+
+export const ProviderUpsertInput = UpdateProviderInput.extend({
+  id: Uuid.optional(),
+}).strict()
+export type ProviderUpsertInput = z.infer<typeof ProviderUpsertInput>
+
+export const ProviderOrganizationRecord = z
+  .object({
+    id: Uuid,
+    providerId: Uuid,
+    organizationId: Uuid,
+    providerNpi: z.string().nullable(),
+    name: z.string().nullable(),
+    parentOrgName: z.string().nullable(),
+    orgName: z.string().nullable(),
+    orgAddress: z.string().nullable(),
+    orgCity: z.string().nullable(),
+    orgState: z.string().nullable(),
+    orgZip: z.string().nullable(),
+    createdAt: UtcDateTime,
+    updatedAt: UtcDateTime,
+  })
+  .strict()
+export type ProviderOrganizationRecord = z.infer<typeof ProviderOrganizationRecord>
+
+export const ProviderOrganizationLinkInput = z
+  .object({
+    organizationId: Uuid,
+    providerNpi: z.string().nullable().optional(),
+    name: z.string().nullable().optional(),
+    parentOrgName: z.string().nullable().optional(),
+    orgName: z.string().nullable().optional(),
+    orgAddress: z.string().nullable().optional(),
+    orgCity: z.string().nullable().optional(),
+    orgState: z.string().nullable().optional(),
+    orgZip: z.string().nullable().optional(),
+  })
+  .strict()
+export type ProviderOrganizationLinkInput = z.infer<typeof ProviderOrganizationLinkInput>
+
+export const ProviderOrganizationListResponse = z
+  .object({
+    items: z.array(ProviderOrganizationRecord),
+  })
+  .strict()
+export type ProviderOrganizationListResponse = z.infer<typeof ProviderOrganizationListResponse>
+
+export const ProviderStatsResponse = z
+  .object({
+    totalProviders: z.number().int().nonnegative(),
+    providersWithOrganizations: z.number().int().nonnegative(),
+    providersWithoutOrganizations: z.number().int().nonnegative(),
+  })
+  .strict()
+export type ProviderStatsResponse = z.infer<typeof ProviderStatsResponse>
+
+export const ProviderBulkUpdateInput = z
+  .object({
+    providerIds: z.array(Uuid).min(1),
+    updateData: UpdateProviderInput.partial(),
+  })
+  .strict()
+export type ProviderBulkUpdateInput = z.infer<typeof ProviderBulkUpdateInput>
+
+export const ProviderBulkUpdateResult = z
+  .object({
+    updated: z.number().int().nonnegative(),
+  })
+  .strict()
+export type ProviderBulkUpdateResult = z.infer<typeof ProviderBulkUpdateResult>
+
+export const ProviderEducationCreateInput = ProviderEducationRecord.pick({
+  providerNpi: true,
+  name: true,
+  educationType: true,
+  schoolName: true,
+  areaOfEducation: true,
+}).partial({
+  providerNpi: true,
+  name: true,
+  educationType: true,
+  schoolName: true,
+  areaOfEducation: true,
+})
+export type ProviderEducationCreateInput = z.infer<typeof ProviderEducationCreateInput>
+
+export const ProviderByNpiParam = z
+  .object({
+    npi: z.string().min(1),
+  })
+  .strict()
+export type ProviderByNpiParam = z.infer<typeof ProviderByNpiParam>
 

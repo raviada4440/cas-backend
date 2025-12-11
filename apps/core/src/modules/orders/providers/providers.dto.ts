@@ -3,20 +3,29 @@ import { z } from 'zod'
 
 import {
   CreateProviderInput,
+  ProviderBulkUpdateInput,
+  ProviderBulkUpdateResult,
   ProviderDetail,
+  ProviderEducationCreateInput,
   ProviderEducationListResponse,
+  ProviderEducationRecord,
   ProviderFavoriteCreateInput,
   ProviderFavoriteTestListResponse,
   ProviderFavoriteTestRecord,
   ProviderIdParam,
+  ProviderOrganizationLinkInput,
+  ProviderOrganizationListResponse,
+  ProviderOrganizationRecord,
   ProviderOrderListResponse,
   ProviderOrderRecord,
   ProviderSearchParams,
   ProviderSearchResponse,
+  ProviderStatsResponse,
+  ProviderUpsertInput,
   ProviderUserAccountResponse,
+  ProviderByNpiParam,
   UpdateProviderInput,
 } from '@shared/contracts/providers'
-import { OrganizationListResponse } from '@shared/contracts/organization'
 
 export class ProviderSearchQueryDto extends createZodDto(ProviderSearchParams) {}
 export type ProviderSearchQuery = z.infer<typeof ProviderSearchParams>
@@ -33,11 +42,17 @@ export type CreateProviderDtoInput = z.infer<typeof CreateProviderInput>
 export class UpdateProviderDto extends createZodDto(UpdateProviderInput) {}
 export type UpdateProviderDtoInput = z.infer<typeof UpdateProviderInput>
 
+export class ProviderUpsertDto extends createZodDto(ProviderUpsertInput) {}
+export type ProviderUpsertDtoInput = z.infer<typeof ProviderUpsertInput>
+
 export class ProviderDetailDto extends createZodDto(ProviderDetail) {}
 export type ProviderDetailType = z.infer<typeof ProviderDetail>
 
 export class ProviderEducationListResponseDto extends createZodDto(ProviderEducationListResponse) {}
 export type ProviderEducationListResponseType = z.infer<typeof ProviderEducationListResponse>
+
+export class ProviderEducationRecordDto extends createZodDto(ProviderEducationRecord) {}
+export type ProviderEducationRecordType = z.infer<typeof ProviderEducationRecord>
 
 export class ProviderFavoriteCreateDto extends createZodDto(ProviderFavoriteCreateInput) {}
 export type ProviderFavoriteCreateInputDto = z.infer<typeof ProviderFavoriteCreateInput>
@@ -64,8 +79,16 @@ export const ProviderOrganizationQuerySchema = z
 export class ProviderOrganizationQueryDto extends createZodDto(ProviderOrganizationQuerySchema) {}
 export type ProviderOrganizationQuery = z.infer<typeof ProviderOrganizationQuerySchema>
 
-export class ProviderOrganizationListResponseDto extends createZodDto(OrganizationListResponse) {}
-export type ProviderOrganizationListResponseType = z.infer<typeof OrganizationListResponse>
+export class ProviderOrganizationRecordDto extends createZodDto(ProviderOrganizationRecord) {}
+export type ProviderOrganizationRecordType = z.infer<typeof ProviderOrganizationRecord>
+
+export class ProviderOrganizationListResponseDto extends createZodDto(
+  ProviderOrganizationListResponse,
+) {}
+export type ProviderOrganizationListResponseType = z.infer<typeof ProviderOrganizationListResponse>
+
+export class ProviderOrganizationLinkDto extends createZodDto(ProviderOrganizationLinkInput) {}
+export type ProviderOrganizationLinkInputType = z.infer<typeof ProviderOrganizationLinkInput>
 
 export const ProviderUserAccountInputSchema = z
   .object({
@@ -78,3 +101,18 @@ export type ProviderUserAccountInput = z.infer<typeof ProviderUserAccountInputSc
 
 export class ProviderUserAccountResponseDto extends createZodDto(ProviderUserAccountResponse) {}
 export type ProviderUserAccountResponseType = z.infer<typeof ProviderUserAccountResponse>
+
+export class ProviderStatsResponseDto extends createZodDto(ProviderStatsResponse) {}
+export type ProviderStatsResponseType = z.infer<typeof ProviderStatsResponse>
+
+export class ProviderBulkUpdateDto extends createZodDto(ProviderBulkUpdateInput) {}
+export type ProviderBulkUpdateInputType = z.infer<typeof ProviderBulkUpdateInput>
+
+export class ProviderBulkUpdateResultDto extends createZodDto(ProviderBulkUpdateResult) {}
+export type ProviderBulkUpdateResultType = z.infer<typeof ProviderBulkUpdateResult>
+
+export class ProviderEducationCreateDto extends createZodDto(ProviderEducationCreateInput) {}
+export type ProviderEducationCreateInputType = z.infer<typeof ProviderEducationCreateInput>
+
+export class ProviderByNpiParamDto extends createZodDto(ProviderByNpiParam) {}
+export type ProviderByNpiParamInput = z.infer<typeof ProviderByNpiParam>

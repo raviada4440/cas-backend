@@ -26,6 +26,8 @@
     "prebuild": "rimraf dist && pnpm run prisma:generate",
     "init": "pnpm run prisma:generate && pnpm run migrate:dev",
     "build": "pnpm -C \"apps/core\" run build",
+    "contracts:build": "pnpm -C packages/shared-contracts run build",
+    "contracts:publish": "pnpm -C packages/shared-contracts publish --access restricted",
     "dev": "pnpm -C \"apps/core\" run start",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write --no-error-on-unmatched-pattern \"apps/**/*.ts\" \"test/**/*.ts\"",
