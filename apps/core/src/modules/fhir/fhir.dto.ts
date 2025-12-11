@@ -37,4 +37,3 @@ export const FhirPatientIdParamSchema = z
 export class FhirPatientIdParamDto extends createZodDto(FhirPatientIdParamSchema) {}
 
 export type FhirBundleResponseType = FhirBundleResponse
-

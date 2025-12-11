@@ -1,4 +1,4 @@
-import type {
+import {
   Address,
   Bundle,
   ContactPoint,
@@ -16,8 +16,7 @@ import {
 
 const MRN_CODES = new Set(['MR', 'MRN', 'MEDRECNO', 'MedicalRecordNumber'])
 
-const ensureTrailingSlash = (value: string): string =>
-  value.endsWith('/') ? value : `${value}/`
+const ensureTrailingSlash = (value: string): string => (value.endsWith('/') ? value : `${value}/`)
 
 const formatName = (
   name?: HumanName | null,
@@ -83,10 +82,7 @@ const extractIdentifierValue = (
   const fallbackIdentifier = identifiers.find((identifier) => {
     if (!identifier.value) return false
     const codes = normalizeIdentifierCodes(identifier)
-    return (
-      codes.some((code) => fallbackSet.has(code)) ||
-      codes.some((code) => MRN_CODES.has(code))
-    )
+    return codes.some((code) => fallbackSet.has(code)) || codes.some((code) => MRN_CODES.has(code))
   })
 
   if (fallbackIdentifier?.value) {
@@ -151,10 +147,7 @@ export const buildFhirPatientId = (
   return `${normalizedEndpoint}${normalizedResourceId}`
 }
 
-export const mapFhirPatient = (
-  patient: Patient,
-  options?: { endpoint?: string },
-) => {
+export const mapFhirPatient = (patient: Patient, options?: { endpoint?: string }) => {
   const primaryName = Array.isArray(patient.name) ? patient.name[0] : undefined
   const { firstName, lastName, fullName } = formatName(primaryName)
   const { email, phone } = extractContact(patient.telecom)
@@ -224,4 +217,3 @@ const extractNextCursor = (bundle: Bundle, fallbackUrl: string | null): string |
   if (link?.url) return link.url
   return fallbackUrl
 }
-

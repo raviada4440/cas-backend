@@ -142,7 +142,14 @@ const createDependencies = async () => {
     },
   })
 
-  return { unique, lab, test, version, configuration, patient, provider, organization }
+  const icd = await prisma.icd.create({
+    data: {
+      code: `C${unique}`,
+      shortDescription: `Cancer ${unique}`,
+    },
+  })
+
+  return { unique, lab, test, version, configuration, patient, provider, organization, icd }
 }
 
 const createLabOrderFixtures = async (
@@ -151,6 +158,129 @@ const createLabOrderFixtures = async (
 ) => {
   const base = await createDependencies()
   const timestamp = new Date().toISOString()
+
+  const labOrderDraft = {
+    patient: {
+      recordId: base.patient.id,
+      demographics: {
+        firstName: base.patient.firstName ?? 'Alice',
+        lastName: base.patient.lastName ?? 'Tester',
+        dateOfBirth: timestamp,
+        sexAtBirth: 'FEMALE',
+        mrn: `MRN-${base.unique}`,
+        ethnicity: 'Unknown',
+      },
+      contact: {
+        address: {
+          line1: '123 Health St',
+          city: 'Austin',
+          state: 'TX',
+          postalCode: '73301',
+          country: 'US',
+        },
+        email: base.patient.email,
+        phones: [{ type: 'MOBILE', number: base.patient.mobile ?? '555-0100', preferred: true }],
+        fax: null,
+      },
+      specimen: {
+        drawDate: timestamp,
+        collectionTime: null,
+        collectionMethod: 'LAB',
+        collectionMethodOther: null,
+        collectionLocation: 'Oncology Clinic',
+        specialInstructions: '',
+        fastingRequired: false,
+        fastingHours: null,
+        sampleType: 'BLOOD',
+        sampleTypeOther: null,
+        extractedDna: false,
+        dnaSource: null,
+        logisticsNotes: '',
+      },
+      consent: {
+        researchOptOut: false,
+        sampleRetention: 'OPT_IN',
+        acmgSecondaryFindings: 'OPT_IN',
+        patientSignature: null,
+      },
+    },
+    provider: {
+      facility: {
+        organizationId: base.organization.id,
+        parentOrganizationId: null,
+        parentOrganizationName: null,
+        name: base.organization.orgName,
+        contact: {
+          address: {
+            line1: '123 Health St',
+            city: 'Austin',
+            state: 'TX',
+            postalCode: '73301',
+            country: 'US',
+          },
+          email: null,
+          phones: [],
+          fax: null,
+        },
+      },
+      orderingProviderId: base.provider.id,
+      orderingProvider: {
+        fullName: `Dr. ${base.provider.lastName}`,
+        npi: base.provider.npi,
+        minc: null,
+        email: null,
+        phone: null,
+        fax: null,
+      },
+    },
+    testRequest: {
+      requestedTests: [
+        {
+          id: base.test.id,
+          testId: base.test.id,
+          testName: base.test.testName,
+          labId: base.lab.id,
+          labName: base.lab.labName ?? null,
+        },
+      ],
+      indications: [{ value: 'OTHER', otherText: 'Diagnostics' }],
+    },
+    specimens: [
+      {
+        specimenType: 'BLOOD',
+        collectionMethod: 'LAB',
+        collectionLocation: 'Oncology Clinic',
+        drawDate: timestamp,
+      },
+    ],
+    icdCodes: [
+      {
+        id: base.icd.id,
+        code: base.icd.code,
+        shortDescription: base.icd.shortDescription,
+      },
+    ],
+    clinicalHistory: {
+      clinicalDetails: 'Initial pathology request',
+      clinicalPresentation: 'Symptoms',
+      clinicalTesting: 'Previous tests',
+      riskFlags: [],
+      riskFlagNotes: null,
+      attachments: [],
+    },
+    billing: {
+      mode: 'SELF_PAY',
+      usePatientForBilling: true,
+      selfPayDetails: {
+        paymentMethod: 'CREDIT_CARD',
+        notes: null,
+      },
+    },
+    attachments: [],
+    family: {
+      samples: [],
+    },
+  }
 
   const response = await proxy.app.inject({
     method: 'POST',
@@ -162,15 +292,8 @@ const createLabOrderFixtures = async (
       orderDate: timestamp,
       orderingProviderId: base.provider.id,
       organizationId: base.organization.id,
-      orderNotes: 'Initial pathology request',
-      specimens: [
-        {
-          specimenType: 'WHOLE_BLOOD',
-          collectedDate: timestamp,
-          specimenCount: '1',
-          bodySite: 'Left Arm',
-        },
-      ],
+      labId: base.lab.id,
+      labOrder: labOrderDraft,
       ...overrides,
     },
   })
@@ -272,6 +395,7 @@ describe('ROUTE /laborders', () => {
         }),
       ]),
     )
+    expect(body.clinicalDetails).toBe('Initial pathology request')
   })
 
   it('PUT /laborders/:labOrderId should update notes and specimen records', async () => {
@@ -319,6 +443,84 @@ describe('ROUTE /laborders', () => {
         }),
       ]),
     )
+  })
+
+  it('PUT /laborders/:labOrderId should accept labOrder payload to replace tests and icds', async () => {
+    const { labOrder } = await createLabOrderFixtures(proxy)
+    const existingSpecimen = labOrder.labOrderSpecimens[0]
+
+    const unique = randomUUID().slice(0, 8)
+    const secondaryLab = await prisma.lab.create({
+      data: {
+        labName: `Precision Lab ${unique}`,
+        labCode: unique.slice(0, 2),
+      },
+    })
+    const secondaryTest = await prisma.testCatalog.create({
+      data: {
+        labId: secondaryLab.id,
+        casandraTestId: `CAS-UPDATE-${unique}`,
+        labTestId: `LAB-UPDATE-${unique}`,
+        testName: `Update Panel ${unique}`,
+        status: $Enums.TestCatalogStatus.PUBLISHED,
+      },
+    })
+    const secondaryIcd = await prisma.icd.create({
+      data: {
+        code: `D${unique}`,
+        shortDescription: `Disorder ${unique}`,
+      },
+    })
+
+    const now = new Date().toISOString()
+    const updateResponse = await proxy.app.inject({
+      method: 'PUT',
+      url: `/laborders/${labOrder.id}`,
+      body: {
+        labOrder: {
+          testRequest: {
+            requestedTests: [{ testId: secondaryTest.id }],
+          },
+          icdCodes: [{ id: secondaryIcd.id }],
+          specimens: [
+            {
+              id: existingSpecimen.id,
+              specimenType: 'SERUM',
+              collectedDate: now,
+              specimenCount: '3',
+              bodySite: 'Vein',
+            },
+            {
+              specimenType: 'PLASMA',
+              collectedDate: now,
+              specimenCount: '1',
+              bodySite: 'Arm',
+            },
+          ],
+        },
+      },
+    })
+
+    expect(updateResponse.statusCode).toBe(200)
+    const updated = camelize(updateResponse.json())
+    const snapshot = JSON.parse(updated.orderNotes)
+    expect(updated.labOrderTests.map((entry: any) => entry.testCatalog?.testId)).toEqual([
+      secondaryTest.id,
+    ])
+    expect(updated.labOrderIcds.map((entry: any) => entry.icd?.id)).toEqual([secondaryIcd.id])
+    expect(updated.labOrderSpecimens).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          specimenType: 'SERUM',
+          specimenCount: '3',
+        }),
+        expect.objectContaining({
+          specimenType: 'PLASMA',
+          specimenCount: '1',
+        }),
+      ]),
+    )
+    expect(snapshot?.testRequest?.requestedTests?.[0]?.testId).toBe(secondaryTest.id)
   })
 
   it('PATCH /laborders/:labOrderId/status should append status history', async () => {

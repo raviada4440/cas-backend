@@ -50,10 +50,7 @@ export class FhirCredentialsService {
     return null
   }
 
-  async getCredentials(
-    userId: string,
-    provider: FhirProvider,
-  ): Promise<FhirCredentials> {
+  async getCredentials(userId: string, provider: FhirProvider): Promise<FhirCredentials> {
     let account = await this.db.prisma.account.findFirst({
       where: { userId, provider },
       orderBy: { updatedAt: 'desc' },
@@ -97,13 +94,10 @@ export class FhirCredentialsService {
       }
     }
 
-    const resolvedEndpoint =
-      orgEndpoint?.endpoint ?? getProviderEndpointFallback(provider)
+    const resolvedEndpoint = orgEndpoint?.endpoint ?? getProviderEndpointFallback(provider)
 
     if (!resolvedEndpoint) {
-      throw new Error(
-        `No FHIR endpoint configured for provider ${provider.toUpperCase()}`,
-      )
+      throw new Error(`No FHIR endpoint configured for provider ${provider.toUpperCase()}`)
     }
 
     if (!account?.accessToken) {
@@ -137,9 +131,7 @@ export class FhirCredentialsService {
     )
 
     if (!clientId || !clientSecret || !tokenEndpoint) {
-      throw new Error(
-        `Missing OAuth client configuration for ${provider.toUpperCase()}`,
-      )
+      throw new Error(`Missing OAuth client configuration for ${provider.toUpperCase()}`)
     }
 
     const params = new URLSearchParams({
@@ -161,7 +153,9 @@ export class FhirCredentialsService {
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '')
       throw new Error(
-        `Failed to refresh ${provider.toUpperCase()} token: ${response.status} ${response.statusText} ${errorBody}`,
+        `Failed to refresh ${provider.toUpperCase()} token: ${response.status} ${
+          response.statusText
+        } ${errorBody}`,
       )
     }
 
@@ -174,14 +168,10 @@ export class FhirCredentialsService {
     }
 
     if (!payload.access_token) {
-      throw new Error(
-        `Refresh response for ${provider.toUpperCase()} missing access_token`,
-      )
+      throw new Error(`Refresh response for ${provider.toUpperCase()} missing access_token`)
     }
 
-    const expiresAt = payload.expires_in
-      ? Math.floor(Date.now() / 1000) + payload.expires_in
-      : null
+    const expiresAt = payload.expires_in ? Math.floor(Date.now() / 1000) + payload.expires_in : null
 
     const updated = await this.db.prisma.account.update({
       where: { id: account.id },
@@ -234,10 +224,8 @@ function resolveOAuthClientConfig(
   clientSecret?: string
   tokenEndpoint?: string
 } {
-  const clientId =
-    orgEndpoint?.clientId ?? getProviderClientIdFallback(provider)
-  const clientSecret =
-    orgEndpoint?.clientSecret ?? getProviderClientSecretFallback(provider)
+  const clientId = orgEndpoint?.clientId ?? getProviderClientIdFallback(provider)
+  const clientSecret = orgEndpoint?.clientSecret ?? getProviderClientSecretFallback(provider)
 
   let tokenEndpoint = orgEndpoint?.issuer
     ? `${orgEndpoint.issuer.replace(/\/$/, '')}/token`
@@ -263,9 +251,7 @@ function getProviderClientIdFallback(provider: FhirProvider): string | undefined
   }
 }
 
-function getProviderClientSecretFallback(
-  provider: FhirProvider,
-): string | undefined {
+function getProviderClientSecretFallback(provider: FhirProvider): string | undefined {
   switch (provider) {
     case 'epic':
       return process.env['EPIC_CLIENT_SECRET']
@@ -278,14 +264,14 @@ function getProviderClientSecretFallback(
   }
 }
 
-function getProviderTokenEndpointFallback(
-  provider: FhirProvider,
-): string | undefined {
+function getProviderTokenEndpointFallback(provider: FhirProvider): string | undefined {
   switch (provider) {
     case 'epic':
       return (
         process.env['EPIC_TOKEN_ENDPOINT'] ??
-        `${(process.env['EPIC_ISSUER'] ?? 'https://fhir.epic.com/interconnect-fhir-oauth/oauth2').replace(/\/$/, '')}/token`
+        `${(
+          process.env['EPIC_ISSUER'] ?? 'https://fhir.epic.com/interconnect-fhir-oauth/oauth2'
+        ).replace(/\/$/, '')}/token`
       )
     case 'cerner':
       return process.env['CERNER_TOKEN_ENDPOINT']
@@ -295,4 +281,3 @@ function getProviderTokenEndpointFallback(
       return undefined
   }
 }
-

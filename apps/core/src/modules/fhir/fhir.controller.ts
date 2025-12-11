@@ -86,10 +86,7 @@ export class FhirController {
   @ApiOperation({ summary: 'Search FHIR patients' })
   @ApiBody({ type: FhirPatientSearchRequestDto })
   @ApiOkResponse({ type: FhirPatientSearchResponseDto })
-  searchPatients(
-    @Req() request: AuthenticatedRequest,
-    @Body() body: FhirPatientSearchRequestDto,
-  ) {
+  searchPatients(@Req() request: AuthenticatedRequest, @Body() body: FhirPatientSearchRequestDto) {
     const userId = request.owner?.id
     if (!userId) {
       throw new UnauthorizedException('Unable to resolve authenticated user')
@@ -113,4 +110,3 @@ export class FhirController {
     return this.fhirService.getPatientDetail(userId, params.patientId, body)
   }
 }
-

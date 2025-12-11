@@ -1,16 +1,39 @@
 import { Injectable } from '@nestjs/common'
-import { Prisma } from '@db/client'
+import { Prisma, $Enums } from '@db/client'
 
 import { BizException } from '@core/common/exceptions/biz.exception'
 import { ErrorCodeEnum } from '@core/constants/error-code.constant'
 import { DatabaseService } from '@core/processors/database/database.service'
 import { resourceNotFoundWrapper } from '@core/shared/utils/prisma.util'
 
-import { LabOrder, LabOrderSummary, PagedLabOrders } from '@shared/contracts/laborders'
+import {
+  AttachmentCategory,
+  LabOrder,
+  LabOrderSummary,
+  PagedLabOrders,
+} from '@shared/contracts/laborders'
+import { FamilyStructureType, VariantDimensionType } from '@shared/contracts/catalog'
+import { LabOrderFormSnapshot, ResolvedOrderFormSection } from '@shared/contracts/order-forms'
 import { OrderableTest } from '@shared/contracts/orders'
 
 import { CreateLabOrderInput, LabOrderSearchQuery, UpdateLabOrderInput } from './lab-orders.dto'
 import { OrderableQueryInput } from './orderable-tests.dto'
+
+type TenantScope = {
+  tenantIds: string[]
+  isSuperAdmin: boolean
+}
+
+type LabOrderBillingContract = NonNullable<LabOrder['labOrderBilling']>[number]
+type ClinicalAttachmentContract = NonNullable<LabOrder['clinicalAttachments']>[number]
+
+type CreateLabOrderExtras = {
+  variantDimension: VariantDimensionType
+  variantValue: string
+  orderDate: Date
+  versionId?: string
+  derivedLabId?: string | null
+}
 
 const labOrderSummaryArgs = Prisma.validator<Prisma.LabOrderDefaultArgs>()({
   include: {
@@ -121,7 +144,8 @@ const labOrderDetailArgs = Prisma.validator<Prisma.LabOrderDefaultArgs>()({
         id: true,
         configurationName: true,
         type: true,
-        customerId: true,
+        dimension: true,
+        dimensionValue: true,
       },
     },
     version: {
@@ -220,8 +244,18 @@ const labOrderDetailArgs = Prisma.validator<Prisma.LabOrderDefaultArgs>()({
         id: true,
         billingType: true,
         copayAmount: true,
+        deductibleAmount: true,
         insuranceProvider: true,
         policyNumber: true,
+        planName: true,
+        groupNumber: true,
+        benefitsId: true,
+        insuredName: true,
+        relationToPatient: true,
+        insuredDob: true,
+        insuredPhone: true,
+        insurerState: true,
+        referralAuthNumber: true,
       },
     },
     labOrderAttachments: {
@@ -267,9 +301,10 @@ type LabOrderDetailPayload = Prisma.LabOrderGetPayload<typeof labOrderDetailArgs
 export class LabOrdersService {
   constructor(private readonly db: DatabaseService) {}
 
-  async list(query: LabOrderSearchQuery): Promise<PagedLabOrders> {
+  async list(query: LabOrderSearchQuery, scope: TenantScope): Promise<PagedLabOrders> {
     const take = Math.min(query.limit ?? 20, 50)
-    const where = this.buildSearchWhere(query)
+    const baseWhere = this.buildSearchWhere(query)
+    const where = this.applyScopeToLabOrderWhere(baseWhere, scope)
 
     const [orders, total] = await this.db.prisma.$transaction([
       this.db.prisma.labOrder.findMany({
@@ -292,7 +327,9 @@ export class LabOrdersService {
     }
   }
 
-  async detail(labOrderId: string): Promise<LabOrder> {
+  async detail(labOrderId: string, scope: TenantScope): Promise<LabOrder> {
+    await this.ensureLabOrderAccess(labOrderId, scope)
+
     const labOrder = await this.db.prisma.labOrder
       .findUnique({
         where: { id: labOrderId },
@@ -307,22 +344,48 @@ export class LabOrdersService {
     return this.mapDetail(labOrder)
   }
 
-  async create(input: CreateLabOrderInput): Promise<LabOrder> {
-    const { version, configuration } = await this.resolveVersionAndConfiguration(
-      input.testId,
-      input.versionId,
-    )
+  async create(
+    input: CreateLabOrderInput,
+    scope: TenantScope,
+    extras: CreateLabOrderExtras,
+  ): Promise<LabOrder> {
+    const { variantDimension, variantValue, orderDate, versionId, derivedLabId } = extras
+
+    const variantContext = await this.resolveVariantContext(input.testId, {
+      dimension: variantDimension,
+      dimensionValue: variantValue,
+      orderDate,
+      versionId,
+    })
+
+    const normalizedScope = this.normalizeScope(scope)
+    let organizationId = input.organizationId ?? null
+
+    if (
+      !organizationId &&
+      !normalizedScope.isSuperAdmin &&
+      normalizedScope.tenantIds.length === 1
+    ) {
+      organizationId = normalizedScope.tenantIds[0]
+    }
+
+    if (organizationId) {
+      await this.ensureOrganizationAccess(organizationId, scope)
+    } else if (!normalizedScope.isSuperAdmin && normalizedScope.tenantIds.length === 0) {
+      throw new BizException(ErrorCodeEnum.OrganizationNotFound)
+    }
 
     const created = await this.db.prisma.$transaction(async (tx) => {
       const labOrder = await tx.labOrder.create({
         data: {
           patientId: input.patientId,
-          testVersionId: version.id,
-          testConfigurationId: configuration.id,
+          testVersionId: variantContext.version.id,
+          testConfigurationId: variantContext.configuration.id,
           orderingProviderId: input.orderingProviderId ?? null,
           treatingProviderId: input.treatingProviderId ?? null,
-          organizationId: input.organizationId ?? null,
-          orderDate: input.orderDate ? new Date(input.orderDate) : undefined,
+          organizationId,
+          labId: derivedLabId ?? null,
+          orderDate,
           orderNotes: input.orderNotes ?? null,
         },
       })
@@ -358,6 +421,26 @@ export class LabOrdersService {
         })
       }
 
+      if (variantContext.orderForms.length) {
+        const formInputs = variantContext.orderForms
+          .filter((form) => form.sectionName && form.templateId)
+          .map((form, index) => ({
+            labOrderId: labOrder.id,
+            versionOrderFormId: form.assignmentId ?? null,
+            orderFormTemplateId: form.templateId,
+            sectionName: form.sectionName,
+            templateName: form.templateName ?? null,
+            displayOrder: form.displayOrder ?? index,
+            formSchema: this.toPrismaJson(form.formSchema),
+            layoutSchema: this.toPrismaJson(form.layoutSchema),
+            responses: Prisma.JsonNull,
+          }))
+
+        if (formInputs.length) {
+          await tx.labOrderForm.createMany({ data: formInputs })
+        }
+      }
+
       await tx.labOrderStatus.create({
         data: {
           labOrderId: labOrder.id,
@@ -369,105 +452,138 @@ export class LabOrdersService {
       return labOrder
     })
 
-    return this.detail(created.id)
+    return this.detail(created.id, scope)
   }
 
-  async update(labOrderId: string, input: UpdateLabOrderInput): Promise<LabOrder> {
-    await this.ensureLabOrderExists(labOrderId)
+  async update(
+    labOrderId: string,
+    input: UpdateLabOrderInput,
+    scope: TenantScope,
+  ): Promise<LabOrder> {
+    await this.ensureLabOrderAccess(labOrderId, scope)
 
     await this.db.prisma.$transaction(async (tx) => {
+      const updateData: Prisma.LabOrderUpdateInput = {
+        updatedAt: new Date(),
+      }
+      if (input.orderNotes !== undefined) {
+        updateData.orderNotes = input.orderNotes ?? null
+      }
       await tx.labOrder.update({
         where: { id: labOrderId },
-        data: {
-          orderNotes: input.orderNotes ?? null,
-          updatedAt: new Date(),
-        },
+        data: updateData,
       })
 
-      if (input.testIds) {
-        const uniqueTests = Array.from(new Set(input.testIds ?? []))
-        await tx.labOrderTest.deleteMany({
-          where: {
-            labOrderId,
-            testId: { notIn: uniqueTests },
-          },
-        })
-        const existing = await tx.labOrderTest.findMany({
-          where: { labOrderId },
-          select: { testId: true },
-        })
-        const existingIds = new Set(existing.map((item) => item.testId).filter(Boolean) as string[])
-        const toCreate = uniqueTests.filter((id) => !existingIds.has(id))
-        if (toCreate.length) {
-          await tx.labOrderTest.createMany({
-            data: toCreate.map((testId) => ({ labOrderId, testId })),
-          })
-        }
-      }
+      if (input.testIds !== undefined) {
+        const uniqueTests = Array.from(
+          new Set((input.testIds ?? []).filter((value): value is string => Boolean(value?.trim()))),
+        )
 
-      if (input.icdIds) {
-        const uniqueIcds = Array.from(new Set(input.icdIds ?? []))
-        await tx.labOrderIcd.deleteMany({
-          where: {
-            labOrderId,
-            icdId: { notIn: uniqueIcds },
-          },
-        })
-        const existing = await tx.labOrderIcd.findMany({
-          where: { labOrderId },
-          select: { icdId: true },
-        })
-        const existingIds = new Set(existing.map((item) => item.icdId).filter(Boolean) as string[])
-        const toCreate = uniqueIcds.filter((id) => !existingIds.has(id))
-        if (toCreate.length) {
-          await tx.labOrderIcd.createMany({
-            data: toCreate.map((icdId) => ({ labOrderId, icdId })),
-          })
-        }
-      }
-
-      if (input.specimens) {
-        const updatePayload = input.specimens.filter((s) => !s._delete && s.id)
-        const createPayload = input.specimens.filter((s) => !s._delete && !s.id)
-        const deleteIds = input.specimens.filter((s) => s._delete && s.id).map((s) => s.id!) // safe because filtered
-
-        if (deleteIds.length) {
-          await tx.labOrderSpecimen.deleteMany({
-            where: { labOrderId, id: { in: deleteIds } },
-          })
-        }
-
-        for (const specimen of updatePayload) {
-          await tx.labOrderSpecimen.update({
-            where: { id: specimen.id! },
-            data: {
-              specimenType: specimen.specimenType,
-              collectedDate: this.toDate(specimen.collectedDate),
-              specimenCount: specimen.specimenCount ?? null,
-              bodySite: specimen.bodySite ?? null,
+        if (uniqueTests.length === 0) {
+          await tx.labOrderTest.deleteMany({ where: { labOrderId } })
+        } else {
+          await tx.labOrderTest.deleteMany({
+            where: {
+              labOrderId,
+              testId: { notIn: uniqueTests },
             },
           })
-        }
-
-        if (createPayload.length) {
-          await tx.labOrderSpecimen.createMany({
-            data: createPayload.map((specimen) => ({
-              labOrderId,
-              specimenType: specimen.specimenType,
-              collectedDate: this.toDate(specimen.collectedDate),
-              specimenCount: specimen.specimenCount ?? null,
-              bodySite: specimen.bodySite ?? null,
-            })),
+          const existing = await tx.labOrderTest.findMany({
+            where: { labOrderId },
+            select: { testId: true },
           })
+          const existingIds = new Set(
+            existing.map((item) => item.testId).filter(Boolean) as string[],
+          )
+          const toCreate = uniqueTests.filter((id) => !existingIds.has(id))
+          if (toCreate.length) {
+            await tx.labOrderTest.createMany({
+              data: toCreate.map((testId) => ({ labOrderId, testId })),
+            })
+          }
+        }
+      }
+
+      if (input.icdIds !== undefined) {
+        const uniqueIcds = Array.from(
+          new Set((input.icdIds ?? []).filter((value): value is string => Boolean(value?.trim()))),
+        )
+
+        if (uniqueIcds.length === 0) {
+          await tx.labOrderIcd.deleteMany({ where: { labOrderId } })
+        } else {
+          await tx.labOrderIcd.deleteMany({
+            where: {
+              labOrderId,
+              icdId: { notIn: uniqueIcds },
+            },
+          })
+          const existing = await tx.labOrderIcd.findMany({
+            where: { labOrderId },
+            select: { icdId: true },
+          })
+          const existingIds = new Set(
+            existing.map((item) => item.icdId).filter(Boolean) as string[],
+          )
+          const toCreate = uniqueIcds.filter((id) => !existingIds.has(id))
+          if (toCreate.length) {
+            await tx.labOrderIcd.createMany({
+              data: toCreate.map((icdId) => ({ labOrderId, icdId })),
+            })
+          }
+        }
+      }
+
+      if (input.specimens !== undefined) {
+        if (input.specimens.length === 0) {
+          await tx.labOrderSpecimen.deleteMany({ where: { labOrderId } })
+        } else {
+          const updatePayload = input.specimens.filter((s) => !s?._delete && s?.id)
+          const createPayload = input.specimens.filter((s) => !s?._delete && !s?.id)
+          const deleteIds = input.specimens.filter((s) => s?._delete && s?.id).map((s) => s!.id!)
+
+          if (deleteIds.length) {
+            await tx.labOrderSpecimen.deleteMany({
+              where: { labOrderId, id: { in: deleteIds } },
+            })
+          }
+
+          for (const specimen of updatePayload) {
+            await tx.labOrderSpecimen.update({
+              where: { id: specimen!.id! },
+              data: {
+                specimenType: specimen!.specimenType ?? null,
+                collectedDate: this.toDate(specimen!.collectedDate),
+                specimenCount: specimen!.specimenCount ?? null,
+                bodySite: specimen!.bodySite ?? null,
+              },
+            })
+          }
+
+          const toCreate = createPayload
+            .filter((specimen) => specimen?.specimenType)
+            .map((specimen) => ({
+              labOrderId,
+              specimenType: specimen!.specimenType!,
+              collectedDate: this.toDate(specimen!.collectedDate),
+              specimenCount: specimen!.specimenCount ?? null,
+              bodySite: specimen!.bodySite ?? null,
+            }))
+
+          if (toCreate.length) {
+            await tx.labOrderSpecimen.createMany({
+              data: toCreate,
+            })
+          }
         }
       }
     })
 
-    return this.detail(labOrderId)
+    return this.detail(labOrderId, scope)
   }
 
-  async updateStatus(labOrderId: string, status: string) {
-    await this.ensureLabOrderExists(labOrderId)
+  async updateStatus(labOrderId: string, status: string, scope: TenantScope) {
+    await this.ensureLabOrderAccess(labOrderId, scope)
 
     await this.db.prisma.labOrderStatus.create({
       data: {
@@ -477,11 +593,11 @@ export class LabOrdersService {
       },
     })
 
-    return this.detail(labOrderId)
+    return this.detail(labOrderId, scope)
   }
 
-  async delete(labOrderId: string) {
-    await this.ensureLabOrderExists(labOrderId)
+  async delete(labOrderId: string, scope: TenantScope) {
+    await this.ensureLabOrderAccess(labOrderId, scope)
 
     await this.db.prisma.$transaction(async (tx) => {
       await tx.labOrderAttachment.deleteMany({ where: { labOrderId } })
@@ -603,52 +719,338 @@ export class LabOrdersService {
     return where
   }
 
-  private async ensureLabOrderExists(labOrderId: string) {
-    const exists = await this.db.prisma.labOrder.findUnique({
+  private normalizeScope(scope?: TenantScope): TenantScope {
+    const tenantIds = Array.from(new Set(scope?.tenantIds ?? [])).filter(
+      (id): id is string => typeof id === 'string' && id.length > 0,
+    )
+
+    return {
+      tenantIds,
+      isSuperAdmin: Boolean(scope?.isSuperAdmin),
+    }
+  }
+
+  private combineWhere(
+    base: Prisma.LabOrderWhereInput,
+    addition: Prisma.LabOrderWhereInput,
+  ): Prisma.LabOrderWhereInput {
+    if (!addition || Object.keys(addition).length === 0) {
+      return base
+    }
+
+    const baseCopy = { ...base }
+    const andConditions: Prisma.LabOrderWhereInput[] = []
+
+    if (baseCopy.AND) {
+      const existing = baseCopy.AND
+      delete baseCopy.AND
+      andConditions.push(...(Array.isArray(existing) ? existing : [existing]))
+    }
+
+    if (Object.keys(baseCopy).length > 0) {
+      andConditions.unshift(baseCopy)
+    }
+
+    andConditions.push(addition)
+
+    if (andConditions.length === 1) {
+      return andConditions[0]
+    }
+
+    return {
+      AND: andConditions,
+    }
+  }
+
+  private applyScopeToLabOrderWhere(
+    where: Prisma.LabOrderWhereInput,
+    scope: TenantScope,
+  ): Prisma.LabOrderWhereInput {
+    const normalized = this.normalizeScope(scope)
+    if (normalized.isSuperAdmin || normalized.tenantIds.length === 0) {
+      return where
+    }
+
+    const scopeFilter: Prisma.LabOrderWhereInput = {
+      organizationId: { in: normalized.tenantIds },
+    }
+
+    return this.combineWhere(where, scopeFilter)
+  }
+
+  private async ensureOrganizationAccess(organizationId: string, scope: TenantScope) {
+    if (!organizationId) {
+      return
+    }
+    const normalized = this.normalizeScope(scope)
+    if (normalized.isSuperAdmin) {
+      return
+    }
+
+    if (!normalized.tenantIds.includes(organizationId)) {
+      throw new BizException(ErrorCodeEnum.OrganizationNotFound)
+    }
+  }
+
+  private async ensureLabOrderAccess(labOrderId: string, scope: TenantScope) {
+    const labOrder = await this.db.prisma.labOrder.findUnique({
       where: { id: labOrderId },
-      select: { id: true },
+      select: { id: true, organizationId: true },
     })
-    if (!exists) {
+
+    if (!labOrder) {
+      throw new BizException(ErrorCodeEnum.LabOrderNotFound)
+    }
+
+    const normalized = this.normalizeScope(scope)
+    if (
+      !normalized.isSuperAdmin &&
+      (normalized.tenantIds.length === 0 ||
+        !labOrder.organizationId ||
+        !normalized.tenantIds.includes(labOrder.organizationId))
+    ) {
       throw new BizException(ErrorCodeEnum.LabOrderNotFound)
     }
   }
 
-  private async resolveVersionAndConfiguration(testId: string, versionId?: string) {
+  private async resolveVariantContext(
+    testId: string,
+    options: {
+      dimension: VariantDimensionType
+      dimensionValue: string
+      orderDate: Date
+      versionId?: string
+    },
+  ): Promise<{
+    version: Awaited<ReturnType<typeof this.ensurePublishedMasterVersion>>
+    configuration: Awaited<ReturnType<typeof this.ensureOperationalConfiguration>>
+    orderForms: ResolvedOrderFormSection[]
+  }> {
     if (!testId) {
       throw new BizException(ErrorCodeEnum.TestNotFound)
     }
 
-    const version = versionId
-      ? await this.db.prisma.testCatalogVersion
-          .findUnique({ where: { id: versionId } })
-          .catch(resourceNotFoundWrapper(new BizException(ErrorCodeEnum.TestVersionNotFound)))
-      : await this.db.prisma.testCatalogVersion.findFirst({
-          where: { testId, status: 'PUBLISHED' },
-          orderBy: { versionNumber: 'desc' },
-        })
+    const dimension = this.toPrismaVariantDimension(options.dimension)
+    const normalizedValue = options.dimensionValue.trim().toUpperCase()
+    const orderDate = options.orderDate
 
-    if (!version) {
-      throw new BizException(ErrorCodeEnum.TestVersionNotFound)
+    const version = await this.ensurePublishedMasterVersion(testId, orderDate, options.versionId)
+    const configuration = await this.ensureOperationalConfiguration(
+      testId,
+      version.id,
+      dimension,
+      normalizedValue,
+      orderDate,
+    )
+    const orderForms = await this.loadResolvedOrderForms(version.id, configuration.id)
+
+    return { version, configuration, orderForms }
+  }
+
+  private async ensurePublishedMasterVersion(testId: string, orderDate: Date, versionId?: string) {
+    if (versionId) {
+      const version = await this.db.prisma.testCatalogVersion.findFirst({
+        where: {
+          id: versionId,
+          testId,
+          status: $Enums.TestCatalogVersionStatus.PUBLISHED,
+          OR: [{ effectiveDate: null }, { effectiveDate: { lte: orderDate } }],
+        },
+      })
+      if (!version) {
+        throw new BizException(ErrorCodeEnum.TestVersionNotFound)
+      }
+      return version
     }
 
+    const published = await this.db.prisma.testCatalogVersion.findFirst({
+      where: {
+        testId,
+        status: $Enums.TestCatalogVersionStatus.PUBLISHED,
+        OR: [{ effectiveDate: null }, { effectiveDate: { lte: orderDate } }],
+      },
+      orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }],
+    })
+    if (published) {
+      return published
+    }
+
+    const latest = await this.db.prisma.testCatalogVersion.findFirst({
+      where: { testId },
+      orderBy: [{ versionNumber: 'desc' }, { createdAt: 'desc' }],
+    })
+    if (latest) {
+      return this.db.prisma.testCatalogVersion.update({
+        where: { id: latest.id },
+        data: {
+          status: $Enums.TestCatalogVersionStatus.PUBLISHED,
+          effectiveDate: orderDate,
+        },
+      })
+    }
+
+    return this.db.prisma.testCatalogVersion.create({
+      data: {
+        testId,
+        versionNumber: 1,
+        status: $Enums.TestCatalogVersionStatus.PUBLISHED,
+        effectiveDate: orderDate,
+      },
+    })
+  }
+
+  private async ensureOperationalConfiguration(
+    testId: string,
+    versionId: string,
+    dimension: $Enums.VariantDimension,
+    dimensionValue: string,
+    orderDate: Date,
+  ) {
     const configuration = await this.db.prisma.testCatalogConfiguration.findFirst({
       where: {
         testId,
+        versionId,
+        type: $Enums.TestCatalogConfigurationType.OPERATIONAL,
+        dimension,
+        dimensionValue,
+        status: $Enums.TestCatalogConfigurationStatus.ACTIVE,
         isActive: true,
-        ...(version.id
-          ? {
-              OR: [{ versionId: version.id }, { versionId: null }],
-            }
-          : {}),
+        OR: [{ effectiveDate: null }, { effectiveDate: { lte: orderDate } }],
+        AND: [{ OR: [{ expirationDate: null }, { expirationDate: { gt: orderDate } }] }],
       },
-      orderBy: [{ isDefault: 'desc' }, { versionNumber: 'desc' }],
+      orderBy: [{ versionNumber: 'desc' }, { effectiveDate: 'desc' }, { createdAt: 'desc' }],
     })
 
-    if (!configuration) {
-      throw new BizException(ErrorCodeEnum.TestConfigurationNotFound)
+    if (configuration) {
+      return configuration
     }
 
-    return { version, configuration }
+    return this.db.prisma.testCatalogConfiguration.create({
+      data: {
+        testId,
+        versionId,
+        configurationName: `Auto ${dimension} ${dimensionValue}`,
+        type: $Enums.TestCatalogConfigurationType.OPERATIONAL,
+        dimension,
+        dimensionValue,
+        status: $Enums.TestCatalogConfigurationStatus.ACTIVE,
+        isActive: true,
+        effectiveDate: orderDate,
+      },
+    })
+  }
+
+  private async loadResolvedOrderForms(
+    versionId: string,
+    configurationId: string,
+  ): Promise<ResolvedOrderFormSection[]> {
+    let assignments = await this.db.prisma.testCatalogVersionOrderForm.findMany({
+      where: {
+        versionId,
+        configurationId,
+      },
+      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
+      select: {
+        id: true,
+        orderFormTemplateId: true,
+        displayOrder: true,
+        customTitle: true,
+        isRequired: true,
+        isVisible: true,
+        template: {
+          select: {
+            id: true,
+            name: true,
+            orderFormSectionId: true,
+            formSchema: true,
+            layoutSchema: true,
+            section: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (assignments.length === 0) {
+      assignments = await this.db.prisma.testCatalogVersionOrderForm.findMany({
+        where: {
+          versionId,
+          configurationId: null,
+        },
+        orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
+        select: {
+          id: true,
+          orderFormTemplateId: true,
+          displayOrder: true,
+          customTitle: true,
+          isRequired: true,
+          isVisible: true,
+          template: {
+            select: {
+              id: true,
+              name: true,
+              orderFormSectionId: true,
+              formSchema: true,
+              layoutSchema: true,
+              section: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      })
+    }
+
+    return assignments
+      .filter((assignment) => assignment.template)
+      .map((assignment) => {
+        const template = assignment.template!
+        const sectionId = template.section?.id ?? template.orderFormSectionId
+        if (!sectionId) {
+          throw new BizException(ErrorCodeEnum.OrderFormSectionNotFound)
+        }
+
+        const sectionName = template.section?.name ?? assignment.customTitle ?? template.name ?? ''
+        if (!sectionName) {
+          throw new BizException(ErrorCodeEnum.OrderFormTemplateNotFound)
+        }
+
+        return {
+          assignmentId: assignment.id,
+          sectionId,
+          sectionName,
+          templateId: template.id,
+          templateName: template.name ?? null,
+          displayOrder: assignment.displayOrder ?? 0,
+          isRequired: assignment.isRequired ?? false,
+          isVisible: assignment.isVisible ?? true,
+          customTitle: assignment.customTitle ?? null,
+          formSchema: template.formSchema ?? null,
+          layoutSchema: template.layoutSchema ?? null,
+        } satisfies ResolvedOrderFormSection
+      })
+  }
+
+  private toPrismaJson(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
+    if (value === null || value === undefined) {
+      return Prisma.JsonNull
+    }
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue
+  }
+
+  private toPrismaVariantDimension(value: VariantDimensionType): $Enums.VariantDimension {
+    const dimension = value as $Enums.VariantDimension
+    if (!Object.values($Enums.VariantDimension).includes(dimension)) {
+      throw new BizException(ErrorCodeEnum.TestConfigurationNotFound)
+    }
+    return dimension
   }
 
   private toDate(value?: string | Date | null) {
@@ -656,6 +1058,200 @@ export class LabOrdersService {
       return null
     }
     return value instanceof Date ? value : new Date(value)
+  }
+
+  private parseOrderSnapshot(orderNotes: string | null): Record<string, unknown> | null {
+    if (!orderNotes) {
+      return null
+    }
+    try {
+      const parsed = JSON.parse(orderNotes)
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : null
+    } catch {
+      return null
+    }
+  }
+
+  private ensureRecord(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {}
+  }
+
+  private ensureArray<T = unknown>(value: unknown): T[] {
+    return Array.isArray(value) ? (value as T[]) : []
+  }
+
+  private toOptionalString(value: unknown): string | null {
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      return trimmed.length > 0 ? trimmed : null
+    }
+    return null
+  }
+
+  private toOptionalNumber(value: unknown): number | null {
+    return this.decimalToNumber(value as Prisma.Decimal | number | string | null | undefined)
+  }
+
+  private toOptionalDateString(value: unknown): string | null {
+    if (value instanceof Date) {
+      return value.toISOString()
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      if (!trimmed) {
+        return null
+      }
+      const parsed = new Date(trimmed)
+      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+    }
+    return null
+  }
+
+  private parseStringArray(value: unknown): string[] | null {
+    const items = this.ensureArray(value)
+    const result = items
+      .map((item) => this.toOptionalString(item))
+      .filter((item): item is string => Boolean(item))
+    return result.length ? result : null
+  }
+
+  private mapClinicalAttachments(value: unknown): ClinicalAttachmentContract[] | null {
+    const attachments: ClinicalAttachmentContract[] = []
+    this.ensureArray(value).forEach((item, index) => {
+      const record = this.ensureRecord(item)
+      const fileName = this.toOptionalString(record.fileName)
+      const fileId = this.toOptionalString(record.fileId)
+      const uploadedAt = this.toOptionalString(record.uploadedAt)
+      const categoryValue = this.toOptionalString(record.category)
+      if (!fileName || !fileId || !uploadedAt || !categoryValue) {
+        return
+      }
+      const id = this.toOptionalString(record.id) ?? `snapshot-attachment-${index.toString(10)}`
+      const attachment: ClinicalAttachmentContract = {
+        id,
+        category: categoryValue as AttachmentCategory,
+        fileId,
+        fileName,
+        uploadedAt,
+      }
+      const url = this.toOptionalString(record.url)
+      if (url) {
+        attachment.url = url
+      }
+      const notes = this.toOptionalString(record.notes)
+      if (notes) {
+        attachment.notes = notes
+      }
+      attachments.push(attachment)
+    })
+    return attachments.length ? attachments : null
+  }
+
+  private mapBillingRecord(
+    bill: LabOrderDetailPayload['labOrderBilling'][number],
+  ): LabOrderBillingContract {
+    return {
+      id: bill.id,
+      billingType: bill.billingType ?? null,
+      totalCost: this.decimalToNumber(bill.copayAmount),
+      insuranceProvider: bill.insuranceProvider ?? null,
+      policyNumber: bill.policyNumber ?? null,
+      planName: bill.planName ?? null,
+      groupNumber: bill.groupNumber ?? null,
+      benefitsId: bill.benefitsId ?? null,
+      insuredName: bill.insuredName ?? null,
+      relationToPatient: bill.relationToPatient ?? null,
+      insuredDob: bill.insuredDob?.toISOString() ?? null,
+      insuredPhone: bill.insuredPhone ?? null,
+      insurerState: bill.insurerState ?? null,
+      referralAuthNumber: bill.referralAuthNumber ?? null,
+      copayAmount: this.decimalToNumber(bill.copayAmount),
+      deductibleAmount: this.decimalToNumber(bill.deductibleAmount),
+    }
+  }
+
+  private buildBillingFromSnapshot(billing: Record<string, unknown>): LabOrderBillingContract[] {
+    const entries: LabOrderBillingContract[] = []
+    const addInsuranceEntry = (insurance: Record<string, unknown>, type: string, key: string) => {
+      if (Object.keys(insurance).length === 0) {
+        return
+      }
+      const entry: LabOrderBillingContract = {
+        id: `snapshot-${key}`,
+        billingType: type,
+        totalCost: this.toOptionalNumber(insurance.copayAmount),
+        insuranceProvider: this.toOptionalString(insurance.insuranceName) ?? null,
+        policyNumber: this.toOptionalString(insurance.insuranceId) ?? null,
+        planName: this.toOptionalString(insurance.planName) ?? null,
+        groupNumber: this.toOptionalString(insurance.groupNumber) ?? null,
+        benefitsId: this.toOptionalString(insurance.benefitsId) ?? null,
+        insuredName: this.toOptionalString(insurance.insuredName) ?? null,
+        relationToPatient: this.toOptionalString(insurance.relationToPatient) ?? null,
+        insuredDob: this.toOptionalDateString(insurance.insuredDob),
+        insuredPhone: this.toOptionalString(insurance.insuredPhone) ?? null,
+        insurerState: this.toOptionalString(insurance.insurerState) ?? null,
+        referralAuthNumber: this.toOptionalString(insurance.referralAuthNumber) ?? null,
+        copayAmount: this.toOptionalNumber(insurance.copayAmount),
+        deductibleAmount: this.toOptionalNumber(insurance.deductibleAmount),
+      }
+      entries.push(entry)
+    }
+
+    addInsuranceEntry(this.ensureRecord(billing.primaryInsurance), 'INSURANCE_PRIMARY', 'primary')
+    addInsuranceEntry(
+      this.ensureRecord(billing.secondaryInsurance),
+      'INSURANCE_SECONDARY',
+      'secondary',
+    )
+
+    return entries
+  }
+
+  private extractPrimaryPhone(value: unknown): string | null {
+    const phones = this.ensureArray(value)
+    for (const phone of phones) {
+      const record = this.ensureRecord(phone)
+      const number = this.toOptionalString(record.number)
+      if (number) {
+        return number
+      }
+    }
+    return null
+  }
+
+  private extractNamePart(fullName: unknown, part: 'first' | 'last'): string | null {
+    const value = this.toOptionalString(fullName)
+    if (!value) {
+      return null
+    }
+    const segments = value.trim().split(/\s+/)
+    if (!segments.length) {
+      return null
+    }
+    return part === 'first' ? segments[0] : segments[segments.length - 1]
+  }
+
+  private decimalToNumber(
+    value: Prisma.Decimal | number | string | null | undefined,
+  ): number | null {
+    if (value === null || value === undefined) {
+      return null
+    }
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) ? parsed : null
+    }
+    if (value instanceof Prisma.Decimal) {
+      return value.toNumber()
+    }
+    return null
   }
 
   private mapSummary(order: LabOrderSummaryPayload): LabOrderSummary {
@@ -692,24 +1288,61 @@ export class LabOrdersService {
   }
 
   private mapDetail(order: LabOrderDetailPayload): LabOrder {
-    const billing = order.labOrderBilling.map((bill) => ({
-      id: bill.id,
-      billingType: bill.billingType ?? null,
-      totalCost: bill.copayAmount ? Number(bill.copayAmount) : null,
-      insuranceProvider: bill.insuranceProvider ?? null,
-      policyNumber: bill.policyNumber ?? null,
-      planName: null,
-      groupNumber: null,
-      benefitsId: null,
-      insuredName: null,
-      relationToPatient: null,
-      insuredDob: null,
-      insuredPhone: null,
-      insurerState: null,
-      referralAuthNumber: null,
-      copayAmount: bill.copayAmount ? Number(bill.copayAmount) : null,
-      deductibleAmount: null,
-    }))
+    const snapshot = this.parseOrderSnapshot(order.orderNotes)
+    const clinicalSnapshot = this.ensureRecord(snapshot?.clinicalHistory)
+    const billingSnapshot = this.ensureRecord(snapshot?.billing)
+    const patientSnapshot = this.ensureRecord(snapshot?.patient)
+    const providerSnapshot = this.ensureRecord(
+      this.ensureRecord(snapshot?.provider).orderingProvider,
+    )
+
+    const clinicalDetails = this.toOptionalString(clinicalSnapshot.clinicalDetails)
+    const clinicalPresentation = this.toOptionalString(clinicalSnapshot.clinicalPresentation)
+    const clinicalTesting = this.toOptionalString(clinicalSnapshot.clinicalTesting)
+    const riskFlags = this.parseStringArray(clinicalSnapshot.riskFlags)
+    const riskFlagNotes = this.toOptionalString(clinicalSnapshot.riskFlagNotes)
+    const clinicalAttachments = this.mapClinicalAttachments(clinicalSnapshot.attachments)
+
+    const labOrderBilling =
+      order.labOrderBilling.length > 0
+        ? order.labOrderBilling.map((bill) => this.mapBillingRecord(bill))
+        : this.buildBillingFromSnapshot(billingSnapshot)
+
+    const patientMRN =
+      order.patientMRN ?? this.toOptionalString(this.ensureRecord(patientSnapshot.demographics).mrn)
+
+    const patientContact = this.ensureRecord(patientSnapshot.contact)
+    const snapshotPrimaryPhone = this.extractPrimaryPhone(patientContact.phones)
+
+    const patient =
+      order.patient ??
+      (patientSnapshot && (patientSnapshot.firstName || patientSnapshot.lastName)
+        ? {
+            id: order.patientId ?? this.toOptionalString(patientSnapshot.id) ?? '',
+            firstName: this.toOptionalString(patientSnapshot.firstName),
+            lastName: this.toOptionalString(patientSnapshot.lastName),
+            dateOfBirth: this.toOptionalDateString(
+              this.ensureRecord(patientSnapshot.demographics).dateOfBirth,
+            ),
+            gender: this.toOptionalString(
+              this.ensureRecord(patientSnapshot.demographics).sexAtBirth,
+            ),
+            email: this.toOptionalString(patientContact.email),
+            mobile: snapshotPrimaryPhone,
+            // Additional fields not in contract are ignored
+          }
+        : null)
+
+    const orderingProvider =
+      order.orderingProvider ??
+      (providerSnapshot && (providerSnapshot.fullName || providerSnapshot.npi)
+        ? {
+            id: order.orderingProviderId ?? this.toOptionalString(providerSnapshot.id) ?? '',
+            firstName: this.extractNamePart(providerSnapshot.fullName, 'first'),
+            lastName: this.extractNamePart(providerSnapshot.fullName, 'last'),
+            npi: this.toOptionalString(providerSnapshot.npi),
+          }
+        : null)
 
     return {
       id: order.id,
@@ -717,41 +1350,46 @@ export class LabOrdersService {
       accessionNumber: order.accessionNumber,
       testVersionId: order.testVersionId,
       testConfigurationId: order.testConfigurationId,
-      patientMRN: order.patientMRN ?? null,
-      patientMobile: order.patientMobile ?? order.patient?.mobile ?? null,
-      patientEmail: order.patientEmail ?? order.patient?.email ?? null,
+      patientMRN: patientMRN ?? null,
+      patientMobile:
+        order.patientMobile ??
+        order.patient?.mobile ??
+        snapshotPrimaryPhone ??
+        this.toOptionalString(patientSnapshot.mobile),
+      patientEmail:
+        order.patientEmail ?? order.patient?.email ?? this.toOptionalString(patientContact.email),
       orderDate: order.orderDate?.toISOString() ?? null,
       orderNotes: order.orderNotes ?? null,
-      clinicalNotes: null,
-      clinicalDetails: null,
-      clinicalPresentation: null,
-      clinicalTesting: null,
-      riskFlags: null,
-      riskFlagNotes: null,
-      clinicalAttachments: null,
-      labId: order.version?.test?.labId ?? null,
+      clinicalNotes: clinicalDetails,
+      clinicalDetails,
+      clinicalPresentation,
+      clinicalTesting,
+      riskFlags,
+      riskFlagNotes,
+      clinicalAttachments,
+      labId: order.labId ?? order.version?.test?.labId ?? this.toOptionalString(snapshot?.labId),
       organizationId: order.organizationId ?? null,
       orderingProviderId: order.orderingProviderId ?? null,
       treatingProviderId: order.treatingProviderId ?? null,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
-      patient: order.patient
+      patient: patient
         ? {
-            id: order.patient.id,
-            firstName: order.patient.firstName ?? null,
-            lastName: order.patient.lastName ?? null,
-            dateOfBirth: order.patient.dateOfBirth?.toISOString() ?? null,
-            gender: order.patient.gender ?? null,
-            email: order.patient.email ?? null,
-            mobile: order.patient.mobile ?? null,
+            id: patient.id,
+            firstName: patient.firstName ?? null,
+            lastName: patient.lastName ?? null,
+            dateOfBirth: patient.dateOfBirth ?? null,
+            gender: patient.gender ?? null,
+            email: patient.email ?? null,
+            mobile: patient.mobile ?? null,
           }
         : null,
-      orderingProvider: order.orderingProvider
+      orderingProvider: orderingProvider
         ? {
-            id: order.orderingProvider.id,
-            firstName: order.orderingProvider.firstName ?? null,
-            lastName: order.orderingProvider.lastName ?? null,
-            npi: order.orderingProvider.npi ?? null,
+            id: orderingProvider.id,
+            firstName: orderingProvider.firstName ?? null,
+            lastName: orderingProvider.lastName ?? null,
+            npi: orderingProvider.npi ?? null,
           }
         : null,
       treatingProvider: order.treatingProvider
@@ -782,33 +1420,20 @@ export class LabOrdersService {
       version: order.version
         ? {
             id: order.version.id,
-            status: order.version.status ?? null,
-            versionNumber: order.version.versionNumber ?? null,
-            turnAroundTime: order.version.turnAroundTime ?? null,
-            orderLoincs: order.version.orderLoincs.map((loinc) => ({
-              loincCode: loinc.loincCode,
-            })),
-            specimens: order.version.specimens.map((specimen) => ({
-              id: specimen.id,
-              displayName: specimen.displayName ?? null,
-              isPrimary: specimen.isPrimary ?? null,
-              specimenType: specimen.specimenType ?? null,
-              specimenRequirements: specimen.specimenRequirements ?? null,
-              volume: specimen.volume ?? null,
-              minimumVolume: specimen.minimumVolume ?? null,
-              container: specimen.container ?? null,
-              specialInstructions: specimen.specialInstructions ?? null,
-              alternateContainers: specimen.alternateContainers ?? null,
-              preferredVolume: specimen.preferredVolume ?? null,
-            })),
+            status: order.version.status ?? undefined,
+            versionNumber: order.version.versionNumber ?? undefined,
           }
         : null,
       configuration: order.configuration
         ? {
             id: order.configuration.id,
             configurationName: order.configuration.configurationName ?? null,
-            customerId: order.configuration.customerId ?? null,
-            type: order.configuration.type ?? null,
+            familyStructure:
+              order.configuration.dimension === 'FAMILY_STRUCTURE' &&
+              order.configuration.dimensionValue
+                ? (order.configuration.dimensionValue as FamilyStructureType)
+                : null,
+            type: order.configuration.type ?? undefined,
           }
         : null,
       labOrderTests: order.labOrderTests.map((test) => ({
@@ -846,7 +1471,7 @@ export class LabOrdersService {
         specimenCount: specimen.specimenCount ?? null,
         bodySite: specimen.bodySite ?? null,
       })),
-      labOrderBilling: billing,
+      labOrderBilling,
       labOrderAttachments: order.labOrderAttachments.map((attachment) => ({
         id: attachment.id,
         labOrderId: attachment.labOrderId ?? null,
@@ -873,9 +1498,9 @@ export class LabOrdersService {
         sectionName: form.sectionName,
         templateName: form.templateName ?? null,
         displayOrder: form.displayOrder ?? 0,
-        formSchema: form.formSchema ?? null,
-        layoutSchema: form.layoutSchema ?? null,
-        responses: form.responses ?? null,
+        formSchema: (form.formSchema ?? null) as LabOrderFormSnapshot['formSchema'],
+        layoutSchema: (form.layoutSchema ?? null) as LabOrderFormSnapshot['layoutSchema'],
+        responses: (form.responses ?? null) as LabOrderFormSnapshot['responses'],
         isCompleted: form.isCompleted,
         completedAt: form.completedAt?.toISOString() ?? null,
         createdAt: form.createdAt.toISOString(),

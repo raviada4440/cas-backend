@@ -1,5 +1,5 @@
 import { Injectable, HttpException, HttpStatus, ForbiddenException, Logger } from '@nestjs/common'
-import type { Bundle, Patient } from 'fhir/r4'
+import { Bundle, Patient } from 'fhir/r4'
 
 import {
   FhirBundleResponse,
@@ -78,7 +78,10 @@ export class FhirService {
     return this.fetchJson(url, input.accessToken)
   }
 
-  async searchPatients(userId: string, input: FhirPatientSearchInput): Promise<FhirPatientSearchResponse> {
+  async searchPatients(
+    userId: string,
+    input: FhirPatientSearchInput,
+  ): Promise<FhirPatientSearchResponse> {
     const { provider, credentials } = await this.resolveCredentials(userId, input.provider)
 
     const url = input.cursor
@@ -271,4 +274,3 @@ export class FhirService {
     return cursorUrl
   }
 }
-

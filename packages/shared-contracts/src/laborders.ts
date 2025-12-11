@@ -1,4 +1,6 @@
-import { FamilyStructure, FamilyStructureType } from './catalog'
+import { z } from 'zod/v4'
+
+import { FamilyStructureType } from './catalog'
 import { LabOrderFormSnapshot } from './order-forms'
 
 export type SexAtBirth = 'MALE' | 'FEMALE' | 'UNKNOWN'
@@ -434,26 +436,10 @@ export interface LabOrderStatusRecord {
   statusDate: Date | string | null
 }
 
-export interface LabOrderForm {
-  id: string
-  versionOrderFormId: string | null
-  orderFormTemplateId: string | null
-  sectionName: string
-  templateName: string | null
-  displayOrder: number
-  formSchema: unknown
-  layoutSchema: unknown
-  isCompleted: boolean
-  completedAt: Date | string | null
-  responses: unknown
-  createdAt: Date | string
-  updatedAt: Date | string
-}
-
 export interface LabOrder {
   id: string
-  orderNumber: number | null
-  accessionNumber: number | null
+  orderNumber: number
+  accessionNumber: number
   testVersionId: string
   testConfigurationId: string
   patientMRN: string | null
@@ -497,46 +483,33 @@ export interface LabOrder {
   version:
     | {
         id: string
-        versionNumber: number | null
-        status: string | null
-        turnAroundTime: string | null
-        orderLoincs: { loincCode: string }[]
-        specimens: Array<{
-          id: string
-          displayName: string | null
-          isPrimary: boolean | null
-          specimenType: string | null
-          specimenRequirements: string | null
-          volume: string | null
-          minimumVolume: string | null
-          container: string | null
-          specialInstructions: string | null
-          alternateContainers: string | null
-          preferredVolume: string | null
-        }>
+        versionNumber?: number
+        status?: string
       }
     | null
   configuration:
     | {
         id: string
-        configurationName: string | null
-        type: string | null
-        customerId?: string | null
+        configurationName?: string | null
+        familyStructure?: FamilyStructureType | null
+        type?: string
       }
     | null
-  labOrderTests: LabOrderTest[]
-  labOrderIcds: LabOrderIcd[]
-  labOrderSpecimens: LabOrderSpecimen[]
-  labOrderBilling: LabOrderBilling[]
-  labOrderAttachments: LabOrderAttachment[]
-  labOrderStatuses: LabOrderStatusRecord[]
-  orderForms: LabOrderForm[]
+  labOrderTests: LabOrderTest[] | null
+  labOrderIcds: LabOrderIcd[] | null
+  labOrderSpecimens: LabOrderSpecimen[] | null
+  labOrderBilling: LabOrderBilling[] | null
+  labOrderAttachments: LabOrderAttachment[] | null
+  labOrderStatuses: LabOrderStatusRecord[] | null
+  orderForms: LabOrderFormSnapshot[] | null
 }
+
+export type LabOrderDetail = LabOrder
 
 export interface LabOrderSummary {
   id: string
-  orderNumber: number | null
-  accessionNumber: number | null
+  orderNumber: number
+  accessionNumber: number
   orderDate: Date | string | null
   patientMRN: string | null
   patientName: string | null
@@ -552,9 +525,65 @@ export interface LabOrderSummary {
   icdCount: number
 }
 
+export interface CreateLabOrderInput {
+  patientId: string
+  testId: string
+  familyStructure: FamilyStructureType
+  orderDate?: string
+  versionId?: string
+  orderingProviderId?: string
+  treatingProviderId?: string
+  organizationId?: string
+  orderNotes?: string
+  testIds?: string[]
+  icdIds?: string[]
+  specimens?: Array<{
+    specimenType: string
+    collectedDate?: Date | string
+    specimenCount?: string
+    bodySite?: string
+  }>
+}
+
+export interface UpdateLabOrderInput {
+  orderNotes?: string
+  testIds?: string[]
+  icdIds?: string[]
+  specimens?: Array<{
+    id?: string
+    specimenType: string
+    collectedDate?: Date | string
+    specimenCount?: string
+    bodySite?: string
+    _delete?: boolean
+  }>
+}
+
+export interface LabOrderSearchQuery {
+  query?: string
+  status?: string
+  labId?: string
+  providerId?: string
+  dateFrom?: string
+  dateTo?: string
+  limit?: number
+  cursor?: string
+}
+
 export interface PagedLabOrders {
   items: LabOrderSummary[]
   nextCursor: string | null
   total: number
 }
+
+export const LabOrderStatus = z.enum([
+  'DRAFT',
+  'PENDING_REVIEW',
+  'APPROVED',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'CANCELLED',
+])
+
+export const LabOrderPriority = z.enum(['ROUTINE', 'URGENT', 'STAT'])
 

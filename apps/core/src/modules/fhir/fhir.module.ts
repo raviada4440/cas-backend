@@ -13,4 +13,3 @@ import { FhirCredentialsService } from './fhir-credentials.service'
   exports: [FhirService],
 })
 export class FhirModule {}
-
