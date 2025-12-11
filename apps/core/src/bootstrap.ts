@@ -91,6 +91,11 @@ export async function bootstrap() {
       return
     }
 
+    if (request.url.startsWith('/docs')) {
+      done()
+      return
+    }
+
     const origin = request.headers['origin']
     if (!origin || isOriginAllowed(origin)) {
       done()
