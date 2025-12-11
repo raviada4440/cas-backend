@@ -521,6 +521,14 @@ export class OrganizationsService {
       email: user.email ?? null,
       hasPassword: Boolean(user.password),
       createdAt: user.createdAt?.toISOString() ?? null,
+      updatedAt: user.updatedAt?.toISOString() ?? null,
+      emailVerified: user.emailVerified?.toISOString() ?? null,
+      image: user.image ?? null,
+      userAttribute: user.userAttribute
+        ? {
+            userType: user.userAttribute.userType ?? null,
+          }
+        : null,
     }
   }
 

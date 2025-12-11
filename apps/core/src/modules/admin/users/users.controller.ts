@@ -1,11 +1,19 @@
-import { ApiOperation, ApiTags } from '@nestjs/swagger'
-import { Get, Param, Query } from '@nestjs/common'
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { Body, Get, Param, Post, Query } from '@nestjs/common'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
 
 import { AdminUsersService } from './users.service'
-import { UserIdParamDto, UserSearchQueryDto } from './users.dto'
+import {
+  InviteUserRequestAdminDto,
+  InviteUserResponseAdminDto,
+  UserDetailDto,
+  UserEmailQueryDto,
+  UserIdParamDto,
+  UserListResponseDto,
+  UserSearchQueryDto,
+} from './users.dto'
 
 @Auth()
 @ApiTags('Admin - Users')
@@ -15,12 +23,28 @@ export class AdminUsersController {
 
   @Get('/')
   @ApiOperation({ summary: 'List users' })
+  @ApiOkResponse({ type: UserListResponseDto })
   list(@Query() query: UserSearchQueryDto) {
     return this.usersService.list(query)
   }
 
+  @Post('/')
+  @ApiOperation({ summary: 'Invite a new user' })
+  @ApiOkResponse({ type: InviteUserResponseAdminDto })
+  invite(@Body() body: InviteUserRequestAdminDto) {
+    return this.usersService.invite(body)
+  }
+
+  @Get('/lookup')
+  @ApiOperation({ summary: 'Get user detail by email' })
+  @ApiOkResponse({ type: UserDetailDto })
+  detailByEmail(@Query() query: UserEmailQueryDto) {
+    return this.usersService.detailByEmail(query.email)
+  }
+
   @Get('/:userId')
   @ApiOperation({ summary: 'Get user detail' })
+  @ApiOkResponse({ type: UserDetailDto })
   detail(@Param() params: UserIdParamDto) {
     return this.usersService.detail(params.userId)
   }

@@ -54,7 +54,7 @@ importers:
         version: 0.12.6
       '@nestjs/cli':
         specifier: 11.0.12
-        version: 11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2)(chokidar@4.0.3))(@swc/core@1.15.2)(@types/node@24.10.1)
+        version: 11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2))(@swc/core@1.15.2)(@types/node@24.10.1)
       '@nestjs/schematics':
         specifier: 11.0.9
         version: 11.0.9(chokidar@4.0.3)(typescript@5.9.3)
@@ -67,6 +67,9 @@ importers:
       '@types/bcrypt':
         specifier: 5.0.2
         version: 5.0.2
+      '@types/fhir':
+        specifier: ^0.0.41
+        version: 0.0.41
       '@types/lodash':
         specifier: 4.14.202
         version: 4.14.202
@@ -250,7 +253,7 @@ importers:
     devDependencies:
       '@nestjs/cli':
         specifier: 11.0.12
-        version: 11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2)(chokidar@4.0.3))(@swc/core@1.15.2)(@types/node@24.10.1)
+        version: 11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2))(@swc/core@1.15.2)(@types/node@24.10.1)
       '@nestjs/schematics':
         specifier: 11.0.9
         version: 11.0.9(chokidar@4.0.3)(typescript@5.9.3)
@@ -281,6 +284,9 @@ importers:
 
   packages/shared-contracts:
     devDependencies:
+      '@types/fhir':
+        specifier: ^0.0.41
+        version: 0.0.41
       rimraf:
         specifier: ^5.0.0
         version: 5.0.5
@@ -1715,6 +1721,9 @@ packages:
 
   '@types/express@5.0.5':
     resolution: {integrity: sha512-LuIQOcb6UmnF7C1PCFmEU1u2hmiHL43fgFQX67sN3H4Z+0Yk0Neo++mFsBjhOAuLzvlQeqAAkeDOZrJs9rzumQ==}
+
+  '@types/fhir@0.0.41':
+    resolution: {integrity: sha512-MAQAFufNZBZ6V0F94Nhknmmh/E3iMXFK4n/L8RkSNjKtOJnvaAJERivNOj35VVx9VCQBJbE0BHSzikfBahoRhA==}
 
   '@types/fs-extra@11.0.4':
     resolution: {integrity: sha512-yTbItCNreRooED33qjunPthRcSjERP1r4MqCZc7wv0u2sUkzTFp45tgUfS5+r7FrZPdmCCNflLhVSP/o+SemsQ==}
@@ -6888,7 +6897,7 @@ snapshots:
       keyv: 5.5.4
       rxjs: 7.8.2
 
-  '@nestjs/cli@11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2)(chokidar@4.0.3))(@swc/core@1.15.2)(@types/node@24.10.1)':
+  '@nestjs/cli@11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2))(@swc/core@1.15.2)(@types/node@24.10.1)':
     dependencies:
       '@angular-devkit/core': 19.2.19(chokidar@4.0.3)
       '@angular-devkit/schematics': 19.2.19(chokidar@4.0.3)
@@ -7509,6 +7518,8 @@ snapshots:
       '@types/body-parser': 1.19.6
       '@types/express-serve-static-core': 5.1.0
       '@types/serve-static': 1.15.10
+
+  '@types/fhir@0.0.41': {}
 
   '@types/fs-extra@11.0.4':
     dependencies:

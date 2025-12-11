@@ -31,6 +31,7 @@ import { ChatModule } from './modules/chat/chat.module'
 import { FilesModule } from './modules/files/files.module'
 import { AuditModule } from './modules/audit/audit.module'
 import { TasksModule } from './modules/tasks/tasks.module'
+import { FhirModule } from './modules/fhir/fhir.module'
 
 // Request ----->
 // Response <-----
@@ -81,6 +82,7 @@ const envFilePath = process.env['DOTENV_CONFIG_PATH'] || '.env'
     TasksModule,
     ChatModule,
     EmailModule,
+    FhirModule,
   ],
   controllers: [AppController],
   providers: [

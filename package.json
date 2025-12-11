@@ -62,6 +62,7 @@
     "@nestjs/testing": "11.1.9",
     "@swc/cli": "0.1.63",
     "@types/bcrypt": "5.0.2",
+    "@types/fhir": "^0.0.41",
     "@types/lodash": "4.14.202",
     "@types/node": "24.10.1",
     "dayjs": "1.11.10",
