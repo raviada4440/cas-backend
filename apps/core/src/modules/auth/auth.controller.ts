@@ -36,7 +36,9 @@ import {
   SystemTokenResponseDto,
   VerificationStatusDto,
   VerifyEmailRequestDto,
+  LinkExternalIdentityResponseDto,
 } from './auth.dto'
+import { AccountLinkingService } from './account-linking.service'
 import { AuthService, TenantMembership } from './auth.service'
 import { SystemTokenService } from './system-token.service'
 import { UserOnboardingService } from './user-onboarding.service'
@@ -50,6 +52,8 @@ import {
   SystemTokenRequest,
   SystemTokenRequestSchema,
   VerifyEmailRequest,
+  LinkExternalIdentityRequest,
+  LinkExternalIdentityRequestSchema,
 } from '@shared/contracts/auth'
 
 type RequestWithOwner = FastifyRequest & {
@@ -71,6 +75,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly systemTokenService: SystemTokenService,
     private readonly onboardingService: UserOnboardingService,
+    private readonly accountLinkingService: AccountLinkingService,
     private readonly i18n: I18nService,
   ) {}
 
@@ -87,9 +92,14 @@ export class AuthController {
       throw new UnauthorizedException(await this.i18n.translate('errors.not_authenticated'))
     }
 
-    const tenantIds = context.tenants.map((tenant) => tenant.id)
+    const tenantScopes = context.tenants.map((tenant) => ({
+      type: tenant.tenantType ?? 'organization',
+      id: tenant.id,
+    }))
+    const tenantIds = tenantScopes.filter((scope) => scope.type === 'organization').map((t) => t.id)
     const token = await this.authService.signToken(user.id, {
       tenantIds,
+      tenantScopes,
       isSuperAdmin: context.isSuperAdmin,
     })
 
@@ -125,6 +135,29 @@ export class AuthController {
     return token
   }
 
+  @Post('identities/link')
+  @HttpCode(HttpStatus.OK)
+  @HTTPDecorators.Bypass
+  @ApiOperation({ summary: 'Link or create a user from external identity' })
+  @ApiOkResponse({ type: LinkExternalIdentityResponseDto })
+  async linkExternalIdentity(
+    @Body(new ZodValidationPipe(LinkExternalIdentityRequestSchema))
+    body: LinkExternalIdentityRequest,
+  ) {
+    const userId = await this.accountLinkingService.linkOrCreateUser({
+      provider: body.provider,
+      issuer: body.issuer,
+      subject: body.subject,
+      email: body.email ?? null,
+      name: body.name ?? null,
+      image: body.image ?? null,
+      fhirUser: body.fhirUser ?? null,
+      orgId: body.orgId ?? null,
+    })
+
+    return { userId }
+  }
+
   @Post('access-token')
   @Auth()
   @ApiOperation({ summary: 'Issue a bearer token for API integrations' })
@@ -141,9 +174,14 @@ export class AuthController {
     const context = request.tenants ? null : await this.authService.getUserContext(userId)
     const tenants = request.tenants ?? context?.tenants ?? []
     const isSuperAdmin = request.isSuperAdmin ?? context?.isSuperAdmin ?? false
-    const tenantIds = tenants.map((tenant) => tenant.id)
+    const tenantScopes = tenants.map((tenant) => ({
+      type: tenant.tenantType ?? 'organization',
+      id: tenant.id,
+    }))
+    const tenantIds = tenantScopes.filter((scope) => scope.type === 'organization').map((t) => t.id)
     const token = await this.authService.signToken(userId, {
       tenantIds,
+      tenantScopes,
       isSuperAdmin,
     })
     const expiresAt = new Date(

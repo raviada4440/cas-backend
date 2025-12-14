@@ -13,6 +13,14 @@ export interface TenantMembership {
   id: string
   name: string | null
   slug?: string | null
+  organizationName?: string | null
+  organizationType?: string | null
+  providerOrganizationId?: string | null
+  providerId?: string | null
+  providerName?: string | null
+  providerNpi?: string | null
+  labName?: string | null
+  tenantType?: 'organization' | 'lab'
 }
 
 export interface SanitizedUser {
@@ -68,13 +76,18 @@ export class AuthService {
     id: string,
     options?: {
       tenantIds?: string[]
+      tenantScopes?: Array<{ type: 'organization' | 'lab'; id: string }>
       isSuperAdmin?: boolean
     },
   ) {
     const tenantIds = options?.tenantIds ?? []
+    const tenantScopes = options?.tenantScopes ?? []
     const claims: Record<string, unknown> = {}
     if (tenantIds.length > 0) {
       claims.tenantIds = tenantIds
+    }
+    if (tenantScopes.length > 0) {
+      claims.tenantScopes = tenantScopes
     }
     if (options?.isSuperAdmin) {
       claims.isSuperAdmin = true
@@ -100,52 +113,152 @@ export class AuthService {
   }
 
   async getUserTenants(userId: string): Promise<TenantMembership[]> {
-    const identities = await this.db.prisma.userIdentity.findMany({
-      where: {
-        userId,
-        orgId: {
-          not: null,
-        },
-      },
+    // Derive tenant context from the user's profile:
+    // - Providers: organization tenants via providerOrganizations
+    // - Lab users: lab tenants via LabUser link
+    const user = await this.db.prisma.user.findUnique({
+      where: { id: userId },
       select: {
-        orgId: true,
-        organization: {
+        userAttribute: {
           select: {
-            id: true,
-            orgName: true,
+            userType: true,
+            provider: {
+              select: {
+                id: true,
+                name: true,
+                firstName: true,
+                lastName: true,
+                npi: true,
+                providerOrganizations: {
+                  select: {
+                    id: true,
+                    organizationId: true,
+                    providerNpi: true,
+                    name: true,
+                    parentOrgName: true,
+                    orgName: true,
+                    orgAddress: true,
+                    orgCity: true,
+                    orgState: true,
+                    orgZip: true,
+                    organization: {
+                      select: {
+                        id: true,
+                        orgName: true,
+                        orgType: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
     })
 
+    const attr = user?.userAttribute
+    if (!attr) {
+      return []
+    }
+
+    const tenants: TenantMembership[] = []
+
+    if (attr.userType === 'Provider' && attr.provider) {
+      tenants.push(...this.deriveOrganizationContextFromProvider(attr.provider))
+    }
+
+    if (attr.userType === 'Lab') {
+      const labMemberships = await this.db.prisma.labUser.findMany({
+        where: { userId },
+        select: {
+          lab: {
+            select: {
+              id: true,
+              labName: true,
+              labCode: true,
+            },
+          },
+        },
+      })
+
+      for (const membership of labMemberships) {
+        if (membership.lab) {
+          tenants.push(this.deriveLabContext(membership.lab))
+        }
+      }
+    }
+
+    return tenants
+  }
+
+  private deriveOrganizationContextFromProvider(provider: {
+    id: string
+    name: string | null
+    firstName: string | null
+    lastName: string | null
+    npi: string | null
+    providerOrganizations: Array<{
+      id: string
+      organizationId: string | null
+      providerNpi: string | null
+      orgName: string | null
+      organization: { id: string; orgName: string | null; orgType: string | null } | null
+    }>
+  }): TenantMembership[] {
+    const fallbackName = [provider.firstName, provider.lastName].filter(Boolean).join(' ').trim()
+    const providerName = provider.name ?? (fallbackName.length > 0 ? fallbackName : null)
+
     const byId = new Map<string, TenantMembership>()
 
-    for (const identity of identities) {
-      if (!identity.orgId) {
+    for (const entry of provider.providerOrganizations ?? []) {
+      if (!entry.organizationId) {
         continue
       }
-      if (!byId.has(identity.orgId)) {
-        const name = identity.organization?.orgName ?? null
-        let slug: string | null = null
-        if (name) {
-          const normalized = name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '')
-          slug = normalized.length > 0 ? normalized : null
-        }
-        byId.set(identity.orgId, {
-          id: identity.orgId,
-          name,
+      const organizationName = entry.orgName ?? entry.organization?.orgName ?? null
+      const organizationType = entry.organization?.orgType ?? null
+      const slug = this.slugify(organizationName)
+      if (!byId.has(entry.organizationId)) {
+        byId.set(entry.organizationId, {
+          id: entry.organizationId,
+          name: organizationName,
           slug,
+          organizationName,
+          organizationType,
+          providerOrganizationId: entry.id,
+          providerId: provider.id,
+          providerName,
+          providerNpi: entry.providerNpi ?? provider.npi ?? null,
+          tenantType: 'organization',
         })
       }
     }
 
-    // If no org identities, check for user attributes with admin/provider roles referencing organizations in future
-    // Placeholder for extensibility
-
     return Array.from(byId.values())
+  }
+
+  private deriveLabContext(lab: { id: string; labName: string | null; labCode: string | null }) {
+    const name = lab.labName ?? lab.labCode ?? null
+    const slug = this.slugify(name)
+    const tenant: TenantMembership = {
+      id: lab.id,
+      name,
+      slug,
+      labName: lab.labName ?? null,
+      organizationName: null,
+      organizationType: 'Lab',
+      tenantType: 'lab',
+    }
+    return tenant
+  }
+
+  private slugify(name?: string | null): string | null {
+    if (!name) return null
+    const normalized = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    return normalized.length > 0 ? normalized : null
   }
 
   async getUserContext(

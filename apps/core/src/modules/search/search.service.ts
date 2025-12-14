@@ -25,6 +25,7 @@ interface VectorSearchRow {
   status: string | null
   casandraTestId: string | null
   labId: string | null
+  labName: string | null
   testCategory: string | null
   testSubCategory: string | null
 }
@@ -140,6 +141,15 @@ export class SearchService {
         existing.semanticScore = item.semanticScore
         existing.metadata = existing.metadata ?? item.metadata
         existing.summary = existing.summary ?? item.summary
+        if (!existing.testName && item.testName) {
+          existing.testName = item.testName
+        }
+        if (!existing.labId && item.labId) {
+          existing.labId = item.labId
+        }
+        if (!existing.labName && item.labName) {
+          existing.labName = item.labName
+        }
         existing.score =
           weights.keyword * (existing.keywordScore ?? 0) +
           weights.semantic * (item.semanticScore ?? 0)
@@ -181,7 +191,9 @@ export class SearchService {
     }
 
     const response = await this.typesenseService.search(typesenseParams)
-    const items = this.mapKeywordResults(response.hits, request.includeMetadata ?? false)
+    const items = await this.attachTestDetails(
+      this.mapKeywordResults(response.hits, request.includeMetadata ?? false),
+    )
 
     return {
       items,
@@ -220,6 +232,9 @@ export class SearchService {
             ? (metadata.summary as string)
             : (metadata?.highlights as string[])?.[0] ?? null,
         metadata,
+        testName: row.testName ?? null,
+        labId: row.labId ?? null,
+        labName: row.labName ?? null,
       } as SearchResultItem
     })
 
@@ -259,6 +274,21 @@ export class SearchService {
         (document?.summary as string | undefined) ??
         (document?.description as string | undefined) ??
         null
+      const testName =
+        (document?.testName as string | undefined) ??
+        (document?.test_name as string | undefined) ??
+        (document?.name as string | undefined) ??
+        null
+      const labId =
+        (document?.labId as string | undefined) ??
+        (document?.lab_id as string | undefined) ??
+        (document?.labId as string | undefined) ??
+        null
+      const labName =
+        (document?.labName as string | undefined) ??
+        (document?.lab_name as string | undefined) ??
+        (document?.lab as string | undefined) ??
+        null
 
       return {
         testId: testIdValue,
@@ -269,6 +299,9 @@ export class SearchService {
         highlights,
         summary,
         metadata,
+        testName,
+        labId: labId ?? null,
+        labName,
       }
     })
   }
@@ -323,10 +356,12 @@ export class SearchService {
         t."status" AS "status",
         t."casandraTestId" AS "casandraTestId",
         t."labId" AS "labId",
+        lab."labName" AS "labName",
         t."testCategory" AS "testCategory",
         t."testSubCategory" AS "testSubCategory"
       FROM "TestCatalogEmbedding" e
       INNER JOIN "TestCatalog" t ON t."id" = e."testId"
+      LEFT JOIN "Lab" lab ON lab."id" = t."labId"
       ${whereClause}
       ORDER BY e."embeddingOpenai" <-> $1::${vectorCast} ASC
       LIMIT $${paramIndex};
@@ -344,6 +379,7 @@ export class SearchService {
       status: row.status ?? base.status,
       casandraTestId: row.casandraTestId ?? base.casandraTestId,
       labId: row.labId ?? base.labId,
+      labName: row.labName ?? base.labName,
       testCategory: row.testCategory ?? base.testCategory,
       testSubCategory: row.testSubCategory ?? base.testSubCategory,
     }
@@ -406,5 +442,54 @@ export class SearchService {
       return undefined
     }
     return value as Record<string, any>
+  }
+
+  private async attachTestDetails(items: SearchResultItem[]): Promise<SearchResultItem[]> {
+    if (!items.length) {
+      return items
+    }
+
+    const testIds = Array.from(new Set(items.map((item) => item.testId)))
+    const tests = (await this.db.prisma.testCatalog.findMany({
+      where: { id: { in: testIds } },
+      select: {
+        id: true,
+        testName: true,
+        labId: true,
+        lab: {
+          select: {
+            labName: true,
+          },
+        },
+      },
+    })) as Array<{
+      id: string
+      testName: string | null
+      labId: string | null
+      lab: { labName: string | null } | null
+    }>
+    const lookup = new Map(
+      tests.map((test) => [
+        test.id,
+        {
+          testName: test.testName ?? null,
+          labId: test.labId ?? null,
+          labName: test.lab?.labName ?? null,
+        },
+      ]),
+    )
+
+    return items.map((item) => {
+      const info = lookup.get(item.testId)
+      if (!info) {
+        return item
+      }
+      return {
+        ...item,
+        testName: item.testName ?? info.testName ?? null,
+        labId: item.labId ?? info.labId ?? null,
+        labName: item.labName ?? info.labName ?? null,
+      }
+    })
   }
 }

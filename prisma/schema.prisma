@@ -264,17 +264,17 @@ enum ChatMessageSenderType {
 }
 
 model ChatContact {
-  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   displayName        String
-  title              String?          @db.VarChar(256)
-  avatarUrl          String?          @db.VarChar(512)
+  title              String?           @db.VarChar(256)
+  avatarUrl          String?           @db.VarChar(512)
   status             ChatContactStatus @default(offline)
-  about              String?          @db.Text
-  lastMessagePreview String?          @db.Text
-  lastMessageAt      DateTime?        @db.Timestamp(0)
-  unreadCount        Int              @default(0)
-  createdAt          DateTime         @default(now()) @db.Timestamp(0)
-  updatedAt          DateTime         @updatedAt @db.Timestamp(0)
+  about              String?           @db.Text
+  lastMessagePreview String?           @db.Text
+  lastMessageAt      DateTime?         @db.Timestamp(0)
+  unreadCount        Int               @default(0)
+  createdAt          DateTime          @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime          @updatedAt @db.Timestamp(0)
 
   messages ChatMessage[]
 }
@@ -449,6 +449,7 @@ model Lab {
   sponsoredTests SponsoredTest[]
   testCatalogs   TestCatalog[]
   labOrders      LabOrder[]
+  labUsers       LabUser[]
 }
 
 model LabOrder {
@@ -1697,6 +1698,7 @@ model User {
   userAttribute  UserAttribute?
   userIdentities UserIdentity[]
   userRoles      UserRole[]
+  labUsers       LabUser[]
 }
 
 model UserAttribute {
@@ -1709,6 +1711,21 @@ model UserAttribute {
   user     User      @relation(fields: [userId], references: [id], onDelete: NoAction)
   admin    Admin?
   provider Provider?
+}
+
+model LabUser {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  labId     String   @db.Uuid
+  role      String?  @db.VarChar(64)
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @db.Timestamp(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lab  Lab  @relation(fields: [labId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([labId])
 }
 
 model VerificationToken {
@@ -1724,6 +1741,7 @@ enum UserAttributeUserType {
   Admin
   Provider
   Organization
+  Lab
 }
 
 enum TestCatalogCollectionMethod {

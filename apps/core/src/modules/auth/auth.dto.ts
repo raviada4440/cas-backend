@@ -1,30 +1,26 @@
 import { createZodDto } from 'nestjs-zod/dto'
-import { z } from 'zod'
 
 import {
+  AccessTokenResponseSchema,
   InviteUserRequestSchema,
   InviteUserResponseSchema,
+  LinkExternalIdentityRequestSchema,
+  LinkExternalIdentityResponseSchema,
   LoginRequestSchema,
   LoginResponseSchema,
   ResendVerificationRequestSchema,
   SetPasswordRequestSchema,
   SetPasswordResponseSchema,
   SystemTokenConfigResponseSchema,
+  SystemTokenQuerySchema,
   SystemTokenRequestSchema,
   SystemTokenResponseSchema,
-  TenantMembershipSchema,
   VerificationStatusSchema,
   VerifyEmailRequestSchema,
 } from '@shared/contracts/auth'
 
-export const AccessTokenResponseSchema = z
-  .object({
-    token: z.string().min(1),
-    expiresAt: z.string().datetime(),
-    tenants: z.array(TenantMembershipSchema).default([]),
-    isSuperAdmin: z.boolean().default(false),
-  })
-  .strict()
+export { AccessTokenResponseSchema, SystemTokenQuerySchema } from '@shared/contracts/auth'
+export type { SystemTokenQuery } from '@shared/contracts/auth'
 
 export class AccessTokenResponseDto extends createZodDto(AccessTokenResponseSchema) {}
 
@@ -38,15 +34,7 @@ export class SystemTokenResponseDto extends createZodDto(SystemTokenResponseSche
 
 export class SystemTokenConfigResponseDto extends createZodDto(SystemTokenConfigResponseSchema) {}
 
-export const SystemTokenQuerySchema = z
-  .object({
-    org: z.string().min(1),
-  })
-  .strict()
-
 export class SystemTokenQueryDto extends createZodDto(SystemTokenQuerySchema) {}
-
-export type SystemTokenQuery = z.infer<typeof SystemTokenQuerySchema>
 
 export class InviteUserRequestDto extends createZodDto(InviteUserRequestSchema) {}
 
@@ -61,3 +49,11 @@ export class VerificationStatusDto extends createZodDto(VerificationStatusSchema
 export class SetPasswordRequestDto extends createZodDto(SetPasswordRequestSchema) {}
 
 export class SetPasswordResponseDto extends createZodDto(SetPasswordResponseSchema) {}
+
+export class LinkExternalIdentityRequestDto extends createZodDto(
+  LinkExternalIdentityRequestSchema,
+) {}
+
+export class LinkExternalIdentityResponseDto extends createZodDto(
+  LinkExternalIdentityResponseSchema,
+) {}

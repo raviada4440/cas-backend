@@ -33,11 +33,13 @@ interface SchemaCacheEntry {
 }
 
 const SCHEMA_CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
-const ASSISTANT_CONTACT_ID = '11111111-1111-1111-1111-111111111111'
+const ASSISTANT_CONTACT_ID = '26911fe7-5bf4-40ce-9502-310e4d63fe80'
 const ASSISTANT_SENDER_ID = 'assistant'
 
 @Injectable()
 export class ChatService implements OnModuleInit {
+  private readonly uuidRegex =
+    /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/
   private readonly logger = new Logger(ChatService.name)
   private schemaCache: SchemaCacheEntry | null = null
 
@@ -60,6 +62,13 @@ export class ChatService implements OnModuleInit {
     rawRequest: ChatSearchRequest,
     userId: string | null,
   ): Promise<ChatSearchResponse> {
+    this.logger.debug(`executeSearch start`, {
+      mode: rawRequest?.mode,
+      contactId: rawRequest?.contactId,
+      userId,
+      storeHistory: rawRequest?.storeHistory,
+    })
+
     const request = ChatSearchRequestSchema.parse(rawRequest)
     const contact = await this.ensureContact(request.contactId)
     const shouldStore = request.storeHistory ?? true
@@ -85,7 +94,8 @@ export class ChatService implements OnModuleInit {
       replayMetadata: false,
     })
 
-    const mappedContact = mapChatContact(await this.refreshContact(contact.id))
+    const refreshed = await this.refreshContact(contact.id)
+    const mappedContact = mapChatContact(refreshed)
     return {
       contact: mappedContact,
       userMessage: userMessage ? mapChatMessage(userMessage) : undefined,
@@ -98,7 +108,8 @@ export class ChatService implements OnModuleInit {
     const contacts = await this.database.prisma.chatContact.findMany({
       orderBy: [{ lastMessageAt: 'desc' }, { displayName: 'asc' }],
     })
-    return contacts.map(mapChatContact)
+    const validContacts = contacts.filter((c) => this.uuidRegex.test(c.id))
+    return validContacts.map(mapChatContact)
   }
 
   async getConversation(contactId: string): Promise<ChatConversation> {

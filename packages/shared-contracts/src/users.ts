@@ -3,7 +3,7 @@ import { z } from 'zod/v4'
 import { ProviderDetail, ProviderOrganizationRecord } from './providers'
 import { Uuid } from './common'
 
-export const UserAttributeUserTypeEnum = z.enum(['Admin', 'Provider', 'Organization'])
+export const UserAttributeUserTypeEnum = z.enum(['Admin', 'Provider', 'Organization', 'Lab'])
 
 export const UserSummary = z.object({
   id: z.string().uuid(),

@@ -9,7 +9,7 @@ import { AddressService } from './address.service'
 
 @Auth()
 @ApiTags('Address')
-@ApiController('address')
+@ApiController(['address', 'reference-data/address'])
 export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 

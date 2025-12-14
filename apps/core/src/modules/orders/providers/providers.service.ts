@@ -217,22 +217,11 @@ export class ProvidersService {
 
   private applyScopeToProviderWhere(
     where: Prisma.ProviderWhereInput,
-    scope: TenantScope,
+    _scope: TenantScope,
   ): Prisma.ProviderWhereInput {
-    const normalized = this.normalizeScope(scope)
-    if (normalized.isSuperAdmin || normalized.tenantIds.length === 0) {
-      return where
-    }
-
-    const scopeFilter: Prisma.ProviderWhereInput = {
-      providerOrganizations: {
-        some: {
-          organizationId: { in: normalized.tenantIds },
-        },
-      },
-    }
-
-    return this.combineWhere(where, scopeFilter)
+    // Scope filtering disabled: providers are no longer restricted by tenantIds here.
+    // Caller may still supply organizationId explicitly via query to filter.
+    return where
   }
 
   private async ensureOrganizationAccess(organizationId: string, scope: TenantScope) {

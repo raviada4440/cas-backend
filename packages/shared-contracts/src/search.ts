@@ -54,6 +54,9 @@ export const SearchResultItemSchema = z
     highlights: z.array(z.string()).optional(),
     summary: z.string().nullable().optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
+    testName: z.string().nullable().optional(),
+    labId: z.string().uuid().nullable().optional(),
+    labName: z.string().nullable().optional(),
   })
   .strict()
 
