@@ -32,6 +32,7 @@ import { FilesModule } from './modules/files/files.module'
 import { AuditModule } from './modules/audit/audit.module'
 import { TasksModule } from './modules/tasks/tasks.module'
 import { FhirModule } from './modules/fhir/fhir.module'
+import { ZohoModule } from './modules/zoho/zoho.module'
 
 // Request ----->
 // Response <-----
@@ -83,6 +84,7 @@ const envFilePath = process.env['DOTENV_CONFIG_PATH'] || '.env'
     ChatModule,
     EmailModule,
     FhirModule,
+    ZohoModule,
   ],
   controllers: [AppController],
   providers: [

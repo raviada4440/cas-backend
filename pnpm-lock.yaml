@@ -54,7 +54,7 @@ importers:
         version: 0.12.6
       '@nestjs/cli':
         specifier: 11.0.12
-        version: 11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2))(@swc/core@1.15.2)(@types/node@24.10.1)
+        version: 11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2)(chokidar@4.0.3))(@swc/core@1.15.2)(@types/node@24.10.1)
       '@nestjs/schematics':
         specifier: 11.0.9
         version: 11.0.9(chokidar@4.0.3)(typescript@5.9.3)
@@ -253,7 +253,7 @@ importers:
     devDependencies:
       '@nestjs/cli':
         specifier: 11.0.12
-        version: 11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2))(@swc/core@1.15.2)(@types/node@24.10.1)
+        version: 11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2)(chokidar@4.0.3))(@swc/core@1.15.2)(@types/node@24.10.1)
       '@nestjs/schematics':
         specifier: 11.0.9
         version: 11.0.9(chokidar@4.0.3)(typescript@5.9.3)
@@ -6897,7 +6897,7 @@ snapshots:
       keyv: 5.5.4
       rxjs: 7.8.2
 
-  '@nestjs/cli@11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2))(@swc/core@1.15.2)(@types/node@24.10.1)':
+  '@nestjs/cli@11.0.12(@swc/cli@0.1.63(@swc/core@1.15.2)(chokidar@4.0.3))(@swc/core@1.15.2)(@types/node@24.10.1)':
     dependencies:
       '@angular-devkit/core': 19.2.19(chokidar@4.0.3)
       '@angular-devkit/schematics': 19.2.19(chokidar@4.0.3)

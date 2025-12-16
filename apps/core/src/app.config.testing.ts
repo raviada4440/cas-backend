@@ -8,17 +8,8 @@ import { isDev } from './shared/utils/environment.util'
 console.log(argv)
 export const PORT = argv.port || 3333
 export const CROSS_DOMAIN = {
-  allowedOrigins: [
-    'innei.in',
-    'shizuri.net',
-    'localhost:9528',
-    'localhost:2323',
-    '127.0.0.1',
-    'mbp.cc',
-    'local.innei.test',
-    '22333322.xyz',
-  ],
-  allowedReferer: 'innei.in',
+  allowedOrigins: ['localhost:3000', '127.0.0.1:3000', '^(.+\\.)?casandra\\.ai$'],
+  allowedReferer: 'casandra.ai',
 }
 
 const DEFAULT_REDIS_HOST = 'localhost'

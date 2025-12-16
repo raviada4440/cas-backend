@@ -16,20 +16,8 @@ const { PORT: ENV_PORT, MX_ENCRYPT_KEY } = process.env
 export const PORT = argv.port || ENV_PORT || 3333
 
 export const CROSS_DOMAIN = {
-  allowedOrigins: [
-    'innei.in',
-    'shizuri.net',
-    'localhost:9528',
-    'localhost:2323',
-    'localhost:3000',
-    '127.0.0.1:3000',
-    '127.0.0.1',
-    'mbp.cc',
-    'local.innei.test',
-    '22333322.xyz',
-    'cas-catalog-git-remote-be-integration-casandra-projects.vercel.app',
-  ],
-  allowedReferer: 'innei.in',
+  allowedOrigins: ['localhost:3000', '127.0.0.1:3000', '^(.+\\.)?casandra\\.ai$'],
+  allowedReferer: 'casandra.ai',
 }
 
 const DEFAULT_REDIS_HOST = 'localhost'
