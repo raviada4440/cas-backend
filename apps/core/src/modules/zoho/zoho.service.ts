@@ -153,12 +153,16 @@ export class ZohoService {
     }
 
     try {
-      await this.http.axiosRef.post(this.leadUrl, payload, {
+      const response = await this.http.axiosRef.post(this.leadUrl, payload, {
         headers: {
           Authorization: `Zoho-oauthtoken ${accessToken}`,
           'Content-Type': 'application/json',
         },
       })
+      const zohoId = response.data?.data?.[0]?.details?.id
+      this.logger.log(
+        `Zoho lead created: status=${response.status}${zohoId ? ` id=${zohoId}` : ''}`,
+      )
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
       this.logger.error(`Failed to create Zoho lead: ${reason}`)
