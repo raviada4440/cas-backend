@@ -1,8 +1,9 @@
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import { CreateIcdDto, IcdIdParamDto, IcdSearchQueryDto, UpdateIcdDto } from './icd.dto'
 import { IcdService } from './icd.service'
@@ -15,7 +16,7 @@ export class IcdController {
 
   @Get('/')
   @ApiOperation({ summary: 'Search ICD codes' })
-  @ApiOkResponse({ description: 'List ICD codes with pagination cursor' })
+  @ApiOkResponseEnvelope({ description: 'List ICD codes with pagination cursor' })
   search(@Query() query: IcdSearchQueryDto) {
     return this.icdService.search(query)
   }

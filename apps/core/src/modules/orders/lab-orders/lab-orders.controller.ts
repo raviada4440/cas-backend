@@ -1,4 +1,4 @@
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import {
   BadRequestException,
   Body,
@@ -15,6 +15,7 @@ import {
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 import { AuthenticatedRequest } from '@core/transformers/get-req.transformer'
 
 import {
@@ -189,7 +190,7 @@ export class LabOrdersController {
 
   @Delete('/:labOrderId')
   @ApiOperation({ summary: 'Delete a lab order' })
-  @ApiOkResponse({ description: 'Deletion success flag' })
+  @ApiOkResponseEnvelope({ description: 'Deletion success flag' })
   delete(@Param() params: LabOrderIdParamDto, @Req() request: AuthenticatedRequest) {
     return this.labOrdersService.delete(params.labOrderId, this.getScope(request))
   }

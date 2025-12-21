@@ -1,7 +1,8 @@
 import { Body, Get, Param, Post, Put, Query } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import {
   CloneVersionDto,
@@ -36,14 +37,14 @@ export class TestsController {
 
   @Get('/search')
   @ApiOperation({ summary: 'Search tests for a lab' })
-  @ApiOkResponse({ type: LabTestLookupResponseDto })
+  @ApiOkResponseEnvelope(LabTestLookupResponseDto)
   search(@Query() query: TestSearchQueryDto) {
     return this.testsService.search(query)
   }
 
   @Get('/')
   @ApiOperation({ summary: 'List catalog tests' })
-  @ApiOkResponse({ description: 'Paged test summaries' })
+  @ApiOkResponseEnvelope({ description: 'Paged test summaries' })
   list(@Query() query: ListTestsQueryDto) {
     return this.testsService.list(query)
   }

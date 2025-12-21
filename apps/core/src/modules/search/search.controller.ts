@@ -1,8 +1,9 @@
 import { Body, Post } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import {
   HybridSearchDto,
@@ -20,21 +21,21 @@ export class SearchController {
 
   @Post('keyword')
   @ApiOperation({ summary: 'Search catalog tests using Typesense keyword search only' })
-  @ApiOkResponse({ type: SearchResponseDto })
+  @ApiOkResponseEnvelope(SearchResponseDto)
   keywordSearch(@Body() body: KeywordSearchDto) {
     return this.searchService.keywordSearch(body)
   }
 
   @Post('semantic')
   @ApiOperation({ summary: 'Search catalog tests using pgvector semantic similarity' })
-  @ApiOkResponse({ type: SearchResponseDto })
+  @ApiOkResponseEnvelope(SearchResponseDto)
   semanticSearch(@Body() body: SemanticSearchDto) {
     return this.searchService.semanticSearch(body)
   }
 
   @Post('hybrid')
   @ApiOperation({ summary: 'Hybrid keyword + semantic search across the catalog' })
-  @ApiOkResponse({ type: SearchResponseDto })
+  @ApiOkResponseEnvelope(SearchResponseDto)
   hybridSearch(@Body() body: HybridSearchDto) {
     return this.searchService.hybridSearch(body)
   }

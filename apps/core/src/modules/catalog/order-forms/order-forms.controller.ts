@@ -1,8 +1,9 @@
 import { Body, Get, Param, Post, Put, Query } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import {
   AssignOrderFormsDto,
@@ -76,7 +77,7 @@ export class OrderFormsController {
 
   @Post('catalog/tests/:testId/order-forms')
   @ApiOperation({ summary: 'Assign order forms to a test version' })
-  @ApiOkResponse({ description: 'Updated assignments' })
+  @ApiOkResponseEnvelope({ description: 'Updated assignments' })
   assign(@Param('testId') testId: string, @Body() body: AssignOrderFormsDto) {
     return this.orderFormsService.assign(testId, body)
   }

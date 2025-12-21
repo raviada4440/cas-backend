@@ -1,10 +1,11 @@
 import { Get, Query, Req, UnauthorizedException } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { FastifyRequest } from 'fastify'
 import { I18nService } from 'nestjs-i18n'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import { MyTasksQueryDto, TaskListResponseDto } from './tasks.dto'
 import { TasksService } from './tasks.service'
@@ -31,7 +32,7 @@ export class TasksController {
 
   @Get('my')
   @ApiOperation({ summary: 'List pending catalog tasks assigned to the current user' })
-  @ApiOkResponse({ type: TaskListResponseDto })
+  @ApiOkResponseEnvelope(TaskListResponseDto)
   async listMyTasks(@Req() request: RequestWithOwner, @Query() query: MyTasksQueryDto) {
     const userId = request.owner?.id
     if (!userId) {

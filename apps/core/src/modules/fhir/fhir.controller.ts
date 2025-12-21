@@ -1,8 +1,9 @@
 import { Body, Param, Post, Req, UnauthorizedException } from '@nestjs/common'
-import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 import { AuthenticatedRequest } from '@core/transformers/get-req.transformer'
 
 import {
@@ -29,7 +30,7 @@ export class FhirController {
   @Post('practitioner')
   @ApiOperation({ summary: 'Fetch practitioner resource' })
   @ApiBody({ type: FhirPractitionerRequestDto })
-  @ApiOkResponse({ description: 'FHIR Practitioner resource', type: Object })
+  @ApiOkResponseEnvelope({ description: 'FHIR Practitioner resource', type: Object })
   getPractitioner(@Body() body: FhirPractitionerRequestDto) {
     return this.fhirService.getPractitioner(body)
   }
@@ -37,7 +38,7 @@ export class FhirController {
   @Post('practitioner-role')
   @ApiOperation({ summary: 'Fetch practitioner role' })
   @ApiBody({ type: FhirPractitionerRoleRequestDto })
-  @ApiOkResponse({ description: 'FHIR PractitionerRole resource', type: Object })
+  @ApiOkResponseEnvelope({ description: 'FHIR PractitionerRole resource', type: Object })
   getPractitionerRole(@Body() body: FhirPractitionerRoleRequestDto) {
     return this.fhirService.getPractitionerRole(body)
   }
@@ -45,7 +46,7 @@ export class FhirController {
   @Post('practitioner-role/include')
   @ApiOperation({ summary: 'Fetch practitioner role bundle with includes' })
   @ApiBody({ type: FhirPractitionerRoleRequestDto })
-  @ApiOkResponse({ description: 'FHIR Bundle response', type: Object })
+  @ApiOkResponseEnvelope({ description: 'FHIR Bundle response', type: Object })
   getPractitionerRoleWithIncludes(@Body() body: FhirPractitionerRoleRequestDto) {
     return this.fhirService.getPractitionerRoleWithIncludes(body)
   }
@@ -53,7 +54,7 @@ export class FhirController {
   @Post('location')
   @ApiOperation({ summary: 'Fetch location resource' })
   @ApiBody({ type: FhirLocationRequestDto })
-  @ApiOkResponse({ description: 'FHIR Location resource', type: Object })
+  @ApiOkResponseEnvelope({ description: 'FHIR Location resource', type: Object })
   getLocation(@Body() body: FhirLocationRequestDto) {
     return this.fhirService.getLocation(body)
   }
@@ -61,7 +62,7 @@ export class FhirController {
   @Post('organization')
   @ApiOperation({ summary: 'Fetch organization resource' })
   @ApiBody({ type: FhirOrganizationRequestDto })
-  @ApiOkResponse({ description: 'FHIR Organization resource', type: Object })
+  @ApiOkResponseEnvelope({ description: 'FHIR Organization resource', type: Object })
   getOrganization(@Body() body: FhirOrganizationRequestDto) {
     return this.fhirService.getOrganization(body)
   }
@@ -69,7 +70,7 @@ export class FhirController {
   @Post('patient')
   @ApiOperation({ summary: 'Fetch patient resource' })
   @ApiBody({ type: FhirPatientRequestDto })
-  @ApiOkResponse({ description: 'FHIR Patient resource', type: Object })
+  @ApiOkResponseEnvelope({ description: 'FHIR Patient resource', type: Object })
   getPatient(@Body() body: FhirPatientRequestDto) {
     return this.fhirService.getPatient(body)
   }
@@ -77,7 +78,7 @@ export class FhirController {
   @Post('resource')
   @ApiOperation({ summary: 'Fetch generic FHIR resource' })
   @ApiBody({ type: FhirResourceRequestDto })
-  @ApiOkResponse({ description: 'FHIR resource', type: Object })
+  @ApiOkResponseEnvelope({ description: 'FHIR resource', type: Object })
   getResource(@Body() body: FhirResourceRequestDto) {
     return this.fhirService.getResource(body)
   }
@@ -85,7 +86,7 @@ export class FhirController {
   @Post('patients/search')
   @ApiOperation({ summary: 'Search FHIR patients' })
   @ApiBody({ type: FhirPatientSearchRequestDto })
-  @ApiOkResponse({ type: FhirPatientSearchResponseDto })
+  @ApiOkResponseEnvelope(FhirPatientSearchResponseDto)
   searchPatients(@Req() request: AuthenticatedRequest, @Body() body: FhirPatientSearchRequestDto) {
     const userId = request.owner?.id
     if (!userId) {
@@ -97,7 +98,7 @@ export class FhirController {
   @Post('patients/:patientId')
   @ApiOperation({ summary: 'Fetch FHIR patient detail' })
   @ApiBody({ type: FhirPatientDetailRequestDto })
-  @ApiOkResponse({ type: FhirPatientDetailResponseDto })
+  @ApiOkResponseEnvelope(FhirPatientDetailResponseDto)
   getPatientDetail(
     @Req() request: AuthenticatedRequest,
     @Param() params: FhirPatientIdParamDto,

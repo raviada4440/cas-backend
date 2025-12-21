@@ -1,8 +1,9 @@
 import { Body, HttpCode, Post } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import { AddressAutocompleteDto, AddressPlaceDetailsDto, AddressValidationDto } from './address.dto'
 import { AddressService } from './address.service'
@@ -15,7 +16,7 @@ export class AddressController {
 
   @Post('/autocomplete')
   @ApiOperation({ summary: 'Autocomplete address' })
-  @ApiOkResponse({ description: 'Address suggestions' })
+  @ApiOkResponseEnvelope({ description: 'Address suggestions' })
   @HttpCode(200)
   autocomplete(@Body() body: AddressAutocompleteDto) {
     return this.addressService.autocomplete(body)

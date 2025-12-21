@@ -1,8 +1,9 @@
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import { CptCodeParamDto, CptSearchQueryDto, CreateCptDto, UpdateCptDto } from './cpt.dto'
 import { CptService } from './cpt.service'
@@ -15,7 +16,7 @@ export class CptController {
 
   @Get('/')
   @ApiOperation({ summary: 'Search CPT codes' })
-  @ApiOkResponse({ description: 'List CPT codes with pagination cursor' })
+  @ApiOkResponseEnvelope({ description: 'List CPT codes with pagination cursor' })
   search(@Query() query: CptSearchQueryDto) {
     return this.cptService.search(query)
   }

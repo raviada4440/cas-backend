@@ -1,8 +1,9 @@
 import { Body, HttpCode, HttpException, HttpStatus, Post, Req } from '@nestjs/common'
-import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { FastifyRequest } from 'fastify'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 import { ZodValidationPipe } from '@core/common/pipes/zod-validation.pipe'
 
 import { LeadPayload, LeadPayloadDto, LeadPayloadSchema } from './zoho.dto'
@@ -19,7 +20,7 @@ export class ZohoController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Create a lead in Zoho CRM' })
   @ApiBody({ type: LeadPayloadDto })
-  @ApiOkResponse({
+  @ApiOkResponseEnvelope({
     schema: {
       type: 'object',
       properties: {

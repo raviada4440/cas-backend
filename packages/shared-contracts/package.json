@@ -1,6 +1,6 @@
 {
   "name": "@casandra-ai/shared-contracts",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "private": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",

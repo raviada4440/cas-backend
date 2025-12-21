@@ -1,8 +1,9 @@
 import { Get, Param, Query } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import { AuditLogListDto, AuditQueryDto, AuditTestIdParamDto } from './audit.dto'
 import { AuditService } from './audit.service'
@@ -15,7 +16,7 @@ export class AuditController {
 
   @Get('/:testId/audit')
   @ApiOperation({ summary: 'Get audit logs for a catalog test' })
-  @ApiOkResponse({ type: AuditLogListDto })
+  @ApiOkResponseEnvelope(AuditLogListDto)
   public getTestAuditLogs(@Param() params: AuditTestIdParamDto, @Query() query: AuditQueryDto) {
     return this.auditService.getTestAuditLogs(params.testId, query)
   }

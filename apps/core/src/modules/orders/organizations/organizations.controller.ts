@@ -1,8 +1,9 @@
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Body, Get, Param, Patch, Post, Query } from '@nestjs/common'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import {
   FacilityDirectoryQueryDto,
@@ -75,14 +76,14 @@ export class OrganizationsController {
 
   @Get('/:organizationId/users')
   @ApiOperation({ summary: 'List organization users' })
-  @ApiOkResponse({ type: UserListResponseDto })
+  @ApiOkResponseEnvelope(UserListResponseDto)
   listOrganizationUsers(@Param() params: OrganizationIdParamDto) {
     return this.organizationsService.listOrganizationUsers(params.organizationId)
   }
 
   @Get('/:organizationId/tests')
   @ApiOperation({ summary: 'List organization favorite tests' })
-  @ApiOkResponse({ type: OrganizationFavoriteTestListResponseDto })
+  @ApiOkResponseEnvelope(OrganizationFavoriteTestListResponseDto)
   listOrganizationFavorites(@Param() params: OrganizationIdParamDto) {
     return this.organizationsService.listOrganizationFavoriteTests(params.organizationId)
   }
@@ -98,21 +99,21 @@ export class OrganizationsController {
 
   @Get('/:organizationId/lab-orders')
   @ApiOperation({ summary: 'List organization lab orders' })
-  @ApiOkResponse({ type: OrganizationResultListResponseDto })
+  @ApiOkResponseEnvelope(OrganizationResultListResponseDto)
   listOrganizationResults(@Param() params: OrganizationIdParamDto) {
     return this.organizationsService.listOrganizationResults(params.organizationId)
   }
 
   @Get('/:organizationId/ancestry')
   @ApiOperation({ summary: 'Get organization ancestry' })
-  @ApiOkResponse({ type: OrganizationAncestryResponseDto })
+  @ApiOkResponseEnvelope(OrganizationAncestryResponseDto)
   getOrganizationAncestry(@Param() params: OrganizationIdParamDto) {
     return this.organizationsService.getOrganizationAncestry(params.organizationId)
   }
 
   @Post('/:organizationId/providers')
   @ApiOperation({ summary: 'Associate provider with organization' })
-  @ApiOkResponse({ type: ProviderSummaryDto })
+  @ApiOkResponseEnvelope(ProviderSummaryDto)
   associateProvider(
     @Param() params: OrganizationIdParamDto,
     @Body() input: ProviderAssociationDto,

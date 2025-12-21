@@ -1,8 +1,9 @@
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import { CreateLoincDto, LoincCodeParamDto, LoincSearchQueryDto, UpdateLoincDto } from './loinc.dto'
 import { LoincService } from './loinc.service'
@@ -15,7 +16,7 @@ export class LoincController {
 
   @Get('/')
   @ApiOperation({ summary: 'Search LOINC codes' })
-  @ApiOkResponse({ description: 'List LOINC codes with pagination cursor' })
+  @ApiOkResponseEnvelope({ description: 'List LOINC codes with pagination cursor' })
   search(@Query() query: LoincSearchQueryDto) {
     return this.loincService.search(query)
   }

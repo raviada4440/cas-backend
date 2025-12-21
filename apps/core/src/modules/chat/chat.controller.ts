@@ -1,16 +1,10 @@
 import { Body, Get, Param, Post, Query, Req } from '@nestjs/common'
-import {
-  ApiBody,
-  ApiExtraModels,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-  getSchemaPath,
-} from '@nestjs/swagger'
+import { ApiBody, ApiExtraModels, ApiOperation, ApiTags, getSchemaPath } from '@nestjs/swagger'
 import { FastifyRequest } from 'fastify'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 import { ZodValidationPipe } from '@core/common/pipes/zod-validation.pipe'
 
 import {
@@ -73,7 +67,7 @@ export class ChatController {
       },
     },
   })
-  @ApiOkResponse({ type: ChatSearchResponseDto })
+  @ApiOkResponseEnvelope(ChatSearchResponseDto)
   public async search(
     @Req() req: RequestWithOwner,
     @Body(new ZodValidationPipe(ChatSearchRequestSchema)) payload: ChatSearchRequest,
@@ -84,21 +78,21 @@ export class ChatController {
 
   @Get('contacts')
   @ApiOperation({ summary: 'List chat contacts with unread counts and last activity' })
-  @ApiOkResponse({ type: ChatContactDto, isArray: true })
+  @ApiOkResponseEnvelope(ChatContactDto, { isArray: true })
   public async listContacts(): Promise<ChatContact[]> {
     return this.chatService.listContacts()
   }
 
   @Get('conversations/:contactId')
   @ApiOperation({ summary: 'Fetch full conversation history for a contact' })
-  @ApiOkResponse({ type: ChatConversationDto })
+  @ApiOkResponseEnvelope(ChatConversationDto)
   public async getConversation(@Param() params: ChatContactIdParamsDto): Promise<ChatConversation> {
     return this.chatService.getConversation(params.contactId)
   }
 
   @Post('conversations/:contactId/messages')
   @ApiOperation({ summary: 'Append a free-form message to a conversation' })
-  @ApiOkResponse({ type: ChatConversationDto })
+  @ApiOkResponseEnvelope(ChatConversationDto)
   public async sendMessage(
     @Req() req: RequestWithOwner,
     @Param() params: ChatContactIdParamsDto,
@@ -110,14 +104,14 @@ export class ChatController {
 
   @Get('schema')
   @ApiOperation({ summary: 'Inspect database schema metadata for chat-assisted search prompts' })
-  @ApiOkResponse({ type: ChatSchemaResponseDto })
+  @ApiOkResponseEnvelope(ChatSchemaResponseDto)
   public async getSchema(@Query() query: ChatSchemaQueryDto): Promise<ChatSchemaResponse> {
     return this.chatService.getSchemaOverview(query.q)
   }
 
   @Get('profile')
   @ApiOperation({ summary: 'Return the profile metadata for the signed-in chat user' })
-  @ApiOkResponse({ type: ChatProfileDto })
+  @ApiOkResponseEnvelope(ChatProfileDto)
   public async getProfile(): Promise<ChatProfile> {
     return this.chatService.getProfile()
   }

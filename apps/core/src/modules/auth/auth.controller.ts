@@ -16,6 +16,7 @@ import { I18nService } from 'nestjs-i18n'
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { HTTPDecorators } from '@core/common/decorators/http.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 import { ZodValidationPipe } from '@core/common/pipes/zod-validation.pipe'
 import { JWTService } from '@core/processors/helper/helper.jwt.service'
 import { extractAuthSessionCookie } from '@core/common/utils/cookie.util'
@@ -124,7 +125,7 @@ export class AuthController {
   @Post('system-token')
   @Auth()
   @ApiOperation({ summary: 'Generate a system token for backend FHIR operations' })
-  @ApiOkResponse({ type: SystemTokenResponseDto })
+  @ApiOkResponseEnvelope(SystemTokenResponseDto)
   @ApiBody({ type: SystemTokenRequestDto })
   async createSystemToken(
     @Req() request: RequestWithOwner,
@@ -161,7 +162,7 @@ export class AuthController {
   @Post('access-token')
   @Auth()
   @ApiOperation({ summary: 'Issue a bearer token for API integrations' })
-  @ApiOkResponse({ type: AccessTokenResponseDto })
+  @ApiOkResponseEnvelope(AccessTokenResponseDto)
   async issueAccessToken(@Req() request: RequestWithOwner) {
     const userId = request.owner?.id
     if (!userId) {
@@ -202,7 +203,7 @@ export class AuthController {
   @Get('system-token')
   @Auth()
   @ApiOperation({ summary: 'Get system token configuration for an organization' })
-  @ApiOkResponse({ type: SystemTokenConfigResponseDto })
+  @ApiOkResponseEnvelope(SystemTokenConfigResponseDto)
   async getSystemTokenConfig(
     @Query(new ZodValidationPipe(SystemTokenQuerySchema)) query: SystemTokenQuery,
   ) {
@@ -213,7 +214,7 @@ export class AuthController {
   @Post('users/invite')
   @Auth()
   @ApiOperation({ summary: 'Invite a new user and issue a verification token' })
-  @ApiOkResponse({ type: InviteUserResponseDto })
+  @ApiOkResponseEnvelope(InviteUserResponseDto)
   @ApiBody({ type: InviteUserRequestDto })
   async inviteUser(
     @Body(new ZodValidationPipe(InviteUserRequestDto.schema)) body: InviteUserRequest,
@@ -224,7 +225,7 @@ export class AuthController {
   @Post('users/resend-verification')
   @Auth()
   @ApiOperation({ summary: 'Resend a verification email to a user' })
-  @ApiOkResponse({ type: VerificationStatusDto })
+  @ApiOkResponseEnvelope(VerificationStatusDto)
   @ApiBody({ type: ResendVerificationRequestDto })
   async resendVerification(
     @Body(new ZodValidationPipe(ResendVerificationRequestDto.schema))
@@ -235,7 +236,7 @@ export class AuthController {
 
   @Post('users/verify-email')
   @ApiOperation({ summary: 'Verify a user email via verification token' })
-  @ApiOkResponse({ type: VerificationStatusDto })
+  @ApiOkResponseEnvelope(VerificationStatusDto)
   @ApiBody({ type: VerifyEmailRequestDto })
   async verifyEmail(
     @Body(new ZodValidationPipe(VerifyEmailRequestDto.schema)) body: VerifyEmailRequest,
@@ -245,7 +246,7 @@ export class AuthController {
 
   @Post('users/set-password')
   @ApiOperation({ summary: 'Complete onboarding by setting the account password' })
-  @ApiOkResponse({ type: SetPasswordResponseDto })
+  @ApiOkResponseEnvelope(SetPasswordResponseDto)
   @ApiBody({ type: SetPasswordRequestDto })
   async setPassword(
     @Body(new ZodValidationPipe(SetPasswordRequestSchema)) body: SetPasswordRequest,

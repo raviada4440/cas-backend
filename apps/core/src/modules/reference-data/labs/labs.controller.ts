@@ -1,7 +1,8 @@
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 import { Body, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { CreateLabDto, LabIdParamDto, LabSearchQueryDto, UpdateLabDto } from './labs.dto'
 import { LabsService } from './labs.service'
@@ -14,14 +15,14 @@ export class LabsController {
 
   @Get('/')
   @ApiOperation({ summary: 'Search labs' })
-  @ApiOkResponse({ description: 'List labs with pagination cursor' })
+  @ApiOkResponseEnvelope({ description: 'List labs with pagination cursor' })
   search(@Query() query: LabSearchQueryDto) {
     return this.labsService.search(query)
   }
 
   @Get('/:labId')
   @ApiOperation({ summary: 'Get lab by id' })
-  @ApiOkResponse({ description: 'Lab detail' })
+  @ApiOkResponseEnvelope({ description: 'Lab detail' })
   get(@Param() params: LabIdParamDto) {
     return this.labsService.get(params.labId)
   }

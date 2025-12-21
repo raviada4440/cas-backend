@@ -1,8 +1,9 @@
 import { Body, Get, HttpCode, HttpStatus, Post } from '@nestjs/common'
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 import { Auth } from '@core/common/decorators/auth.decorator'
+import { ApiOkResponseEnvelope } from '@core/common/decorators/response-envelope.decorator'
 
 import { EmailService } from './email.service'
 import { SendEmailDto } from './email.dto'
@@ -15,7 +16,7 @@ export class EmailController {
 
   @Get()
   @ApiOperation({ summary: 'List mock email previews for the inbox UI' })
-  @ApiOkResponse({
+  @ApiOkResponseEnvelope({
     schema: {
       type: 'object',
       properties: {
@@ -53,7 +54,7 @@ export class EmailController {
   @Post()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Send an email via SendGrid dynamic template' })
-  @ApiOkResponse({
+  @ApiOkResponseEnvelope({
     schema: {
       type: 'object',
       properties: {
