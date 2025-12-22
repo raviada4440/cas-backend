@@ -14,7 +14,7 @@ COPY apps ./apps
 COPY packages ./packages
 COPY prisma ./prisma
 COPY external ./external
-RUN pnpm install --frozen-lockfile
+RUN NODE_ENV=production pnpm install --frozen-lockfile --prod=false --ignore-scripts
 
 # Generate Prisma client
 RUN pnpm run prisma:generate
