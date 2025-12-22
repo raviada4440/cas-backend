@@ -8,6 +8,9 @@ WORKDIR /app
 # Build dependencies
 RUN apk add --no-cache git make g++ python3 py3-pip
 
+# CI-friendly installs
+ENV CI=true
+
 # Optional GitHub token for private registry access
 ARG GITHUB_PAT
 ENV GITHUB_PAT=${GITHUB_PAT}
