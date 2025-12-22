@@ -269,11 +269,6 @@ export class SearchService {
       const highlights =
         hit.highlights?.map((highlight) => highlight.snippet).filter((snippet) => !!snippet) ?? []
 
-      const metadata = includeMetadata ? document ?? {} : undefined
-      const summary =
-        (document?.summary as string | undefined) ??
-        (document?.description as string | undefined) ??
-        null
       const testName =
         (document?.testName as string | undefined) ??
         (document?.test_name as string | undefined) ??
@@ -288,6 +283,21 @@ export class SearchService {
         (document?.labName as string | undefined) ??
         (document?.lab_name as string | undefined) ??
         (document?.lab as string | undefined) ??
+        null
+      const baseMetadata = includeMetadata ? { ...(document ?? {}) } : {}
+      if (testName) {
+        baseMetadata.testName = testName
+      }
+      if (labId) {
+        baseMetadata.labId = labId
+      }
+      if (labName) {
+        baseMetadata.labName = labName
+      }
+      const metadata = Object.keys(baseMetadata).length > 0 ? baseMetadata : undefined
+      const summary =
+        (document?.summary as string | undefined) ??
+        (document?.description as string | undefined) ??
         null
 
       return {
