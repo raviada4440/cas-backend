@@ -12,6 +12,10 @@ RUN apk add --no-cache git make g++ python3 py3-pip
 ARG GITHUB_PAT
 ENV GITHUB_PAT=${GITHUB_PAT}
 
+# Dummy database URL for Prisma client generation (override in CI/CD if desired)
+ARG DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
+ENV DATABASE_URL=${DATABASE_URL}
+
 # Install deps (workspace-aware)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps ./apps
