@@ -1,32 +1,41 @@
-FROM node:20-alpine as builder
-WORKDIR /app
-COPY . .
-RUN apk add git make g++ alpine-sdk python3 py3-pip unzip
-RUN npm i -g pnpm
-RUN pnpm install
-RUN npm run build
+FROM node:20-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
-FROM node:20-alpine
-RUN apk add zip unzip bash --no-cache
-RUN npm i -g pnpm
+FROM base AS builder
 WORKDIR /app
-COPY --from=builder /app/apps/core/dist apps/core/dist
+# Build dependencies
+RUN apk add --no-cache git make g++ python3 py3-pip
 
+# Install deps (workspace-aware)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps ./apps
+COPY packages ./packages
+COPY prisma ./prisma
+COPY external ./external
+RUN pnpm install --frozen-lockfile
+
+# Generate Prisma client
+RUN pnpm run prisma:generate
+
+# Build only core app
+RUN pnpm -C apps/core run build
+
+# Prune to production dependencies for the runtime image
+RUN pnpm prune --prod
+
+FROM base AS runner
+WORKDIR /app
 ENV NODE_ENV=production
-COPY package.json ./
-COPY pnpm-lock.yaml ./
-COPY pnpm-workspace.yaml ./
-COPY apps ./apps/
-COPY .npmrc ./
-COPY --from=builder /app/prisma ./prisma/
-COPY external ./external/
 
-RUN pnpm install --prod
+# Copy production node_modules and built assets
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/core/dist ./apps/core/dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/apps/core/package.json ./apps/core/package.json
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY external ./external
 
-COPY docker-clean.sh ./
-RUN sh docker-clean.sh
-
-ENV TZ=Asia/Shanghai
 EXPOSE 3333
-
-CMD ["pnpm", "-C apps/core run start:prod"]
+CMD ["pnpm", "-C", "apps/core", "run", "start:prod"]
