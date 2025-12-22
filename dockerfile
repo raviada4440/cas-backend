@@ -34,7 +34,8 @@ RUN pnpm run prisma:generate
 RUN pnpm -C apps/core run build
 
 # Prune to production dependencies for the runtime image
-RUN pnpm prune --prod
+ENV HUSKY=0
+RUN pnpm prune --prod --ignore-scripts
 
 FROM base AS runner
 WORKDIR /app
