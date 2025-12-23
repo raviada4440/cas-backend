@@ -50,4 +50,5 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY external ./external
 
 EXPOSE 3333
-CMD ["pnpm", "-C", "apps/core", "run", "start:prod"]
+# Start using the root start:prod script (calls into apps/core/dist)
+CMD ["pnpm", "run", "start:prod"]
