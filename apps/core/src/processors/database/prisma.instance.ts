@@ -7,7 +7,7 @@ import { Logger } from '@nestjs/common'
 
 import { createLoggingExtension, QueryInfo } from './middlewares/logger.middleware'
 
-export const createExtendedPrismaClient = ({ url }: { url?: string } = {}) => {
+export const createExtendedPrismaClient = ({ url }: { url?: string } = {}): PrismaClient => {
   if (!process.env.PRISMA_CLIENT_ENGINE_TYPE) {
     process.env.PRISMA_CLIENT_ENGINE_TYPE = 'library'
   }
@@ -36,18 +36,18 @@ export const createExtendedPrismaClient = ({ url }: { url?: string } = {}) => {
       },
     },
   } as Prisma.PrismaClientOptions)
+  const loggingExtension = createLoggingExtension({
+    logger: new Logger('Prisma'),
+    logLevel: 'log', // default is `debug`
+    logMessage: (query: QueryInfo) =>
+      `[Query] ${query.model}.${query.action} - ${query.executionTime}ms`,
+  })
+
   const withLogging = isDev
-    ? baseClient.$extends(
-        createLoggingExtension({
-          logger: new Logger('Prisma'),
-          logLevel: 'log', // default is `debug`
-          logMessage: (query: QueryInfo) =>
-            `[Query] ${query.model}.${query.action} - ${query.executionTime}ms`,
-        }),
-      )
+    ? (baseClient.$extends(loggingExtension) as unknown as PrismaClient)
     : baseClient
 
-  const extendedPrismaClient = withLogging.$extends({
+  const extendedPrismaClient = (withLogging as unknown as PrismaClient).$extends({
     model: {
       $allModels: {
         async paginate(
@@ -124,6 +124,6 @@ export const createExtendedPrismaClient = ({ url }: { url?: string } = {}) => {
     },
   })
 
-  return extendedPrismaClient
+  return extendedPrismaClient as unknown as PrismaClient
 }
 export type extendedPrismaClient = ReturnType<typeof createExtendedPrismaClient>

@@ -1,4 +1,10 @@
 {
   "name": "pino",
-  "main": "./index.js"
+  "version": "0.0.0-local",
+  "private": true,
+  "type": "commonjs",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
 }

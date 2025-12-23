@@ -15,21 +15,33 @@ import { Injectable } from '@nestjs/common'
 export class CacheConfigService implements CacheOptionsFactory {
   // 缓存配置
   public async createCacheOptions(): Promise<CacheModuleOptions> {
-    const redisOptions: Record<string, unknown> = {
-      host: REDIS.host as string,
-      port: REDIS.port as number,
-    }
-    if (REDIS.tls) {
-      redisOptions.tls = {
-        rejectUnauthorized: false,
+    if (REDIS.disableApiCache || !REDIS.url) {
+      return {
+        store: 'memory',
+        ttl: REDIS.ttl ?? undefined,
+        max: REDIS.max,
+        isCacheableValue: () => true,
       }
     }
-    if (REDIS.password) {
-      redisOptions.password = REDIS.password
+
+    const redisOptions: Record<string, unknown> = {}
+    try {
+      const parsed = new URL(REDIS.url)
+      redisOptions.host = parsed.hostname
+      redisOptions.port = parsed.port ? Number(parsed.port) : undefined
+      redisOptions.username = parsed.username || undefined
+      redisOptions.password = parsed.password || undefined
+      redisOptions.tls =
+        parsed.protocol === 'rediss:'
+          ? {
+              rejectUnauthorized: false,
+            }
+          : undefined
+    } catch (error) {
+      // Fall back to URL passthrough if parsing fails
+      redisOptions.url = REDIS.url
     }
-    if (REDIS.username) {
-      redisOptions.username = REDIS.username
-    }
+
     if (REDIS.ttl !== null && REDIS.ttl !== undefined) {
       redisOptions.ttl = REDIS.ttl
     }

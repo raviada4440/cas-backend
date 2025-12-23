@@ -28,22 +28,21 @@ export class CacheService {
   }
 
   private ensureFallbackClient(): Redis {
+    if (REDIS.disableApiCache || !REDIS.url) {
+      throw new Error('Redis URL not configured')
+    }
     if (!this.fallbackClient) {
-      this.logger.warn('Falling back to direct Redis client initialization.')
-      this.fallbackClient = new Redis({
-        host: REDIS.host as string,
-        port: REDIS.port as number,
-        username: REDIS.username ?? undefined,
-        password: REDIS.password ?? undefined,
-        tls: REDIS.tls
-          ? {
-              rejectUnauthorized: false,
-            }
-          : undefined,
+      this.logger.warn(`Falling back to direct Redis client initialization using ${REDIS.url}`)
+      this.fallbackClient = new Redis(REDIS.url, {
+        lazyConnect: true,
+        retryStrategy: (times) => Math.min(times * 100, 2000),
       })
 
       this.fallbackClient.on('error', (error) => {
         this.logger.error('Fallback Redis client error', error as Error)
+      })
+      this.fallbackClient.connect().catch((error) => {
+        this.logger.error('Fallback Redis client connect failed', error as Error)
       })
     }
 
@@ -51,6 +50,9 @@ export class CacheService {
   }
 
   private safeGetClient(): Redis | undefined {
+    if (REDIS.disableApiCache || !REDIS.url) {
+      return undefined
+    }
     const maybeStore = (this.cache as Cache & { store?: unknown }).store ?? this.cache
     if (!maybeStore || typeof maybeStore !== 'object') {
       return this.ensureFallbackClient()

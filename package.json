@@ -22,7 +22,7 @@
     ]
   },
   "scripts": {
-    "prepare": "if [ \"$NODE_ENV\" = \"production\" ]; then echo 'skip prepare in production' ;else corepack enable && husky install && pnpm run prisma:generate; fi",
+    "prepare": "corepack enable && husky install || true",
     "prebuild": "rimraf dist && pnpm run prisma:generate",
     "init": "pnpm run prisma:generate && pnpm run migrate:dev",
     "build": "pnpm -C \"apps/core\" run build",
@@ -43,10 +43,12 @@
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.3",
+    "@db/client": "workspace:*",
     "@prisma/adapter-pg": "^7.0.0",
     "bcrypt": "5.1.1",
     "cross-env": "7.0.3",
     "lodash": "4.17.21",
+    "dayjs": "1.11.10",
     "pg": "^8.16.3",
     "prisma": "^7.0.0",
     "nestjs-i18n": "^10.6.0",
@@ -88,6 +90,7 @@
   },
   "resolutions": {
     "pino": "./external/pino",
+    "chokidar": "3.5.3",
     "*>typescript": "^5.2.2",
     "*>lodash": "4.17.21",
     "*>zod": "4.1.12"

@@ -1,3 +1,4 @@
+import { PrismaClient } from '@db/client'
 import { extendedPrismaClient } from '@core/processors/database/prisma.instance'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
@@ -10,7 +11,7 @@ export class MockedDatabaseService {
     this.client = prisma
   }
 
-  public get prisma() {
-    return this.client
+  public get prisma(): PrismaClient {
+    return this.client as unknown as PrismaClient
   }
 }

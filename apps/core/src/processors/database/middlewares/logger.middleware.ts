@@ -1,5 +1,5 @@
 // @copy https://github.com/notiz-dev/nestjs-prisma/blob/main/lib/logging.middleware.ts
-import { Prisma } from '@db/client'
+import { Prisma, PrismaClient } from '@db/client'
 import { Logger } from '@nestjs/common'
 
 export interface LoggingMiddlewareOptions {
@@ -35,12 +35,14 @@ export interface QueryInfo {
   executionTime: number
 }
 
+type PrismaExtensionArg = Parameters<PrismaClient['$extends']>[0]
+
 export const createLoggingExtension = (
   { logger, logMessage, logLevel }: LoggingMiddlewareOptions = {
     logger: console,
     logLevel: 'debug',
   },
-) =>
+): PrismaExtensionArg =>
   Prisma.defineExtension({
     name: 'prisma-logging',
     query: {

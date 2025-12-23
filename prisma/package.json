@@ -1,17 +1,26 @@
 {
-  "name": "@casandra/prisma",
+  "name": "@db/client",
   "description": "",
   "author": "Casandra <https://casandra.ai>",
   "private": true,
   "license": "Commercial",
-  "main": "./client/index.js",
+  "main": "./index.cjs",
+  "types": "./index.d.ts",
+  "files": [
+    "index.cjs",
+    "index.mjs",
+    "index.d.ts",
+    "schema.prisma",
+    "migrations",
+    "zod"
+  ],
   "exports": {
-    ".": "./client/index.js",
-    "./zod": {
-      "types": "./zod/index.js",
-      "require": "./dist/zod/index.js",
-      "import": "./dist/zod/index.js"
+    ".": {
+      "require": "./index.cjs",
+      "import": "./index.mjs",
+      "types": "./index.d.ts"
     },
+    "./zod": "./zod/index.js",
     "./global": "./global.ts"
   },
   "scripts": {
@@ -25,17 +34,17 @@
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
-    "build": "prisma generate && tsc && cp -r client dist/client"
+    "build": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^7.0.0",
-    "nestjs-zod": "5.0.1",
-    "zod": "4.1.12"
+    "dotenv": "^16.4.5",
+    "dotenv-expand": "^12.0.3",
+    "prisma": "^7.0.0",
+    "prisma-zod-generator": "^1.30.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
-    "prisma": "^7.0.0",
-    "prisma-zod-generator": "^1.30.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
