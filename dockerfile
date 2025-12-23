@@ -43,6 +43,7 @@ ENV NODE_ENV=production
 
 # Copy production node_modules and built assets
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/core/node_modules ./apps/core/node_modules
 COPY --from=builder /app/apps/core/dist ./apps/core/dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/apps/core/package.json ./apps/core/package.json
