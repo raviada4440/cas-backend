@@ -27,7 +27,7 @@
     "dev": "npm run start",
     "start": "cross-env NODE_ENV=development nest start -w",
     "start:debug": "cross-env NODE_ENV=development nest start --debug --watch",
-    "start:prod": "npm run prism:migrate:deploy && cross-env NODE_ENV=production node dist/main.js",
+    "start:prod": "cross-env NODE_ENV=production ENABLE_SWAGGER=true node dist/main.js",
     "prod:debug": "cross-env NODE_ENV=production nest start --debug --watch"
   },
   "dependencies": {
