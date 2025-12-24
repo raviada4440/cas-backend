@@ -135,9 +135,7 @@ WORKDIR /repo
 ENV NODE_ENV=production
 ENV HUSKY=0
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tini \
-  && rm -rf /var/lib/apt/lists/*
-RUN apt-get update && apt-get install -y --no-install-recommends openssl \
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tini curl openssl \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy prod deps (root + workspace-level) so Node resolution always works
