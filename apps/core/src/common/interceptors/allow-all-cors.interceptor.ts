@@ -21,6 +21,7 @@ export class AllowAllCorsInterceptor implements NestInterceptor {
       RequestMethod.PATCH,
       RequestMethod.POST,
       RequestMethod.DELETE,
+      RequestMethod.OPTIONS,
     ]
     const allowedHeaders = [
       'Authorization',
