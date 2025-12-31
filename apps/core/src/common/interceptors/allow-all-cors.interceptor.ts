@@ -32,6 +32,7 @@ export class AllowAllCorsInterceptor implements NestInterceptor {
       'Cache-Control',
       'Expires',
       'Content-Type',
+      'cf-turnstile-token',
     ]
     response.headers({
       'Access-Control-Allow-Origin': '*',
