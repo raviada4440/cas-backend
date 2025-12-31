@@ -216,4 +216,3 @@ export class PublicSearchController {
     }
   }
 }
-

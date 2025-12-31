@@ -27,6 +27,8 @@ export const CROSS_DOMAIN = {
           `localhost:${PORT}`,
           `127.0.0.1:${PORT}`,
           'localhost:3000',
+          'localhost:5173',
+          '127.0.0.1:5173',
           '127.0.0.1:3000',
           '^(.+\\.)?casandra\\.ai$',
         ],

@@ -8,7 +8,13 @@ import { isDev } from './shared/utils/environment.util'
 console.log(argv)
 export const PORT = argv.port || 3333
 export const CROSS_DOMAIN = {
-  allowedOrigins: ['localhost:3000', '127.0.0.1:3000', '^(.+\\.)?casandra\\.ai$'],
+  allowedOrigins: [
+    'localhost:3000',
+    'localhost:5173',
+    '127.0.0.1:5173',
+    '127.0.0.1:3000',
+    '^(.+\\.)?casandra\\.ai$',
+  ],
   allowedReferer: 'casandra.ai',
 }
 
