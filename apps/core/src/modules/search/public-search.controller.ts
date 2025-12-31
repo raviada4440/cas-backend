@@ -14,6 +14,7 @@ import { SearchService } from './search.service'
 type PublicSearchItem = {
   testId: string
   testName: string | null
+  labId: string | null
   labName: string | null
   summary: string | null
   highlights: string[]
@@ -65,6 +66,7 @@ export class PublicSearchController {
     const items: PublicSearchItem[] = result.items.map((item) => ({
       testId: item.testId,
       testName: item.testName ?? null,
+      labId: item.labId ?? null,
       labName: item.labName ?? null,
       summary: item.summary ?? null,
       highlights: item.highlights ?? [],
@@ -186,6 +188,7 @@ export class PublicSearchController {
     items: Array<{
       testId: string
       testName?: string | null
+      labId?: string | null
       labName?: string | null
       summary?: string | null
       highlights?: string[] | null
@@ -194,6 +197,7 @@ export class PublicSearchController {
     return items.map((item) => ({
       testId: item.testId,
       testName: item.testName ?? null,
+      labId: item.labId ?? null,
       labName: item.labName ?? null,
       summary: item.summary ?? null,
       highlights: item.highlights ?? [],
