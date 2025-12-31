@@ -1,9 +1,13 @@
-import { BadRequestException, Body, Headers, Logger, Post } from '@nestjs/common'
+import { BadRequestException, Body, Get, Headers, Logger, Param, Post, Query } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import { ApiController } from '@core/common/decorators/api-controller.decorator'
 
+import { LabIdParamDto } from '../reference-data/labs/labs.dto'
+import { LabsService } from '../reference-data/labs/labs.service'
+import { TestIdParamDto, TestVersionQueryDto } from '../catalog/tests/tests.dto'
+import { TestsService } from '../catalog/tests/tests.service'
 import { HybridSearchDto, KeywordSearchDto, SemanticSearchDto } from './search.dto'
 import { SearchService } from './search.service'
 
@@ -28,7 +32,11 @@ type PublicSearchResponse = {
 export class PublicSearchController {
   private readonly logger = new Logger(PublicSearchController.name)
 
-  constructor(private readonly searchService: SearchService) {}
+  constructor(
+    private readonly searchService: SearchService,
+    private readonly testsService: TestsService,
+    private readonly labsService: LabsService,
+  ) {}
 
   /**
    * Public keyword search endpoint.
@@ -132,6 +140,23 @@ export class PublicSearchController {
       tookMs: result.tookMs,
       items,
     }
+  }
+
+  @Get('tests/:testId')
+  @Throttle({ default: { limit: 30, ttl: 60 } })
+  @ApiOperation({ summary: 'Public test detail' })
+  async publicTestDetail(
+    @Param() params: TestIdParamDto,
+    @Query() query: TestVersionQueryDto,
+  ): Promise<unknown> {
+    return this.testsService.get(params.testId, query.versionId)
+  }
+
+  @Get('labs/:labId')
+  @Throttle({ default: { limit: 30, ttl: 60 } })
+  @ApiOperation({ summary: 'Public lab detail' })
+  async publicLabDetail(@Param() params: LabIdParamDto): Promise<unknown> {
+    return this.labsService.get(params.labId)
   }
 
   private trimQuery(query: string): string {
