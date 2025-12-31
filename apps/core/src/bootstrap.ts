@@ -25,6 +25,7 @@ const ALLOW_HEADERS = [
   'Origin',
   'X-Requested-With',
   'Accept-Language',
+  'cf-turnstile-token',
 ]
 
 function isOriginAllowed(origin: string): boolean {
