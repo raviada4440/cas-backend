@@ -16,6 +16,8 @@ type PublicSearchItem = {
   testName: string | null
   labId: string | null
   labName: string | null
+  methodology: string | null
+  specimenTypes: string[]
   summary: string | null
   highlights: string[]
 }
@@ -58,7 +60,7 @@ export class PublicSearchController {
       ...body,
       query: this.trimQuery(body.query),
       page: this.clamp(body.page ?? 1, 1, 50),
-      perPage: this.clamp(body.perPage ?? 10, 1, 20), // keep small to reduce load
+      perPage: this.clamp(body.perPage ?? 50, 1, 50),
       includeMetadata: false,
     }
 
@@ -68,6 +70,8 @@ export class PublicSearchController {
       testName: item.testName ?? null,
       labId: item.labId ?? null,
       labName: item.labName ?? null,
+      methodology: item.methodology ?? null,
+      specimenTypes: item.specimenTypes ?? [],
       summary: item.summary ?? null,
       highlights: item.highlights ?? [],
     }))
@@ -93,7 +97,7 @@ export class PublicSearchController {
     const safeBody: SemanticSearchDto = {
       ...body,
       query: this.trimQuery(body.query),
-      limit: this.clamp(body.limit ?? 10, 1, 20),
+      limit: this.clamp(body.limit ?? 50, 1, 50),
       filters: this.nullIfEmptyFilters(body.filters),
       embedding: undefined, // disallow client-provided embeddings on public surface
     }
@@ -126,7 +130,7 @@ export class PublicSearchController {
       keywordParams: {
         ...body.keywordParams,
         page: this.clamp(body.keywordParams?.page ?? 1, 1, 50),
-        perPage: this.clamp(body.keywordParams?.perPage ?? 10, 1, 20),
+        perPage: this.clamp(body.keywordParams?.perPage ?? 50, 1, 50),
         includeMetadata: false,
       },
       weights: body.weights ?? undefined,
@@ -190,6 +194,8 @@ export class PublicSearchController {
       testName?: string | null
       labId?: string | null
       labName?: string | null
+      methodology?: string | null
+      specimenTypes?: string[]
       summary?: string | null
       highlights?: string[] | null
     }>,
@@ -199,6 +205,8 @@ export class PublicSearchController {
       testName: item.testName ?? null,
       labId: item.labId ?? null,
       labName: item.labName ?? null,
+      methodology: item.methodology ?? null,
+      specimenTypes: item.specimenTypes ?? [],
       summary: item.summary ?? null,
       highlights: item.highlights ?? [],
     }))

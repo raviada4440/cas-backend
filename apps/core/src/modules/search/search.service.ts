@@ -81,7 +81,10 @@ export class SearchService {
 
   async keywordSearch(request: KeywordSearchRequest): Promise<SearchResponse> {
     const startedAt = Date.now()
-    const result = await this.keywordSearchInternal(request)
+    const result = await this.keywordSearchInternal({
+      ...request,
+      perPage: request.perPage ?? 50,
+    })
     return {
       mode: 'keyword',
       query: request.query,
@@ -96,7 +99,10 @@ export class SearchService {
 
   async semanticSearch(request: SemanticSearchRequest): Promise<SearchResponse> {
     const startedAt = Date.now()
-    const semanticResult = await this.semanticSearchInternal(request)
+    const semanticResult = await this.semanticSearchInternal({
+      ...request,
+      limit: request.limit ?? 50,
+    })
     return {
       mode: 'semantic',
       query: request.query,
@@ -118,10 +124,13 @@ export class SearchService {
         query: request.query,
         filters: keywordFilters,
         page: request.keywordParams?.page,
-        perPage: request.keywordParams?.perPage,
+        perPage: request.keywordParams?.perPage ?? 50,
         includeMetadata: request.keywordParams?.includeMetadata ?? false,
       }),
-      this.semanticSearchInternal(request),
+      this.semanticSearchInternal({
+        ...request,
+        limit: request.limit ?? 50,
+      }),
     ])
 
     const weights = this.normalizeWeights(request.weights)
@@ -198,7 +207,7 @@ export class SearchService {
     return {
       items,
       tookMs: response.search_time_ms ?? Date.now() - startedAt,
-      total: response.found ?? items.length,
+      total: items.length,
     }
   }
 
@@ -237,9 +246,10 @@ export class SearchService {
         labName: row.labName ?? null,
       } as SearchResultItem
     })
+    const enrichedItems = await this.attachTestDetails(items)
 
     return {
-      items,
+      items: enrichedItems,
       embedding,
       tookMs: Date.now() - startedAt,
     }
@@ -284,6 +294,17 @@ export class SearchService {
         (document?.lab_name as string | undefined) ??
         (document?.lab as string | undefined) ??
         null
+      const methodology =
+        (document?.methodology as string | undefined) && String(document?.methodology).trim()
+          ? String(document?.methodology).trim()
+          : null
+      const specimenTypesRaw = document?.specimenTypes
+      const specimenTypes =
+        Array.isArray(specimenTypesRaw) && specimenTypesRaw.length > 0
+          ? specimenTypesRaw
+              .map((v) => (typeof v === 'string' ? v.trim() : null))
+              .filter((v): v is string => !!v)
+          : []
       const baseMetadata = includeMetadata ? { ...(document ?? {}) } : {}
       if (testName) {
         baseMetadata.testName = testName
@@ -312,6 +333,8 @@ export class SearchService {
         testName,
         labId: labId ?? null,
         labName,
+        methodology,
+        specimenTypes,
       }
     })
   }
@@ -458,6 +481,7 @@ export class SearchService {
     if (!items.length) {
       return items
     }
+    console.log(`[SearchService] attachTestDetails called with ${items.length} items`)
 
     const testIds = Array.from(new Set(items.map((item) => item.testId)))
     const tests = (await this.db.prisma.testCatalog.findMany({
@@ -471,12 +495,47 @@ export class SearchService {
             labName: true,
           },
         },
+        defaultVersion: {
+          select: {
+            id: true,
+            methodology: true,
+            specimens: {
+              select: {
+                specimenType: true,
+              },
+            },
+          },
+        },
+        // Fallback: latest version if defaultVersion is null/unset
+        versions: {
+          orderBy: { versionNumber: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            methodology: true,
+            specimens: {
+              select: {
+                specimenType: true,
+              },
+            },
+          },
+        },
       },
     })) as Array<{
       id: string
       testName: string | null
       labId: string | null
       lab: { labName: string | null } | null
+      defaultVersion: {
+        id: string
+        methodology: string | null
+        specimens: { specimenType: string | null }[]
+      } | null
+      versions: Array<{
+        id: string
+        methodology: string | null
+        specimens: { specimenType: string | null }[]
+      }>
     }>
     const lookup = new Map(
       tests.map((test) => [
@@ -485,6 +544,12 @@ export class SearchService {
           testName: test.testName ?? null,
           labId: test.labId ?? null,
           labName: test.lab?.labName ?? null,
+          methodology: test.defaultVersion?.methodology ?? test.versions?.[0]?.methodology ?? null,
+          specimenTypes: (() => {
+            const version = test.defaultVersion ?? test.versions?.[0] ?? null
+            if (!version) return []
+            return version.specimens.map((s) => s.specimenType).filter((v): v is string => !!v)
+          })(),
         },
       ]),
     )
@@ -494,12 +559,23 @@ export class SearchService {
       if (!info) {
         return item
       }
-      return {
+      const enriched = {
         ...item,
         testName: item.testName ?? info.testName ?? null,
         labId: item.labId ?? info.labId ?? null,
         labName: item.labName ?? info.labName ?? null,
+        methodology: item.methodology ?? info.methodology ?? null,
+        specimenTypes:
+          item.specimenTypes && item.specimenTypes.length > 0
+            ? item.specimenTypes
+            : info.specimenTypes ?? [],
       }
+      console.log(
+        `[SearchService] Enriched test=${enriched.testId} methodology=${
+          enriched.methodology ?? 'null'
+        } specimenTypes=${JSON.stringify(enriched.specimenTypes ?? [])}`,
+      )
+      return enriched
     })
   }
 }

@@ -167,7 +167,15 @@ export class TestsService {
         casandraTestId: true,
         defaultVersion: {
           select: {
+            id: true,
             versionNumber: true,
+            status: true,
+            effectiveDate: true,
+            retiredDate: true,
+            turnAroundTime: true,
+            createdAt: true,
+            updatedAt: true,
+            href: true,
           },
         },
         lab: {
@@ -198,6 +206,19 @@ export class TestsService {
         testName: test.testName ?? '',
         labName: test.lab?.labName ?? null,
         defaultVersion: test.defaultVersion?.versionNumber ?? null,
+        version: test.defaultVersion
+          ? {
+              id: test.defaultVersion.id,
+              versionNumber: test.defaultVersion.versionNumber,
+              status: test.defaultVersion.status,
+              effectiveDate: test.defaultVersion.effectiveDate,
+              retiredDate: test.defaultVersion.retiredDate,
+              turnAroundTime: test.defaultVersion.turnAroundTime,
+              createdAt: test.defaultVersion.createdAt ?? undefined,
+              updatedAt: test.defaultVersion.updatedAt ?? undefined,
+              href: test.defaultVersion.href ?? undefined,
+            }
+          : null,
         status: test.status,
         casandraTestId: test.casandraTestId ?? null,
         versionsCount: test._count.versions,
@@ -267,8 +288,11 @@ export class TestsService {
           id: true,
           testName: true,
           labId: true,
+          labTestId: true,
+          lab: { select: { labName: true } },
           status: true,
           defaultVersionId: true,
+          casandraTestId: true,
         },
       })
       .catch(resourceNotFoundWrapper(new BizException(ErrorCodeEnum.TestNotFound)))
@@ -279,6 +303,9 @@ export class TestsService {
       testId: test.id,
       testName: test.testName ?? '',
       labId: test.labId ?? null,
+      labName: test.lab?.labName ?? null,
+      labTestId: test.labTestId ?? null,
+      casandraTestId: test.casandraTestId ?? null,
       status: test.status,
       version,
     }

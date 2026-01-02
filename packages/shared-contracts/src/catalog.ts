@@ -114,6 +114,7 @@ export const TestSummary = z.object({
   casandraTestId: z.string().nullable().optional(),
   versionsCount: z.number().int().optional(),
   methodology: z.string().nullable().optional(),
+  version: z.lazy(() => VersionSummary.nullable().optional()),
 })
 export type TestSummary = z.infer<typeof TestSummary>
 
@@ -121,6 +122,8 @@ export const TestDetail = z.object({
   testId: Uuid,
   testName: z.string(),
   labId: Uuid.nullable(),
+  labName: z.string().nullable().optional(),
+  labTestId: z.string().nullable().optional(),
   casandraTestId: z.string().nullable().optional(),
   status: CatalogStatus,
   version: z.object({
@@ -234,6 +237,8 @@ export const VersionSummary = z.object({
   methodology: z.string().nullable().optional(),
   turnAroundTime: z.string().nullable().optional(),
   createdAt: UtcDateTime.optional(),
+  updatedAt: UtcDateTime.optional(),
+  href: z.string().nullable().optional(),
 })
 export type VersionSummary = z.infer<typeof VersionSummary>
 
