@@ -349,10 +349,11 @@ export class SearchService {
     }
 
     const vectorLiteral = `[${embedding.map((value) => Number(value).toString()).join(',')}]`
-    const vectorCast = `vector(${this.embeddingDimension})`
+    // Use halfvec for reduced-dimension embeddings (e.g., text-embedding-3-large = 1536 dims)
+    const vectorCast = `halfvec(${this.embeddingDimension})`
     const params: unknown[] = [vectorLiteral]
     const conditions: string[] = []
-    conditions.push(`e."embeddingOpenai" IS NOT NULL`)
+    conditions.push(`e."embeddingOpenai_half" IS NOT NULL`)
     let paramIndex = 2
 
     if (filters?.testIds?.length) {
@@ -383,8 +384,8 @@ export class SearchService {
       SELECT
         e."testId" AS "testId",
         e.metadata AS "metadata",
-        e."embeddingOpenai" <-> $1::${vectorCast} AS "distance",
-        1.0 / (1.0 + (e."embeddingOpenai" <-> $1::${vectorCast})) AS "semanticScore",
+        e."embeddingOpenai_half" <-> $1::${vectorCast} AS "distance",
+        1.0 / (1.0 + (e."embeddingOpenai_half" <-> $1::${vectorCast})) AS "semanticScore",
         t."testName" AS "testName",
         t."status" AS "status",
         t."casandraTestId" AS "casandraTestId",
@@ -396,7 +397,7 @@ export class SearchService {
       INNER JOIN "TestCatalog" t ON t."id" = e."testId"
       LEFT JOIN "Lab" lab ON lab."id" = t."labId"
       ${whereClause}
-      ORDER BY e."embeddingOpenai" <-> $1::${vectorCast} ASC
+      ORDER BY e."embeddingOpenai_half" <-> $1::${vectorCast} ASC
       LIMIT $${paramIndex};
     `
 
