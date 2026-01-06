@@ -1,5 +1,7 @@
 import { z } from 'zod/v4'
 
+import { validateLabOrder } from './laborders.validation'
+
 import { FamilyStructureType } from './catalog'
 import { LabOrderFormSnapshot } from './order-forms'
 
@@ -343,6 +345,375 @@ export type LabOrderFamilySample = FamilySample
 export type LabOrderFamilyHistoryEntry = FamilyHistoryEntry
 export type LabOrderCollectionMethod = CollectionMethod
 
+const nonEmptyString = z.string().trim().min(1)
+// Use string-based datetime to keep JSON Schema generation happy; no z.date() to avoid to-json-schema errors.
+const dateLike = z.union([z.string().datetime(), z.string().min(1)]).nullable()
+
+const LabOrderAddressSchema = z.object({
+  line1: nonEmptyString,
+  line2: z.string().optional(),
+  city: nonEmptyString,
+  state: nonEmptyString,
+  postalCode: nonEmptyString,
+  country: z.string().optional(),
+})
+
+const PhoneSchema = z.object({
+  type: z.enum(['MOBILE', 'HOME', 'WORK', 'FAX']),
+  number: nonEmptyString,
+  extension: z.string().optional(),
+  preferred: z.boolean().optional(),
+})
+
+const ContactInfoSchema = z.object({
+  address: LabOrderAddressSchema,
+  email: z.string().optional(),
+  phones: z.array(PhoneSchema).min(1),
+  fax: z.string().optional(),
+})
+
+const SignatureSchema = z
+  .object({
+    fullName: z.string().optional(),
+    relationship: z.string().optional(),
+    method: z.enum(['DRAWN', 'TYPED', 'UPLOADED']).optional(),
+    assetId: z.string().optional(),
+    attestation: z
+      .enum(['BILLING_CONSENT', 'PROVIDER_MEDICAL_NECESSITY', 'INSURED_CONSENT', 'FAMILY_MEMBER_CONSENT'])
+      .optional(),
+    date: dateLike,
+  })
+  .passthrough()
+
+const PatientDemographicsSchema = z.object({
+  firstName: nonEmptyString,
+  lastName: nonEmptyString,
+  dateOfBirth: dateLike,
+  sexAtBirth: z.enum(['MALE', 'FEMALE', 'UNKNOWN']),
+  mrn: nonEmptyString,
+  ethnicity: z.string().optional(),
+})
+
+const PatientContactSchema = z.object({
+  address: LabOrderAddressSchema,
+  email: z.string().optional(),
+  phones: z.array(PhoneSchema).min(1),
+})
+
+const PatientSpecimenSchema = z
+  .object({
+    drawDate: dateLike,
+    collectionTime: z.string().optional(),
+    collectionMethod: z.enum(['LAB', 'KIT', 'PSC', 'MOBILE', 'OTHER']),
+    collectionMethodOther: z.string().optional(),
+    collectionLocation: nonEmptyString,
+    specialInstructions: z.string().optional(),
+    fastingRequired: z.boolean(),
+    fastingHours: z.string().optional(),
+    sampleType: z.enum(['BLOOD', 'BUCCAL', 'SALIVA', 'URINE', 'STOOL', 'TISSUE', 'OTHER', '']),
+    sampleTypeOther: z.string().optional(),
+    extractedDna: z.boolean(),
+    dnaSource: z.string().optional(),
+    logisticsNotes: z.string().optional(),
+  })
+  .passthrough()
+
+const PatientConsentSchema = z
+  .object({
+    researchOptOut: z.boolean(),
+    sampleRetention: z.enum(['UNDECIDED', 'OPT_IN', 'OPT_OUT']),
+    acmgSecondaryFindings: z.enum(['UNDECIDED', 'OPT_IN', 'OPT_OUT']),
+    patientSignature: SignatureSchema.nullable(),
+  })
+  .passthrough()
+
+const PatientSectionSchema = z
+  .object({
+    recordId: z.string().optional(),
+    ehrSource: z.string().optional(),
+    demographics: PatientDemographicsSchema,
+    contact: PatientContactSchema,
+    specimen: PatientSpecimenSchema,
+    consent: PatientConsentSchema,
+  })
+  .passthrough()
+
+const PayorDetailsSchema = z
+  .object({
+    fullName: nonEmptyString,
+    relationship: nonEmptyString,
+    contact: ContactInfoSchema,
+    signature: SignatureSchema.nullable(),
+  })
+  .passthrough()
+
+const InstitutionBillingSchema = z
+  .object({
+    institutionName: nonEmptyString,
+    attentionTo: z.string().optional(),
+    contact: ContactInfoSchema,
+  })
+  .passthrough()
+
+const InsurancePolicySchema = z
+  .object({
+    insuranceId: nonEmptyString,
+    insuranceName: nonEmptyString,
+    planName: z.string().optional(),
+    groupNumber: z.string().optional(),
+    benefitsId: z.string().optional(),
+    insuredName: nonEmptyString,
+    relationToPatient: nonEmptyString,
+    insuredDob: dateLike,
+    insuredPhone: z.string().optional(),
+    insurerState: z.string().optional(),
+    referralAuthNumber: z.string().optional(),
+    copayAmount: z.number().nullable().optional(),
+    deductibleAmount: z.number().nullable().optional(),
+  })
+  .passthrough()
+
+const BillingSectionSchema = z
+  .object({
+    mode: z.enum(['SELF_PAY', 'INSTITUTION', 'INSURANCE']),
+    usePatientForBilling: z.boolean(),
+    payor: PayorDetailsSchema.nullable(),
+    institution: InstitutionBillingSchema.nullable(),
+    primaryInsurance: InsurancePolicySchema.nullable(),
+    secondaryInsurance: InsurancePolicySchema.nullable(),
+    attachments: z.array(z.any()),
+    selfPayDetails: z
+      .object({
+        paymentMethod: nonEmptyString,
+        notes: z.string().optional(),
+      })
+      .nullable()
+      .optional(),
+    billingNotes: z.string().optional(),
+  })
+  .passthrough()
+
+const ProviderContactSchema = z
+  .object({
+    fullName: nonEmptyString,
+    title: z.string().optional(),
+    npi: nonEmptyString,
+    minc: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    fax: z.string().optional(),
+  })
+  .passthrough()
+
+const ProviderSectionSchema = z
+  .object({
+    facility: z
+      .object({
+        organizationId: z.string().nullable().optional(),
+        parentOrganizationId: z.string().nullable().optional(),
+        parentOrganizationName: z.string().optional(),
+        name: nonEmptyString,
+        contact: ContactInfoSchema,
+      })
+      .passthrough(),
+    orderingProviderId: z.string().nullable().optional(),
+    orderingProvider: ProviderContactSchema,
+    reportRecipient: z
+      .object({
+        name: z.string(),
+        contact: ContactInfoSchema,
+      })
+      .nullable()
+      .optional(),
+    providerSignature: SignatureSchema.nullable(),
+  })
+  .passthrough()
+
+const RequestedTestSchema = z
+  .object({
+    id: z.string().optional(),
+    testId: z.string().optional(),
+    testName: z.string().optional(),
+    labId: z.string().optional(),
+    labName: z.string().optional(),
+    loinc: z.string().optional(),
+    methodology: z.string().optional(),
+    turnaroundTime: z.string().optional(),
+    description: z.string().optional(),
+    testCategory: z.string().optional(),
+    testSubCategory: z.string().optional(),
+    configuration: z.any().nullable().optional(),
+  })
+  .passthrough()
+
+const IndicationEntrySchema = z.object({
+  value: z.enum([
+    'ALL_IN_ONE_EXTENDED',
+    'MCC',
+    'PRENATAL_DIAGNOSTIC',
+    'PRESYMPTOMATIC',
+    'FAMILY_HISTORY',
+    'FAMILY_VARIANT',
+    'OTHER',
+  ]),
+  otherText: z.string().optional(),
+})
+
+const OrderOptionsSchema = z
+  .object({
+    rush: z.boolean(),
+    excludeVUS: z.boolean(),
+    holdSample: z.boolean(),
+  })
+  .passthrough()
+
+const TestRequestSectionSchema = z
+  .object({
+    requestedTests: z.array(RequestedTestSchema),
+    indications: z.array(IndicationEntrySchema),
+    clinicalDiagnosis: z.string().optional(),
+    testSpecifics: z.string().optional(),
+    reflexOptions: z.array(z.string()).optional(),
+    orderOptions: OrderOptionsSchema.optional(),
+    additionalGenes: z.array(z.string()).optional(),
+  })
+  .passthrough()
+
+const IcdCodeEntrySchema = z
+  .object({
+    id: z.string().optional(),
+    code: z.string().optional(),
+    shortDescription: z.string().optional(),
+    longDescription: z.string().optional(),
+  })
+  .passthrough()
+
+const SpecimenEntrySchema = z
+  .object({
+    id: z.string().optional(),
+    specimenType: z.string().optional(),
+    specimenTypeOther: z.string().optional(),
+    collectionMethod: z.string().optional(),
+    collectionMethodOther: z.string().optional(),
+    collectionLocation: z.string().optional(),
+    drawDate: dateLike,
+    drawTime: z.string().optional(),
+    fastingRequired: z.boolean().optional(),
+    fastingHours: z.string().optional(),
+    sampleType: z.string().optional(),
+    sampleTypeOther: z.string().optional(),
+    extractedDna: z.boolean().optional(),
+    dnaSource: z.string().optional(),
+    logisticsNotes: z.string().optional(),
+    collectionNotes: z.string().optional(),
+  })
+  .passthrough()
+
+const FamilySampleSchema = z
+  .object({
+    id: z.string().optional(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    kitId: z.string().optional(),
+    comparator: z
+      .enum([
+        'MATERNAL_PARENT',
+        'MATERNAL_HALF_SIBLING',
+        'MATERNAL_GRANDPARENT',
+        'MATERNAL_AUNT_UNCLE',
+        'MATERNAL_FIRST_COUSIN',
+        'PATERNAL_PARENT',
+        'PATERNAL_HALF_SIBLING',
+        'PATERNAL_GRANDPARENT',
+        'PATERNAL_AUNT_UNCLE',
+        'PATERNAL_FIRST_COUSIN',
+      ])
+      .optional(),
+    fullName: z.string().optional(),
+    relationToPatient: z.string().optional(),
+    dateOfBirth: dateLike,
+    sexAtBirth: z.enum(['MALE', 'FEMALE', 'UNKNOWN']).optional(),
+    affectedStatus: z.enum(['AFFECTED', 'UNAFFECTED', 'UNKNOWN']).optional(),
+    specimen: SpecimenEntrySchema.optional(),
+    signature: SignatureSchema.nullable(),
+  })
+  .passthrough()
+
+const FamilyHistoryEntrySchema = z
+  .object({
+    id: z.string().optional(),
+    relationToPatient: z.string().optional(),
+    diagnosisOrSymptoms: z.string().optional(),
+    ageOfOnset: z.string().optional(),
+  })
+  .passthrough()
+
+const ClinicalHistorySchema = z
+  .object({
+    clinicalDetails: z.string().optional(),
+    clinicalPresentation: z.string().optional(),
+    clinicalTesting: z.string().optional(),
+    riskFlags: z.array(z.string()).optional(),
+    riskFlagNotes: z.string().optional(),
+    attachments: z.array(z.any()).optional(),
+  })
+  .passthrough()
+
+const AttachmentReferenceSchema = z
+  .object({
+    id: z.string().optional(),
+    category: z.string().optional(),
+    fileId: z.string().optional(),
+    fileName: z.string().optional(),
+    uploadedAt: z.string().optional(),
+    url: z.string().optional(),
+    notes: z.string().optional(),
+  })
+  .passthrough()
+
+export const LabOrderDraftSchema = z
+  .object({
+    id: z.string().optional(),
+    orderNumber: z.string().optional(),
+    orderDate: dateLike.optional(),
+    patient: PatientSectionSchema,
+    billing: BillingSectionSchema,
+    provider: ProviderSectionSchema,
+    testRequest: TestRequestSectionSchema,
+    icdCodes: z.array(IcdCodeEntrySchema).optional(),
+    specimens: z.array(SpecimenEntrySchema),
+    family: z
+      .object({
+        samples: z.array(FamilySampleSchema).optional(),
+        history: z.array(FamilyHistoryEntrySchema).optional(),
+      })
+      .optional(),
+    clinicalHistory: ClinicalHistorySchema,
+    attachments: z.array(AttachmentReferenceSchema).optional(),
+    labOrderTests: z.array(z.any()).optional(),
+    labOrderIcds: z.array(z.any()).optional(),
+    labOrderSpecimens: z.array(z.any()).optional(),
+    labOrderBilling: z.array(z.any()).optional(),
+    labOrderAttachments: z.array(z.any()).optional(),
+    labOrderStatuses: z.array(z.any()).optional(),
+    orderForms: z.array(z.any()).optional(),
+  })
+  .passthrough()
+  .superRefine((draft, ctx) => {
+    const validation = validateLabOrder(draft)
+    if (!validation.ok) {
+      validation.issues.forEach((issue) => {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: issue.message,
+          path: issue.path ?? [],
+        })
+      })
+    }
+  })
+
+export type LabOrderDraftInput = z.infer<typeof LabOrderDraftSchema>
+
 export interface Patient {
   id: string
   firstName: string | null
@@ -375,12 +746,38 @@ export interface IcdCode {
 
 export interface LabOrderTest {
   id: string
-  testCatalog: {
-    testId: string
-    labId?: string | null
-    testName: string | null
-    lab: Lab | null
-  } | null
+  testVersionId: string | null
+  testConfigurationId: string | null
+  version:
+    | {
+        id: string
+        versionNumber?: number
+        status?: string
+        test?: {
+          id: string
+          casandraTestId?: string | null
+          labId?: string | null
+          testName: string | null
+          lab: Lab | null
+        } | null
+      }
+    | null
+  configuration:
+    | {
+        id: string
+        configurationName?: string | null
+        familyStructure?: FamilyStructureType | null
+        type?: string
+      }
+    | null
+  testCatalog:
+    | {
+        testId: string
+        labId?: string | null
+        testName: string | null
+        lab: Lab | null
+      }
+    | null
 }
 
 export interface LabOrderIcd {
@@ -440,8 +837,6 @@ export interface LabOrder {
   id: string
   orderNumber: number
   accessionNumber: number
-  testVersionId: string
-  testConfigurationId: string
   patientMRN: string | null
   patientMobile: string | null
   patientEmail: string | null
@@ -526,9 +921,10 @@ export interface LabOrderSummary {
 }
 
 export interface CreateLabOrderInput {
-  patientId: string
-  testId: string
-  familyStructure: FamilyStructureType
+  status?: LabOrderStatusType
+  patientId?: string
+  testId?: string
+  familyStructure?: FamilyStructureType
   orderDate?: string
   versionId?: string
   orderingProviderId?: string
@@ -578,12 +974,50 @@ export interface PagedLabOrders {
 
 export const LabOrderStatus = z.enum([
   'DRAFT',
+  'SUBMITTED',
   'PENDING_REVIEW',
-  'APPROVED',
-  'IN_PROGRESS',
-  'COMPLETED',
+  'PRIOR_AUTH_PENDING',
+  'PRIOR_AUTH_APPROVED',
+  'SPECIMEN_SHIPPED',
+  'SPECIMEN_IN_TRANSIT',
+  'SPECIMEN_RECEIVED',
+  'ACCESSIONING_IN_PROGRESS',
+  'ACCESSIONING_CANCELLED',
+  'ACCESSIONING_FAILED',
+  'ACCESSIONING_PENDING',
+  'ACCESSIONING_PENDING_REVIEW',
+  'ACCESSIONING_PENDING_APPROVAL',
+  'ACCESSIONING_PENDING_REJECTION',
+  'ACCESSIONING_PENDING_CANCELLATION',
+  'ACCESSIONING_COMPLETED',
   'CANCELLED',
+  'WET_LAB_COMPLETED',
+  'DRY_LAB_COMPLETED',
+  'ANALYSIS_IN_PROGRESS',
+  'ANALYSIS_COMPLETED',
+  'ANALYSIS_FAILED',
+  'ANALYSIS_PENDING',
+  'ANALYSIS_PENDING_REVIEW',
+  'ANALYSIS_PENDING_APPROVAL',
+  'ANALYSIS_PENDING_REJECTION',
+  'ANALYSIS_PENDING_CANCELLATION',
+  'RESULTED',
+  'REJECTED',
+  'RESULTS_DELIVERED',
+  'RESULTS_DELIVERED_TO_PATIENT',
+  'RESULTS_DELIVERED_TO_PROVIDER',
+  'RESULTS_DELIVERED_TO_INSTITUTION',
+  'RESULTS_DELIVERED_TO_PAYOR',
+  'RESULTS_DELIVERED_TO_PAYOR_REJECTED',
+  'RESULTS_DELIVERED_TO_PAYOR_APPROVED',
+  'CPT_CODES_UPDATED',
+  'ICD_CODES_UPDATED',
+  'DOCTOR_NOTES_UPDATED',
+  'CLINICAL_NOTES_UPDATED',
+  'MEDICAL_NECESSITY_VERIFIED',
 ])
+
+export type LabOrderStatusType = z.infer<typeof LabOrderStatus>
 
 export const LabOrderPriority = z.enum(['ROUTINE', 'URGENT', 'STAT'])
 

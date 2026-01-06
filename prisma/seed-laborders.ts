@@ -1,4 +1,4 @@
-import { PrismaClient } from "@db/client";
+import { PrismaClient, $Enums } from "@db/client";
 import { randomUUID } from "node:crypto";
 
 const makeUnique = () => randomUUID().replace(/-/g, "").slice(0, 10);
@@ -98,15 +98,15 @@ async function main() {
     return;
   }
 
-  const statuses = [
-    "Draft",
-    "Submitted",
-    "Specimen Shipped",
-    "Eligibility Pending",
-    "PA Pending",
-    "Resulted",
-    "Report Received",
-    "Cancelled",
+  const statuses: $Enums.LabOrderStatusEnum[] = [
+    $Enums.LabOrderStatusEnum.DRAFT,
+    $Enums.LabOrderStatusEnum.SUBMITTED,
+    $Enums.LabOrderStatusEnum.SPECIMEN_SHIPPED,
+    $Enums.LabOrderStatusEnum.PRIOR_AUTH_PENDING,
+    $Enums.LabOrderStatusEnum.PENDING_REVIEW, // eligibility pending -> pending review
+    $Enums.LabOrderStatusEnum.RESULTED,
+    $Enums.LabOrderStatusEnum.RESULTS_DELIVERED, // report received -> results delivered
+    $Enums.LabOrderStatusEnum.CANCELLED,
   ];
 
   // 3) Create 10 LabOrders
@@ -141,8 +141,6 @@ async function main() {
       data: {
         orderNumber,
         // leave accessionNumber to autoincrement
-        testVersionId: version.id,
-        testConfigurationId: config.id,
         orderingProviderId,
         patientId: patient.id,
         patientMRN,
@@ -185,15 +183,14 @@ async function main() {
       },
     });
 
-    // LabOrderTest - use config.testId (TestCatalog id)
-    if (config.testId) {
-      await prisma.labOrderTest.create({
-        data: {
-          labOrderId: labOrder.id,
-          testId: config.testId,
-        },
-      });
-    }
+    // LabOrderTest - capture version/config association
+    await prisma.labOrderTest.create({
+      data: {
+        labOrderId: labOrder.id,
+        testVersionId: version.id,
+        testConfigurationId: config.id,
+      },
+    })
 
     // LabOrderStatus
     const status = statuses[Math.floor(Math.random() * statuses.length)];

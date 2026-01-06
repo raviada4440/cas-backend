@@ -34,9 +34,8 @@
       "@test/*": [
         "./*"
       ],
-      "@db/client": [
-        "../prisma/client"
-      ]
+      "@db/client": ["../prisma"],
+      "@db/client/*": ["../prisma/*"]
     }
   },
   "include": [

@@ -29,12 +29,9 @@
       "@shared/contracts/*": [
         "../../packages/shared-contracts/src/*"
       ],
-      "@db/client": [
-        "../../prisma/client"
-      ],
-      "@db/client/zod": [
-        "../../prisma/dist/zod"
-      ]
+      "@db/client": ["../../prisma"],
+      "@db/client/*": ["../../prisma/*"],
+      "@db/client/zod": ["../../prisma/zod"]
     }
   },
   "exclude": [

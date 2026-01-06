@@ -191,6 +191,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       })) as string
     }
 
+    const issues = (normalizedBody as any)?.issues
+    const issuesByStep = (normalizedBody as any)?.issuesByStep
+
     response
       .status(status)
       .type('application/json')
@@ -203,6 +206,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
               ? Number(normalizedBody.code)
               : status,
         message: localizedMessage,
+        ...(issues ? { issues } : {}),
+        ...(issuesByStep ? { issuesByStep } : {}),
       })
   }
 }

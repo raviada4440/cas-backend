@@ -374,13 +374,33 @@ export const normalizeLabOrderDraft = (raw: unknown): NormalizedLabOrderDraft =>
   }
 
   const billingRecord = ensureRecord(draft.billing)
+  const applyPatientDobFallback = (
+    insurance: NormalizedInsurance | null,
+    fallbackDob: Date | null,
+  ): NormalizedInsurance | null => {
+    if (!insurance) {
+      return null
+    }
+    const relation = (insurance.relationToPatient ?? '').toUpperCase()
+    if (!insurance.insuredDob && fallbackDob && (relation === 'SELF' || relation === 'PATIENT')) {
+      return { ...insurance, insuredDob: fallbackDob }
+    }
+    return insurance
+  }
+
   const billing: NormalizedBilling = {
     mode: toTrimmedString(billingRecord.mode),
     usePatientForBilling: Boolean(billingRecord.usePatientForBilling),
     payorFullName: toTrimmedString(ensureRecord(billingRecord.payor).fullName),
     payorRelationship: toTrimmedString(ensureRecord(billingRecord.payor).relationship),
-    primaryInsurance: normalizeInsurance(billingRecord.primaryInsurance),
-    secondaryInsurance: normalizeInsurance(billingRecord.secondaryInsurance),
+    primaryInsurance: applyPatientDobFallback(
+      normalizeInsurance(billingRecord.primaryInsurance),
+      toOptionalDate(demographics.dateOfBirth),
+    ),
+    secondaryInsurance: applyPatientDobFallback(
+      normalizeInsurance(billingRecord.secondaryInsurance),
+      toOptionalDate(demographics.dateOfBirth),
+    ),
     selfPayDetails: (() => {
       const details = ensureRecord(billingRecord.selfPayDetails)
       if (Object.keys(details).length === 0) {

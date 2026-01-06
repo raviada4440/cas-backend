@@ -10,6 +10,7 @@ import {
   Put,
   Query,
   Req,
+  Logger,
   UnprocessableEntityException,
 } from '@nestjs/common'
 
@@ -44,6 +45,8 @@ const FAMILY_STRUCTURE_VALUES = FamilyStructure.options as FamilyStructureType[]
 @ApiTags('Orders - Lab Orders')
 @ApiController('laborders')
 export class LabOrdersController {
+  private readonly logger = new Logger(LabOrdersController.name)
+
   constructor(private readonly labOrdersService: LabOrdersService) {}
 
   @Get('/')
@@ -61,15 +64,36 @@ export class LabOrdersController {
   @Post('/')
   @ApiOperation({ summary: 'Create a lab order' })
   create(@Body() body: CreateLabOrderRequestDto, @Req() request: AuthenticatedRequest) {
-    this.ensureValidLabOrderDraft(body.labOrder)
-
+    const statusNormalized = (body.status ?? 'DRAFT').toString().toUpperCase()
+    const isDraft = statusNormalized === 'DRAFT'
+    // High-visibility log to confirm draft detection
+    const logLine = `[LabOrdersController] create: status=${
+      body.status ?? 'undefined'
+    } normalized=${statusNormalized} isDraft=${isDraft}`
+    this.logger.warn(logLine)
+    console.log(logLine)
+    if (!isDraft) {
+      this.ensureValidLabOrderDraft(statusNormalized, body.labOrder)
+    }
     const createRequest = body as CreateLabOrderRequest
 
     const normalized = normalizeLabOrderDraft(createRequest.labOrder)
 
-    const testId = this.requireIdentifier(createRequest.testId, 'testId')
-    const patientId = this.requireIdentifier(createRequest.patientId, 'patientId')
-    const { dimension, value: variantValue } = this.resolveVariantDimension(createRequest)
+    const testId = isDraft
+      ? this.normalizeIdentifier(createRequest.testId)
+      : this.requireIdentifier(createRequest.testId, 'testId')
+    const patientId = isDraft
+      ? this.normalizeIdentifier(createRequest.patientId)
+      : this.requireIdentifier(createRequest.patientId, 'patientId')
+
+    // For drafts, skip variant resolution entirely; for non-draft enforce it
+    let dimension: VariantDimensionType | null = null
+    let variantValue: string | null = null
+    if (!isDraft) {
+      const resolved = this.resolveVariantDimension(createRequest)
+      dimension = resolved.dimension
+      variantValue = resolved.value
+    }
 
     const orderDateObject =
       normalized.orderDate ??
@@ -105,8 +129,9 @@ export class LabOrdersController {
         : this.normalizeFamilyStructure(createRequest.familyStructure)
 
     const createInput: CreateLabOrderInput = {
-      patientId,
-      testId,
+      status: statusNormalized as CreateLabOrderInput['status'],
+      patientId: patientId ?? undefined,
+      testId: testId ?? undefined,
       familyStructure,
       orderDate: orderDateObject.toISOString(),
       versionId,
@@ -114,14 +139,14 @@ export class LabOrdersController {
       treatingProviderId,
       organizationId,
       orderNotes: normalized.snapshot,
-      testIds: this.buildTestIds(testId, normalized.resolvedTestIds),
-      icdIds: normalized.resolvedIcdIds,
+      testIds: testId ? this.buildTestIds(testId, normalized.resolvedTestIds) : undefined,
+      icdIds: normalized.resolvedIcdIds?.length ? normalized.resolvedIcdIds : undefined,
       specimens,
     }
 
     return this.labOrdersService.create(createInput, this.getScope(request), {
-      variantDimension: dimension,
-      variantValue,
+      variantDimension: dimension ?? undefined,
+      variantValue: variantValue ?? undefined,
       orderDate: orderDateObject,
       versionId,
       derivedLabId: derivedLabId ?? null,
@@ -137,7 +162,6 @@ export class LabOrdersController {
   ) {
     let normalized: ReturnType<typeof normalizeLabOrderDraft> | null = null
     if (body.labOrder) {
-      this.ensureValidLabOrderDraft(body.labOrder)
       normalized = normalizeLabOrderDraft(body.labOrder)
     }
 
@@ -195,7 +219,23 @@ export class LabOrdersController {
     return this.labOrdersService.delete(params.labOrderId, this.getScope(request))
   }
 
-  private ensureValidLabOrderDraft(raw: CreateLabOrderRequest['labOrder']) {
+  private ensureValidLabOrderDraft(
+    status: string | undefined,
+    raw: CreateLabOrderRequest['labOrder'],
+  ) {
+    const normalizedStatus = (status ?? 'DRAFT').toString().toUpperCase()
+    const logLine = `[LabOrdersController] ensureValidLabOrderDraft invoked: status=${
+      status ?? 'undefined'
+    } normalized=${normalizedStatus}`
+    this.logger.warn(logLine)
+    console.log(logLine)
+    if (normalizedStatus === 'DRAFT') {
+      this.logger.warn('[LabOrdersController] skipping draft validation')
+      console.log('[LabOrdersController] skipping draft validation')
+      return
+    }
+    this.logger.warn('[LabOrdersController] running validateLabOrder for non-draft')
+    console.log('[LabOrdersController] running validateLabOrder for non-draft')
     const validation = validateLabOrder(raw)
     if (!validation.ok) {
       throw new UnprocessableEntityException({

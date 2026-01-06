@@ -212,6 +212,50 @@ enum SpecimenType {
   WHOLE_BLOOD_OR_SALIVA
 }
 
+enum LabOrderStatusEnum {
+  DRAFT
+  SUBMITTED
+  PENDING_REVIEW
+  PRIOR_AUTH_PENDING
+  PRIOR_AUTH_APPROVED
+  SPECIMEN_SHIPPED
+  SPECIMEN_IN_TRANSIT
+  SPECIMEN_RECEIVED
+  ACCESSIONING_IN_PROGRESS
+  ACCESSIONING_CANCELLED
+  ACCESSIONING_FAILED
+  ACCESSIONING_PENDING
+  ACCESSIONING_PENDING_REVIEW
+  ACCESSIONING_PENDING_APPROVAL
+  ACCESSIONING_PENDING_REJECTION
+  ACCESSIONING_PENDING_CANCELLATION
+  ACCESSIONING_COMPLETED
+  CANCELLED
+  WET_LAB_COMPLETED
+  DRY_LAB_COMPLETED
+  ANALYSIS_IN_PROGRESS
+  ANALYSIS_COMPLETED
+  ANALYSIS_FAILED
+  ANALYSIS_PENDING
+  ANALYSIS_PENDING_REVIEW
+  ANALYSIS_PENDING_APPROVAL
+  ANALYSIS_PENDING_REJECTION
+  ANALYSIS_PENDING_CANCELLATION
+  RESULTED
+  REJECTED
+  RESULTS_DELIVERED
+  RESULTS_DELIVERED_TO_PATIENT
+  RESULTS_DELIVERED_TO_PROVIDER
+  RESULTS_DELIVERED_TO_INSTITUTION
+  RESULTS_DELIVERED_TO_PAYOR
+  RESULTS_DELIVERED_TO_PAYOR_REJECTED
+  RESULTS_DELIVERED_TO_PAYOR_APPROVED
+  CPT_CODES_UPDATED
+  ICD_CODES_UPDATED
+  DOCTOR_NOTES_UPDATED
+  CLINICAL_NOTES_UPDATED
+  MEDICAL_NECESSITY_VERIFIED
+}
 // All models from casandra-order with PostgreSQL and camelCase conversion
 model Account {
   id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -455,8 +499,6 @@ model LabOrder {
   id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   orderNumber          Int       @default(autoincrement())
   accessionNumber      Int       @default(autoincrement())
-  testVersionId        String    @db.Uuid
-  testConfigurationId  String    @db.Uuid
   labId                String?   @db.Uuid
   orderingProviderId   String?   @db.Uuid
   treatingProviderId   String?   @db.Uuid
@@ -481,8 +523,6 @@ model LabOrder {
   treatingProvider              Provider?                      @relation("LabOrder_TreatingProviderIdToProvider", fields: [treatingProviderId], references: [id], onDelete: NoAction)
   patient                       Patient?                       @relation(fields: [patientId], references: [id], onDelete: NoAction)
   organization                  Organization?                  @relation(fields: [organizationId], references: [id], onDelete: NoAction)
-  version                       TestCatalogVersion             @relation(fields: [testVersionId], references: [id], onDelete: Restrict)
-  configuration                 TestCatalogConfiguration       @relation(fields: [testConfigurationId], references: [id], onDelete: Restrict)
   lab                           Lab?                           @relation(fields: [labId], references: [id], onDelete: NoAction)
   labOrderAttachments           LabOrderAttachment[]
   labOrderBilling               LabOrderBilling[]
@@ -496,8 +536,6 @@ model LabOrder {
 
   @@unique([orderNumber])
   @@unique([accessionNumber])
-  @@index([testVersionId])
-  @@index([testConfigurationId])
   @@index([orderingProviderId])
   @@index([labId])
   @@index([organizationId])
@@ -610,30 +648,34 @@ model LabOrderSponsoredTestConsent {
 }
 
 model LabOrderStatus {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  labOrderId String?   @db.Uuid
-  status     String?   @db.VarChar(45)
-  statusDate DateTime? @db.Timestamp(0)
-  createdAt  DateTime  @default(now()) @db.Timestamp(0)
-  updatedAt  DateTime  @updatedAt @db.Timestamp(0)
+  id         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId String?             @db.Uuid
+  status     LabOrderStatusEnum?
+  statusDate DateTime?           @db.Timestamp(0)
+  createdAt  DateTime            @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime            @updatedAt @db.Timestamp(0)
 
   labOrder LabOrder? @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
 
   @@index([labOrderId])
 }
 
-model LabOrderTest {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  labOrderId String?  @db.Uuid
-  testId     String?  @db.Uuid
-  createdAt  DateTime @default(now()) @db.Timestamp(0)
-  updatedAt  DateTime @updatedAt @db.Timestamp(0)
 
-  labOrder    LabOrder?    @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
-  testCatalog TestCatalog? @relation(fields: [testId], references: [id], onDelete: NoAction)
+model LabOrderTest {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId          String?  @db.Uuid
+  testVersionId       String?  @db.Uuid
+  testConfigurationId String?  @db.Uuid
+  createdAt           DateTime @default(now()) @db.Timestamp(0)
+  updatedAt           DateTime @updatedAt @db.Timestamp(0)
+
+  labOrder      LabOrder?                 @relation(fields: [labOrderId], references: [id], onDelete: NoAction)
+  version       TestCatalogVersion?       @relation("LabOrderTestVersion", fields: [testVersionId], references: [id], onDelete: NoAction)
+  configuration TestCatalogConfiguration? @relation("LabOrderTestConfiguration", fields: [testConfigurationId], references: [id], onDelete: SetNull)
 
   @@index([labOrderId])
-  @@index([testId])
+  @@index([testVersionId])
+  @@index([testConfigurationId])
 }
 
 model LoincComponentHierarchy {
@@ -957,7 +999,6 @@ model TestCatalog {
 
   // Other relations (keep your existing definitions elsewhere)
   lab                       Lab?                       @relation(fields: [labId], references: [id], onDelete: NoAction)
-  labOrderTests             LabOrderTest[]
   organizationFavoriteTests OrganizationFavoriteTest[]
   providerFavoriteTests     ProviderFavoriteTest[]
   sponsoredTests            SponsoredTest[]
@@ -1029,7 +1070,7 @@ model TestCatalogVersion {
   orderForms       TestCatalogVersionOrderForm[]
   consents         TestCatalogVersionConsent[]
   consentAuditLogs ConsentAuditLog[]
-  labOrders        LabOrder[]
+  labOrderTests    LabOrderTest[]                  @relation("LabOrderTestVersion")
 
   // Relations
   test            TestCatalog                @relation(fields: [testId], references: [id], onDelete: Cascade)
@@ -1416,7 +1457,7 @@ model TestCatalogConfiguration {
   version                 TestCatalogVersion?           @relation(fields: [versionId], references: [id], onDelete: SetNull)
   consents                TestCatalogVersionConsent[]
   approvals               TestCatalogApproval[]
-  labOrders               LabOrder[]
+  labOrderTests           LabOrderTest[]                @relation("LabOrderTestConfiguration")
   cptOverrides            TestConfigCptCode[]
   orderLoincOverrides     TestConfigOrderLoinc[]
   resultLoincOverrides    TestConfigResultLoinc[]

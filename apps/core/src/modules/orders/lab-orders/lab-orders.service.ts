@@ -27,9 +27,9 @@ type TenantScope = {
 type LabOrderBillingContract = NonNullable<LabOrder['labOrderBilling']>[number]
 type ClinicalAttachmentContract = NonNullable<LabOrder['clinicalAttachments']>[number]
 
-type CreateLabOrderExtras = {
-  variantDimension: VariantDimensionType
-  variantValue: string
+export type CreateLabOrderExtras = {
+  variantDimension?: VariantDimensionType
+  variantValue?: string
   orderDate: Date
   versionId?: string
   derivedLabId?: string | null
@@ -50,27 +50,6 @@ const labOrderSummaryArgs = Prisma.validator<Prisma.LabOrderDefaultArgs>()({
         lastName: true,
       },
     },
-    configuration: {
-      select: {
-        configurationName: true,
-      },
-    },
-    version: {
-      select: {
-        versionNumber: true,
-        test: {
-          select: {
-            casandraTestId: true,
-            testName: true,
-            lab: {
-              select: {
-                labName: true,
-              },
-            },
-          },
-        },
-      },
-    },
     labOrderStatuses: {
       orderBy: { statusDate: 'desc' },
       take: 1,
@@ -87,10 +66,39 @@ const labOrderSummaryArgs = Prisma.validator<Prisma.LabOrderDefaultArgs>()({
       },
     },
     labOrderTests: {
-      select: {
-        id: true,
+      include: {
+        version: {
+          select: {
+            id: true,
+            versionNumber: true,
+            status: true,
+            test: {
+              select: {
+                id: true,
+                casandraTestId: true,
+                labId: true,
+                testName: true,
+                lab: {
+                  select: {
+                    id: true,
+                    labName: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        configuration: {
+          select: {
+            id: true,
+            configurationName: true,
+            type: true,
+            dimension: true,
+            dimensionValue: true,
+          },
+        },
       },
-    },
+    } as any,
     labOrderIcds: {
       select: {
         id: true,
@@ -139,57 +147,6 @@ const labOrderDetailArgs = Prisma.validator<Prisma.LabOrderDefaultArgs>()({
         orgZip: true,
       },
     },
-    configuration: {
-      select: {
-        id: true,
-        configurationName: true,
-        type: true,
-        dimension: true,
-        dimensionValue: true,
-      },
-    },
-    version: {
-      select: {
-        id: true,
-        versionNumber: true,
-        status: true,
-        turnAroundTime: true,
-        orderLoincs: {
-          select: {
-            loincCode: true,
-          },
-        },
-        specimens: {
-          select: {
-            id: true,
-            displayName: true,
-            isPrimary: true,
-            specimenType: true,
-            specimenRequirements: true,
-            volume: true,
-            minimumVolume: true,
-            container: true,
-            specialInstructions: true,
-            alternateContainers: true,
-            preferredVolume: true,
-          },
-        },
-        test: {
-          select: {
-            labId: true,
-            casandraTestId: true,
-            testName: true,
-            lab: {
-              select: {
-                id: true,
-                labName: true,
-                labCode: true,
-              },
-            },
-          },
-        },
-      },
-    },
     labOrderStatuses: {
       orderBy: { statusDate: 'desc' },
       select: {
@@ -199,24 +156,61 @@ const labOrderDetailArgs = Prisma.validator<Prisma.LabOrderDefaultArgs>()({
       },
     },
     labOrderTests: {
-      select: {
-        id: true,
-        testCatalog: {
+      include: {
+        version: {
           select: {
             id: true,
-            labId: true,
-            testName: true,
-            lab: {
+            versionNumber: true,
+            status: true,
+            turnAroundTime: true,
+            orderLoincs: {
+              select: {
+                loincCode: true,
+              },
+            },
+            specimens: {
               select: {
                 id: true,
-                labName: true,
-                labCode: true,
+                displayName: true,
+                isPrimary: true,
+                specimenType: true,
+                specimenRequirements: true,
+                volume: true,
+                minimumVolume: true,
+                container: true,
+                specialInstructions: true,
+                alternateContainers: true,
+                preferredVolume: true,
+              },
+            },
+            test: {
+              select: {
+                id: true,
+                labId: true,
+                casandraTestId: true,
+                testName: true,
+                lab: {
+                  select: {
+                    id: true,
+                    labName: true,
+                    labCode: true,
+                  },
+                },
               },
             },
           },
         },
+        configuration: {
+          select: {
+            id: true,
+            configurationName: true,
+            type: true,
+            dimension: true,
+            dimensionValue: true,
+          },
+        },
       },
-    },
+    } as any,
     labOrderIcds: {
       select: {
         id: true,
@@ -349,14 +343,17 @@ export class LabOrdersService {
     scope: TenantScope,
     extras: CreateLabOrderExtras,
   ): Promise<LabOrder> {
-    const { variantDimension, variantValue, orderDate, versionId, derivedLabId } = extras
+    // Default path: treat as final (non-draft). Drafts should call createDraftLabOrder explicitly.
+    return this.createFinalLabOrder(input, scope, extras)
+  }
 
-    const variantContext = await this.resolveVariantContext(input.testId, {
-      dimension: variantDimension,
-      dimensionValue: variantValue,
-      orderDate,
-      versionId,
-    })
+  async createDraftLabOrder(
+    input: CreateLabOrderInput,
+    scope: TenantScope,
+    extras: CreateLabOrderExtras,
+  ): Promise<LabOrder> {
+    const { variantDimension, variantValue, orderDate, versionId, derivedLabId } = extras
+    const status = input.status ?? 'DRAFT'
 
     const normalizedScope = this.normalizeScope(scope)
     let organizationId = input.organizationId ?? null
@@ -375,12 +372,21 @@ export class LabOrdersService {
       throw new BizException(ErrorCodeEnum.OrganizationNotFound)
     }
 
+    const hasTest = Boolean(input.testId)
+    const canResolveVariant = hasTest && variantDimension && variantValue
+    const variantContext = canResolveVariant
+      ? await this.resolveVariantContext(input.testId!, {
+          dimension: variantDimension,
+          dimensionValue: variantValue,
+          orderDate,
+          versionId,
+        })
+      : null
+
     const created = await this.db.prisma.$transaction(async (tx) => {
       const labOrder = await tx.labOrder.create({
         data: {
-          patientId: input.patientId,
-          testVersionId: variantContext.version.id,
-          testConfigurationId: variantContext.configuration.id,
+          patientId: input.patientId ?? null,
           orderingProviderId: input.orderingProviderId ?? null,
           treatingProviderId: input.treatingProviderId ?? null,
           organizationId,
@@ -390,13 +396,13 @@ export class LabOrdersService {
         },
       })
 
-      const testIds = Array.from(new Set([input.testId, ...(input.testIds ?? [])]))
-      if (testIds.length) {
-        await tx.labOrderTest.createMany({
-          data: testIds.map((testId) => ({
+      if (variantContext) {
+        await tx.labOrderTest.create({
+          data: {
             labOrderId: labOrder.id,
-            testId,
-          })),
+            testVersionId: variantContext.version.id,
+            testConfigurationId: variantContext.configuration.id,
+          },
         })
       }
 
@@ -421,7 +427,7 @@ export class LabOrdersService {
         })
       }
 
-      if (variantContext.orderForms.length) {
+      if (variantContext && variantContext.orderForms.length) {
         const formInputs = variantContext.orderForms
           .filter((form) => form.sectionName && form.templateId)
           .map((form, index) => ({
@@ -444,7 +450,121 @@ export class LabOrdersService {
       await tx.labOrderStatus.create({
         data: {
           labOrderId: labOrder.id,
-          status: 'DRAFT',
+          status,
+          statusDate: new Date(),
+        },
+      })
+
+      return labOrder
+    })
+
+    return this.detail(created.id, scope)
+  }
+
+  async createFinalLabOrder(
+    input: CreateLabOrderInput,
+    scope: TenantScope,
+    extras: CreateLabOrderExtras,
+  ): Promise<LabOrder> {
+    const { variantDimension, variantValue, orderDate, versionId, derivedLabId } = extras
+    const status = input.status ?? 'DRAFT'
+
+    const hasTest = Boolean(input.testId)
+    const canResolveVariant = hasTest && variantDimension && variantValue
+    const variantContext = canResolveVariant
+      ? await this.resolveVariantContext(input.testId!, {
+          dimension: variantDimension,
+          dimensionValue: variantValue,
+          orderDate,
+          versionId,
+        })
+      : null
+
+    const normalizedScope = this.normalizeScope(scope)
+    let organizationId = input.organizationId ?? null
+
+    if (
+      !organizationId &&
+      !normalizedScope.isSuperAdmin &&
+      normalizedScope.tenantIds.length === 1
+    ) {
+      organizationId = normalizedScope.tenantIds[0]
+    }
+
+    if (organizationId) {
+      await this.ensureOrganizationAccess(organizationId, scope)
+    } else if (!normalizedScope.isSuperAdmin && normalizedScope.tenantIds.length === 0) {
+      throw new BizException(ErrorCodeEnum.OrganizationNotFound)
+    }
+
+    const created = await this.db.prisma.$transaction(async (tx) => {
+      const labOrder = await tx.labOrder.create({
+        data: {
+          patientId: input.patientId ?? null,
+          orderingProviderId: input.orderingProviderId ?? null,
+          treatingProviderId: input.treatingProviderId ?? null,
+          organizationId,
+          labId: derivedLabId ?? null,
+          orderDate,
+          orderNotes: input.orderNotes ?? null,
+        },
+      })
+
+      if (variantContext) {
+        await tx.labOrderTest.create({
+          data: {
+            labOrderId: labOrder.id,
+            testVersionId: variantContext.version.id,
+            testConfigurationId: variantContext.configuration.id,
+          },
+        })
+      }
+
+      if (input.icdIds?.length) {
+        await tx.labOrderIcd.createMany({
+          data: input.icdIds.map((icdId) => ({
+            labOrderId: labOrder.id,
+            icdId,
+          })),
+        })
+      }
+
+      if (input.specimens?.length) {
+        await tx.labOrderSpecimen.createMany({
+          data: input.specimens.map((specimen) => ({
+            labOrderId: labOrder.id,
+            specimenType: specimen.specimenType,
+            collectedDate: this.toDate(specimen.collectedDate),
+            specimenCount: specimen.specimenCount ?? null,
+            bodySite: specimen.bodySite ?? null,
+          })),
+        })
+      }
+
+      if (variantContext && variantContext.orderForms.length) {
+        const formInputs = variantContext.orderForms
+          .filter((form) => form.sectionName && form.templateId)
+          .map((form, index) => ({
+            labOrderId: labOrder.id,
+            versionOrderFormId: form.assignmentId ?? null,
+            orderFormTemplateId: form.templateId,
+            sectionName: form.sectionName,
+            templateName: form.templateName ?? null,
+            displayOrder: form.displayOrder ?? index,
+            formSchema: this.toPrismaJson(form.formSchema),
+            layoutSchema: this.toPrismaJson(form.layoutSchema),
+            responses: Prisma.JsonNull,
+          }))
+
+        if (formInputs.length) {
+          await tx.labOrderForm.createMany({ data: formInputs })
+        }
+      }
+
+      await tx.labOrderStatus.create({
+        data: {
+          labOrderId: labOrder.id,
+          status,
           statusDate: new Date(),
         },
       })
@@ -675,7 +795,9 @@ export class LabOrdersService {
     const where: Prisma.LabOrderWhereInput = {}
 
     if (query.labId) {
-      where.configuration = { test: { labId: query.labId } }
+      where.labOrderTests = {
+        some: { version: { is: { test: { labId: query.labId } } } },
+      } as any
     }
 
     if (query.providerId) {
@@ -683,10 +805,13 @@ export class LabOrdersService {
     }
 
     if (query.status) {
-      where.labOrderStatuses = {
-        some: {
-          status: query.status,
-        },
+      const allowedStatuses = Object.values($Enums.LabOrderStatusEnum)
+      if (allowedStatuses.includes(query.status as $Enums.LabOrderStatusEnum)) {
+        where.labOrderStatuses = {
+          some: {
+            status: query.status as $Enums.LabOrderStatusEnum,
+          },
+        }
       }
     }
 
@@ -1257,6 +1382,9 @@ export class LabOrdersService {
   private mapSummary(order: LabOrderSummaryPayload): LabOrderSummary {
     const latestStatus = order.labOrderStatuses[0]
     const billing = order.labOrderBilling[0]
+    const primaryTest = order.labOrderTests[0] as any
+    const version = primaryTest?.version as any
+    const test = version?.test as any
     const providerNameParts = [
       order.orderingProvider?.firstName,
       order.orderingProvider?.lastName,
@@ -1276,9 +1404,9 @@ export class LabOrdersService {
         : null,
       status: latestStatus?.status ?? null,
       providerName,
-      labName: order.version?.test?.lab?.labName ?? null,
-      casandraTestId: order.version?.test?.casandraTestId ?? null,
-      versionNumber: order.version?.versionNumber ?? null,
+      labName: test?.lab?.labName ?? null,
+      casandraTestId: test?.casandraTestId ?? null,
+      versionNumber: version?.versionNumber ?? null,
       totalCost: billing?.copayAmount ? Number(billing.copayAmount) : null,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
@@ -1344,12 +1472,15 @@ export class LabOrdersService {
           }
         : null)
 
+    const primaryTest = order.labOrderTests[0] as any
+    const primaryVersion = (primaryTest?.version ?? null) as any
+    const primaryConfig = (primaryTest?.configuration ?? null) as any
+    const primaryTestInfo = (primaryVersion?.test ?? null) as any
+
     return {
       id: order.id,
       orderNumber: order.orderNumber,
       accessionNumber: order.accessionNumber,
-      testVersionId: order.testVersionId,
-      testConfigurationId: order.testConfigurationId,
       patientMRN: patientMRN ?? null,
       patientMobile:
         order.patientMobile ??
@@ -1367,7 +1498,7 @@ export class LabOrdersService {
       riskFlags,
       riskFlagNotes,
       clinicalAttachments,
-      labId: order.labId ?? order.version?.test?.labId ?? this.toOptionalString(snapshot?.labId),
+      labId: order.labId ?? primaryTestInfo?.labId ?? this.toOptionalString(snapshot?.labId),
       organizationId: order.organizationId ?? null,
       orderingProviderId: order.orderingProviderId ?? null,
       treatingProviderId: order.treatingProviderId ?? null,
@@ -1411,48 +1542,88 @@ export class LabOrdersService {
             orgZip: order.organization.orgZip ?? null,
           }
         : null,
-      lab: order.version?.test?.lab
+      lab: primaryTestInfo?.lab
         ? {
-            id: order.version.test.lab.id,
-            labName: order.version.test.lab.labName ?? null,
+            id: primaryTestInfo.lab.id,
+            labName: primaryTestInfo.lab.labName ?? null,
           }
         : null,
-      version: order.version
+      version: primaryVersion
         ? {
-            id: order.version.id,
-            status: order.version.status ?? undefined,
-            versionNumber: order.version.versionNumber ?? undefined,
+            id: primaryVersion.id,
+            status: primaryVersion.status ?? undefined,
+            versionNumber: primaryVersion.versionNumber ?? undefined,
           }
         : null,
-      configuration: order.configuration
+      configuration: primaryConfig
         ? {
-            id: order.configuration.id,
-            configurationName: order.configuration.configurationName ?? null,
+            id: primaryConfig.id,
+            configurationName: primaryConfig.configurationName ?? null,
             familyStructure:
-              order.configuration.dimension === 'FAMILY_STRUCTURE' &&
-              order.configuration.dimensionValue
-                ? (order.configuration.dimensionValue as FamilyStructureType)
+              primaryConfig.dimension === 'FAMILY_STRUCTURE' && primaryConfig.dimensionValue
+                ? (primaryConfig.dimensionValue as FamilyStructureType)
                 : null,
-            type: order.configuration.type ?? undefined,
+            type: primaryConfig.type ?? undefined,
           }
         : null,
-      labOrderTests: order.labOrderTests.map((test) => ({
-        id: test.id,
-        testCatalog: test.testCatalog
-          ? {
-              testId: test.testCatalog.id,
-              labId: test.testCatalog.labId ?? undefined,
-              testName: test.testCatalog.testName ?? null,
-              lab: test.testCatalog.lab
-                ? {
-                    id: test.testCatalog.lab.id,
-                    labName: test.testCatalog.lab.labName ?? null,
-                    labCode: test.testCatalog.lab.labCode ?? null,
-                  }
-                : null,
-            }
-          : null,
-      })),
+      labOrderTests: order.labOrderTests.map((test) => {
+        const version = (test as any).version as any
+        const configuration = (test as any).configuration as any
+        const testInfo = version?.test as any
+
+        return {
+          id: test.id,
+          testVersionId: (test as any).testVersionId ?? null,
+          testConfigurationId: (test as any).testConfigurationId ?? null,
+          version: version
+            ? {
+                id: version.id,
+                versionNumber: version.versionNumber ?? undefined,
+                status: version.status ?? undefined,
+                test: testInfo
+                  ? {
+                      id: testInfo.id,
+                      casandraTestId: testInfo.casandraTestId ?? null,
+                      labId: testInfo.labId ?? null,
+                      testName: testInfo.testName ?? null,
+                      lab: testInfo.lab
+                        ? {
+                            id: testInfo.lab.id,
+                            labName: testInfo.lab.labName ?? null,
+                            labCode: testInfo.lab.labCode ?? null,
+                          }
+                        : null,
+                    }
+                  : null,
+              }
+            : null,
+          configuration: configuration
+            ? {
+                id: configuration.id,
+                configurationName: configuration.configurationName ?? null,
+                familyStructure:
+                  configuration.dimension === 'FAMILY_STRUCTURE' && configuration.dimensionValue
+                    ? (configuration.dimensionValue as FamilyStructureType)
+                    : null,
+                type: configuration.type ?? undefined,
+              }
+            : null,
+          testCatalog: testInfo
+            ? {
+                testId: testInfo.id,
+                labId: testInfo.labId ?? undefined,
+                testName: testInfo.testName ?? null,
+                lab: testInfo.lab
+                  ? {
+                      id: testInfo.lab.id,
+                      labName: testInfo.lab.labName ?? null,
+                      labCode: testInfo.lab.labCode ?? null,
+                    }
+                  : null,
+              }
+            : null,
+        }
+      }),
       labOrderIcds: order.labOrderIcds.map((icd) => ({
         id: icd.id,
         icd: icd.icd

@@ -3,22 +3,19 @@ import { z } from 'zod'
 
 import {
   CreateLabOrderInput as CreateLabOrderInputContract,
+  LabOrderDraftSchema,
   LabOrderSearchQuery as LabOrderSearchQueryContract,
+  LabOrderStatus,
   UpdateLabOrderInput as UpdateLabOrderInputContract,
 } from '@shared/contracts/laborders'
 import { FamilyStructure } from '@shared/contracts/catalog'
 
 const uuid = () => z.string().uuid()
 
-const labOrderObjectSchema = z
-  .unknown()
-  .refine((value) => value !== null && typeof value === 'object', {
-    message: 'labOrder must be an object',
-  })
-
 export const CreateLabOrderRequestSchema = z
   .object({
-    testId: z.string().min(1),
+    status: LabOrderStatus.optional(),
+    testId: z.string().min(1).optional(),
     versionId: z.string().min(1).optional(),
     organizationId: z.string().min(1).optional(),
     labOrderId: z.string().min(1).optional(),
@@ -30,9 +27,36 @@ export const CreateLabOrderRequestSchema = z
     dimension: z.string().optional(),
     dimensionValue: z.string().optional(),
     familyStructure: z.string().optional(),
-    labOrder: labOrderObjectSchema,
+    // Accept any object for labOrder at DTO; controller handles draft/non-draft validation
+    labOrder: z.object({}).passthrough(),
   })
   .strict()
+  .superRefine((val, ctx) => {
+    const status = val.status ?? 'DRAFT'
+    if (status !== 'DRAFT') {
+      if (!val.testId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'testId is required',
+          path: ['testId'],
+        })
+      }
+      if (!val.patientId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'patientId is required',
+          path: ['patientId'],
+        })
+      }
+      if (!val.familyStructure) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'familyStructure is required',
+          path: ['familyStructure'],
+        })
+      }
+    }
+  })
 
 export class CreateLabOrderRequestDto extends createZodDto(CreateLabOrderRequestSchema) {}
 export type CreateLabOrderRequest = z.infer<typeof CreateLabOrderRequestSchema>
@@ -63,9 +87,10 @@ export type LabOrderIdParam = z.infer<typeof LabOrderIdParamSchema>
 
 export const CreateLabOrderSchema = z
   .object({
-    patientId: uuid(),
-    testId: uuid(),
-    familyStructure: FamilyStructure,
+    status: LabOrderStatus.optional(),
+    patientId: uuid().optional(),
+    testId: uuid().optional(),
+    familyStructure: FamilyStructure.optional(),
     orderDate: z.string().optional(),
     versionId: uuid().optional(),
     orderingProviderId: uuid().optional(),
@@ -87,7 +112,33 @@ export const CreateLabOrderSchema = z
       )
       .optional(),
   })
-  .strict() satisfies z.ZodType<CreateLabOrderInputContract>
+  .strict()
+  .superRefine((val, ctx) => {
+    const status = val.status ?? 'DRAFT'
+    if (status !== 'DRAFT') {
+      if (!val.patientId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'patientId is required',
+          path: ['patientId'],
+        })
+      }
+      if (!val.testId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'testId is required',
+          path: ['testId'],
+        })
+      }
+      if (!val.familyStructure) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'familyStructure is required',
+          path: ['familyStructure'],
+        })
+      }
+    }
+  }) satisfies z.ZodType<CreateLabOrderInputContract>
 
 export class CreateLabOrderDto extends createZodDto(CreateLabOrderSchema) {}
 export type CreateLabOrderInput = CreateLabOrderInputContract
@@ -98,28 +149,7 @@ export const UpdateLabOrderSchema = z
     testIds: z.array(uuid()).optional(),
     icdIds: z.array(uuid()).optional(),
     familyStructure: z.string().optional(),
-    labOrder: z
-      .object({
-        testRequest: z
-          .object({
-            requestedTests: z.array(z.object({ testId: uuid().optional() })).optional(),
-          })
-          .optional(),
-        icdCodes: z.array(z.object({ id: uuid().optional() })).optional(),
-        specimens: z
-          .array(
-            z.object({
-              id: uuid().optional(),
-              specimenType: z.string().optional(),
-              collectedDate: z.string().datetime().optional(),
-              specimenCount: z.string().optional(),
-              bodySite: z.string().optional(),
-              _delete: z.boolean().optional(),
-            }),
-          )
-          .optional(),
-      })
-      .optional(),
+    labOrder: LabOrderDraftSchema.optional(),
     specimens: z
       .array(
         z

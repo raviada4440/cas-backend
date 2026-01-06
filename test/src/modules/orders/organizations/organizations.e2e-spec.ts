@@ -105,30 +105,37 @@ const createLabOrder = async (organizationId: string) => {
       status: $Enums.TestCatalogVersionStatus.PUBLISHED,
     },
   })
+  const configuration = await prisma.testCatalogConfiguration.create({
+    data: {
+      testId: test.id,
+      versionId: version.id,
+      configurationName: 'Default',
+      versionNumber: 1,
+      isActive: true,
+      type: $Enums.TestCatalogConfigurationType.OPERATIONAL,
+      dimension: $Enums.VariantDimension.FAMILY_STRUCTURE,
+      dimensionValue: 'NONE',
+    },
+  })
 
-  return prisma.labOrder.create({
+  const labOrder = await prisma.labOrder.create({
     data: {
       organizationId,
       patientId: patient.id,
       orderingProviderId: provider.id,
-      testVersionId: version.id,
-      testConfigurationId: await prisma.testCatalogConfiguration
-        .create({
-          data: {
-            testId: test.id,
-            versionId: version.id,
-            configurationName: 'Default',
-            versionNumber: 1,
-            isActive: true,
-            type: $Enums.TestCatalogConfigurationType.OPERATIONAL,
-            dimension: $Enums.VariantDimension.FAMILY_STRUCTURE,
-            dimensionValue: 'NONE',
-          },
-        })
-        .then((config) => config.id),
       orderDate: new Date(),
     },
   })
+
+  await prisma.labOrderTest.create({
+    data: {
+      labOrderId: labOrder.id,
+      testVersionId: version.id,
+      testConfigurationId: configuration.id,
+    },
+  })
+
+  return labOrder
 }
 
 describe('ROUTE /organizations', () => {

@@ -57,40 +57,45 @@ type FavoriteInclude = {
   }
 }
 type FavoriteEntity = Prisma.OrganizationFavoriteTestGetPayload<{ include: FavoriteInclude }>
-type ResultInclude = {
+const resultInclude = {
   orderingProvider: {
     select: {
-      firstName: true
-      lastName: true
-      name: true
-    }
-  }
+      firstName: true,
+      lastName: true,
+      name: true,
+    },
+  },
   patient: {
     select: {
-      firstName: true
-      lastName: true
-    }
-  }
-  version: {
-    select: {
-      test: {
+      firstName: true,
+      lastName: true,
+    },
+  },
+  labOrderTests: {
+    include: {
+      version: {
         select: {
-          casandraTestId: true
-          testName: true
-        }
-      }
-    }
-  }
+          test: {
+            select: {
+              casandraTestId: true,
+              testName: true,
+            },
+          },
+        },
+      },
+      configuration: true,
+    },
+  },
   labOrderStatuses: {
-    orderBy: { statusDate: 'desc' }
-    take: 1
+    orderBy: { statusDate: 'desc' },
+    take: 1,
     select: {
-      status: true
-      statusDate: true
-    }
-  }
-}
-type ResultEntity = Prisma.LabOrderGetPayload<{ include: ResultInclude }>
+      status: true,
+      statusDate: true,
+    },
+  },
+} as any
+type ResultEntity = Prisma.LabOrderGetPayload<{ include: typeof resultInclude }>
 type ProviderEntity = Prisma.ProviderGetPayload<{}>
 
 @Injectable()
@@ -118,7 +123,7 @@ export class OrganizationsService {
     },
   } satisfies Prisma.OrganizationFavoriteTestInclude
 
-  private readonly resultInclude = {
+  private readonly resultInclude: any = {
     orderingProvider: {
       select: {
         firstName: true,
@@ -132,14 +137,18 @@ export class OrganizationsService {
         lastName: true,
       },
     },
-    version: {
-      select: {
-        test: {
-          select: {
-            casandraTestId: true,
-            testName: true,
+    labOrderTests: {
+      include: {
+        version: {
+          include: {
+            test: {
+              include: {
+                lab: true,
+              },
+            },
           },
         },
+        configuration: true,
       },
     },
     labOrderStatuses: {
@@ -150,7 +159,7 @@ export class OrganizationsService {
         statusDate: true,
       },
     },
-  } satisfies Prisma.LabOrderInclude
+  }
 
   async listOrganizations(
     query: OrganizationDirectoryQueryInput,
@@ -548,18 +557,20 @@ export class OrganizationsService {
   }
 
   private mapResult(order: ResultEntity): OrganizationResultRecord {
-    const latestStatus = order.labOrderStatuses[0]
+    const latestStatus = (order.labOrderStatuses as any)?.[0] as any
     const orderedAt = order.orderDate ?? order.createdAt
+    const primaryTest = (order as any).labOrderTests?.[0] as any
+    const test = primaryTest?.version?.test as any
 
     return {
       id: order.id,
       orderNumber: order.orderNumber ?? null,
-      casandraTestId: order.version?.test?.casandraTestId ?? null,
-      testName: order.version?.test?.testName ?? null,
+      casandraTestId: test?.casandraTestId ?? null,
+      testName: test?.testName ?? null,
       status: latestStatus?.status ?? null,
       orderedAt: orderedAt?.toISOString() ?? null,
-      providerName: this.formatName(order.orderingProvider),
-      patientName: this.formatName(order.patient),
+      providerName: this.formatName(order.orderingProvider as any),
+      patientName: this.formatName(order.patient as any),
     }
   }
 
