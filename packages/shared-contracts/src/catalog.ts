@@ -242,6 +242,16 @@ export const VersionSummary = z.object({
 })
 export type VersionSummary = z.infer<typeof VersionSummary>
 
+export const TestCatalogStats = z.object({
+  totalLabs: z.number().int().nonnegative(),
+  totalTests: z.number().int().nonnegative(),
+  drafts: z.number().int().nonnegative(),
+  inReview: z.number().int().nonnegative(),
+  published: z.number().int().nonnegative(),
+  archived: z.number().int().nonnegative(),
+})
+export type TestCatalogStats = z.infer<typeof TestCatalogStats>
+
 export const ListTestsQuery = z.object({
   cursor: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),

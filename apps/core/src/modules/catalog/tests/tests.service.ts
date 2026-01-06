@@ -79,6 +79,112 @@ type AuditLogPerformer = { id: string; name: string | null; email: string | null
 export class TestsService {
   constructor(private readonly db: DatabaseService) {}
 
+  private async resolveLabPrefix(labId?: string | null): Promise<string> {
+    if (!labId) {
+      return 'TC'
+    }
+
+    const lab = await this.db.prisma.lab.findUnique({
+      where: { id: labId },
+      select: { labCode: true, labName: true },
+    })
+    if (!lab) {
+      return 'TC'
+    }
+
+    const labCode = lab.labCode?.trim().toUpperCase()
+    if (labCode && labCode.length > 0) {
+      return labCode
+    }
+
+    const name = (lab.labName ?? '').toUpperCase()
+    const words = name.split(/\s+/).filter(Boolean)
+    const alpha = name.replace(/[^A-Z]/g, '')
+
+    const isTaken = async (prefix: string) => {
+      const existing = await this.db.prisma.lab.findFirst({
+        where: {
+          labCode: prefix,
+          NOT: labId ? { id: labId } : undefined,
+        },
+        select: { id: true },
+      })
+      return Boolean(existing)
+    }
+
+    // Try 2-letter prefixes first
+    const twoLetterCandidates = [
+      words.length >= 2 ? `${words[0][0]}${words[1][0]}` : null, // first letters of first two words
+      words.length >= 1 && words[0].length >= 2 ? words[0].slice(0, 2) : null, // first two letters of first word
+      alpha.length >= 2 ? alpha.slice(0, 2) : null, // first two alpha chars overall
+      'TC',
+    ].filter((c): c is string => Boolean(c))
+
+    for (const candidate of twoLetterCandidates) {
+      if (!(await isTaken(candidate))) {
+        return candidate
+      }
+    }
+
+    // If no 2-letter prefix is available, try 3-letter prefixes
+    const threeLetterCandidates = [
+      words.length >= 3 ? `${words[0][0]}${words[1][0]}${words[2][0]}` : null, // first letters of first three words
+      words.length >= 2
+        ? `${words[0][0]}${words[0][1] ?? ''}${words[1][0] ?? ''}`.slice(0, 3)
+        : null,
+      words.length >= 1 && words[0].length >= 3 ? words[0].slice(0, 3) : null, // first three of first word
+      alpha.length >= 3 ? alpha.slice(0, 3) : null, // first three alpha chars overall
+    ].filter((c): c is string => Boolean(c))
+
+    for (const candidate of threeLetterCandidates) {
+      if (!(await isTaken(candidate))) {
+        return candidate
+      }
+    }
+
+    // random 2-letter fallback to ensure uniqueness
+    const randomLetters = (length: 2 | 3 = 2) =>
+      Array.from({ length }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join(
+        '',
+      )
+
+    for (let i = 0; i < 10; i++) {
+      const candidate = randomLetters(2)
+      if (!(await isTaken(candidate))) {
+        return candidate
+      }
+    }
+
+    // random 3-letter fallback
+    for (let i = 0; i < 10; i++) {
+      const candidate = randomLetters(3)
+      if (!(await isTaken(candidate))) {
+        return candidate
+      }
+    }
+
+    return 'TC'
+  }
+
+  private async generateCasandraTestId(labId?: string | null): Promise<string> {
+    const prefix = await this.resolveLabPrefix(labId)
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = Math.floor(10000 + Math.random() * 90000) // 5 digits
+      const candidate = `${prefix}${code}`
+      const exists = await this.db.prisma.testCatalog.findFirst({
+        where: { casandraTestId: candidate },
+        select: { id: true },
+      })
+      if (!exists) {
+        return candidate
+      }
+    }
+
+    // Fallback with timestamp suffix if repeated collisions
+    return `${prefix}${Date.now().toString().slice(-5)}`
+  }
+
   private readonly versionBaseFields: Array<keyof Prisma.TestCatalogVersionUncheckedCreateInput> = [
     'versionNumber',
     'status',
@@ -227,6 +333,27 @@ export class TestsService {
     }
   }
 
+  async stats() {
+    const [totalLabs, totalTests, drafts, inReview, published, archived] = await Promise.all([
+      // count labs that have at least one test catalog entry
+      this.db.prisma.lab.count({ where: { testCatalogs: { some: {} } } }),
+      this.db.prisma.testCatalog.count(),
+      this.db.prisma.testCatalog.count({ where: { status: $Enums.TestCatalogStatus.DRAFT } }),
+      this.db.prisma.testCatalog.count({ where: { status: $Enums.TestCatalogStatus.REVIEW } }),
+      this.db.prisma.testCatalog.count({ where: { status: $Enums.TestCatalogStatus.PUBLISHED } }),
+      this.db.prisma.testCatalog.count({ where: { status: $Enums.TestCatalogStatus.ARCHIVED } }),
+    ])
+
+    return {
+      totalLabs,
+      totalTests,
+      drafts,
+      inReview,
+      published,
+      archived,
+    }
+  }
+
   async search(query: TestSearchQuery): Promise<LabTestLookupResponse> {
     const take = Math.min(query.limit ?? 20, 100)
     const where: Prisma.TestCatalogWhereInput = {
@@ -312,17 +439,38 @@ export class TestsService {
   }
 
   async create(input: CreateTestInput): Promise<TestDetail> {
-    const test = await this.db.prisma.testCatalog.create({
-      data: {
-        testName: input.testName,
-        labId: input.labId ?? null,
-        testCategory: input.category ?? null,
-        testSubCategory: input.subCategory ?? null,
-        status: $Enums.TestCatalogStatus.DRAFT,
-      },
+    const casandraTestId = await this.generateCasandraTestId(input.labId ?? null)
+
+    const testId = await this.db.prisma.$transaction(async (tx) => {
+      const test = await tx.testCatalog.create({
+        data: {
+          testName: input.testName,
+          labId: input.labId ?? null,
+          testCategory: input.category ?? null,
+          testSubCategory: input.subCategory ?? null,
+          status: $Enums.TestCatalogStatus.DRAFT,
+          casandraTestId,
+        },
+      })
+
+      const version = await tx.testCatalogVersion.create({
+        data: {
+          testId: test.id,
+          versionNumber: 1,
+          status: $Enums.TestCatalogVersionStatus.DRAFT,
+          testName: test.testName,
+        },
+      })
+
+      await tx.testCatalog.update({
+        where: { id: test.id },
+        data: { defaultVersionId: version.id },
+      })
+
+      return test.id
     })
 
-    return this.get(test.id)
+    return this.get(testId)
   }
 
   async update(testId: string, input: UpdateTestInput): Promise<TestDetail> {

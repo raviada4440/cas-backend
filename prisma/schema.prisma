@@ -256,6 +256,7 @@ enum LabOrderStatusEnum {
   CLINICAL_NOTES_UPDATED
   MEDICAL_NECESSITY_VERIFIED
 }
+
 // All models from casandra-order with PostgreSQL and camelCase conversion
 model Account {
   id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -481,7 +482,7 @@ model ReviewComment {
 model Lab {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   labName   String?  @db.VarChar(512)
-  labCode   String?  @db.VarChar(2)
+  labCode   String?  @unique @db.VarChar(3)
   address   String?  @db.VarChar(512)
   city      String?  @db.VarChar(512)
   state     String?  @db.VarChar(512)
@@ -659,7 +660,6 @@ model LabOrderStatus {
 
   @@index([labOrderId])
 }
-
 
 model LabOrderTest {
   id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

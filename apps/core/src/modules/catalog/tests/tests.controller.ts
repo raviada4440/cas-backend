@@ -25,6 +25,7 @@ import {
   UpdateVersionLoincCodesDto,
   UpdateVersionBiomarkersDto,
   UpdateVersionSpecimensDto,
+  TestCatalogStatsDto,
 } from './tests.dto'
 import { TestsService } from './tests.service'
 import { Auth } from '@core/common/decorators/auth.decorator'
@@ -47,6 +48,13 @@ export class TestsController {
   @ApiOkResponseEnvelope({ description: 'Paged test summaries' })
   list(@Query() query: ListTestsQueryDto) {
     return this.testsService.list(query)
+  }
+
+  @Get('/stats')
+  @ApiOperation({ summary: 'Get catalog test stats' })
+  @ApiOkResponseEnvelope(TestCatalogStatsDto)
+  stats() {
+    return this.testsService.stats()
   }
 
   @Get('/:testId')

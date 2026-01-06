@@ -41,6 +41,8 @@ import {
   VersionDiffQuery as VersionDiffQueryType,
   VersionTypeQuery as VersionTypeQueryType,
   VersionUpdateInput as VersionUpdateInputType,
+  TestCatalogStats as TestCatalogStatsSchema,
+  TestCatalogStats as TestCatalogStatsType,
 } from '@shared/contracts/catalog'
 import {
   LabTestLookupResponse as LabTestLookupResponseSchema,
@@ -130,3 +132,6 @@ export type TestSummary = TestSummaryType
 export type TestListResponse = TestListResponseType
 export type TestDetail = TestDetailType
 export type TestVersionDetail = TestDetailType['version']
+
+export class TestCatalogStatsDto extends createZodDto(TestCatalogStatsSchema) {}
+export type TestCatalogStats = TestCatalogStatsType
