@@ -545,7 +545,7 @@ export type UpdateVersionSpecimensInput = z.infer<typeof UpdateVersionSpecimensI
 export const TestSearchQuery = z.object({
   labId: z.string().uuid(),
   q: z.string().trim().min(1).optional(),
-  limit: z.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
 })
 export type TestSearchQuery = z.infer<typeof TestSearchQuery>
 

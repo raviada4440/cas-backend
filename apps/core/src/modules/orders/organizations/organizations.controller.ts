@@ -41,6 +41,19 @@ export class OrganizationsController {
     return this.organizationsService.listFacilities(query)
   }
 
+  @Get('/:organizationId/facilities')
+  @ApiOperation({ summary: 'List facilities for an organization (alias)' })
+  listOrganizationFacilities(
+    @Param() params: OrganizationIdParamDto,
+    @Query() query: FacilityDirectoryQueryDto,
+  ) {
+    // Force parentId from path to scope facilities under this org.
+    return this.organizationsService.listFacilities({
+      ...query,
+      parentId: params.organizationId,
+    })
+  }
+
   @Get('/facilities/:facilityId')
   @ApiOperation({ summary: 'Get facility detail' })
   getFacility(@Param() params: FacilityIdParamDto) {
@@ -88,9 +101,25 @@ export class OrganizationsController {
     return this.organizationsService.listOrganizationFavoriteTests(params.organizationId)
   }
 
+  @Get('/:organizationId/favorite-tests')
+  @ApiOperation({ summary: 'List organization favorite tests (alias)' })
+  @ApiOkResponseEnvelope(OrganizationFavoriteTestListResponseDto)
+  listOrganizationFavoriteTests(@Param() params: OrganizationIdParamDto) {
+    return this.organizationsService.listOrganizationFavoriteTests(params.organizationId)
+  }
+
   @Post('/:organizationId/tests')
   @ApiOperation({ summary: 'Add organization favorite test' })
   addOrganizationFavorite(
+    @Param() params: OrganizationIdParamDto,
+    @Body() input: OrganizationFavoriteCreateDto,
+  ) {
+    return this.organizationsService.addOrganizationFavoriteTest(params.organizationId, input)
+  }
+
+  @Post('/:organizationId/favorite-tests')
+  @ApiOperation({ summary: 'Add organization favorite test (alias)' })
+  addOrganizationFavoriteTest(
     @Param() params: OrganizationIdParamDto,
     @Body() input: OrganizationFavoriteCreateDto,
   ) {
@@ -101,6 +130,13 @@ export class OrganizationsController {
   @ApiOperation({ summary: 'List organization lab orders' })
   @ApiOkResponseEnvelope(OrganizationResultListResponseDto)
   listOrganizationResults(@Param() params: OrganizationIdParamDto) {
+    return this.organizationsService.listOrganizationResults(params.organizationId)
+  }
+
+  @Get('/:organizationId/results')
+  @ApiOperation({ summary: 'List organization lab orders (alias)' })
+  @ApiOkResponseEnvelope(OrganizationResultListResponseDto)
+  listOrganizationResultsAlias(@Param() params: OrganizationIdParamDto) {
     return this.organizationsService.listOrganizationResults(params.organizationId)
   }
 

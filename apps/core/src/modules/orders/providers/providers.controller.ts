@@ -47,6 +47,14 @@ export class ProvidersController {
     return this.providersService.search(query, this.getScope(request))
   }
 
+  // Alias to avoid `/providers/search` falling into `/:providerId` and causing 422.
+  @Get('/search')
+  @ApiOperation({ summary: 'Search providers (alias)' })
+  @ApiOkResponseEnvelope(ProviderSearchResponseDto)
+  search(@Query() query: ProviderSearchQueryDto, @Req() request: AuthenticatedRequest) {
+    return this.providersService.search(query, this.getScope(request))
+  }
+
   @Get('/stats')
   @ApiOperation({ summary: 'Provider statistics' })
   @ApiOkResponseEnvelope(ProviderStatsResponseDto)
